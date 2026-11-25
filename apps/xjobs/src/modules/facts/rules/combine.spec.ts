@@ -363,6 +363,74 @@ describe('combineFacts', () => {
     ]);
   });
 
+  it('the listing place replaces a mentioned region on an office opening (01a207aa)', () => {
+    const { facts } = combine(
+      doc({
+        arrangementValue: 'unstated',
+        openings: [
+          opening({
+            places: [{ kind: 'region', code: 'EMEA' }],
+            placeStrictness: 'mention',
+            quote: 'deliver managed solutions across EMEA',
+          }),
+        ],
+      }),
+      listing({
+        arrangement: 'hybrid',
+        place: { kind: 'country', code: 'DK' },
+        locationText: 'Copenhagen, Denmark',
+      }),
+    );
+    expect(facts.openings).toEqual([
+      expect.objectContaining({
+        arrangements: ['hybrid'],
+        places: [{ kind: 'country', code: 'DK' }],
+        placeStrictness: 'label',
+        quote:
+          'deliver managed solutions across EMEA | LinkedIn: Copenhagen, Denmark',
+        arrangementSource: 'linkedin',
+        placesSource: 'linkedin',
+      }),
+    ]);
+  });
+
+  it('a mentioned region stays on a remote opening, and a mentioned city stays on an office one', () => {
+    const { facts } = combine(
+      doc({
+        arrangementValue: 'unstated',
+        openings: [
+          opening({
+            arrangements: ['remote'],
+            places: [{ kind: 'region', code: 'EMEA' }],
+            placeStrictness: 'mention',
+          }),
+          opening({
+            arrangements: ['onsite'],
+            places: [paris],
+            placeStrictness: 'mention',
+          }),
+        ],
+      }),
+      listing({
+        arrangement: 'hybrid',
+        place: { kind: 'country', code: 'DK' },
+        locationText: 'Copenhagen, Denmark',
+      }),
+    );
+    expect(facts.openings).toMatchObject([
+      {
+        places: [{ kind: 'region', code: 'EMEA' }],
+        placeStrictness: 'mention',
+        placesSource: 'description',
+      },
+      {
+        places: [{ name: 'Paris' }],
+        placeStrictness: 'mention',
+        placesSource: 'description',
+      },
+    ]);
+  });
+
   it('a time-zone-only opening stays placeless when the listing has no place', () => {
     const tz = { fromUtc: 0, toUtc: 2, label: 'European time zones' };
     const { facts, conflicts } = combine(
@@ -899,7 +967,7 @@ describe('combineFacts', () => {
   it('copies the other matcher facts from the description', () => {
     const d = doc();
     const { facts } = combine(d, listing());
-    expect(facts.version).toBe(7);
+    expect(facts.version).toBe(8);
     for (const key of [
       'position',
       'isSoftwareEngineeringRole',

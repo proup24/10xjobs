@@ -107,8 +107,10 @@ Run check 1 at any time. Run checks 2 to 8 at the end of the day, or once the pr
 **Follow-ups for the failures:**
 
 - **Check 2:** open a bug for job 01a207aa-350c-7612-80b2-9e694d3e6a25, where an EMEA mention stood in for the DK office. Look at PR 101's `checkArrangement` (a mention passed hybrid) and at a description mention outranking the LinkedIn place.
+  - Fixed on `fix/slice-09-location-checks` (`FACTS_VERSION` 8). The cause is in combine, not `checkArrangement`: an opening that already had a place never took the listing's, and `EMEA` contains `MA`, so the hybrid check passed. Now an office opening (hybrid, onsite or unstated) whose places are only mentioned regions or worldwide takes the listing's place. On dev on 2026-11-25 that is 11 open jobs, none naming the LinkedIn country, 1 of them qualified (this one). Mentioned cities and countries stay: 302 of the 309 open jobs with them name the LinkedIn country.
 - **Check 3:** read the quotes, add golden cases, fix the prompt, run `processor:eval`. This is a brainstorm.
 - **Check 7:** fix the wording in `checkLocation`, so the reason names the place and not the arrangement.
+  - Fixed on the same branch (`MATCHER_VERSION` 12). A place failure now names the places wanted per arrangement ("job location (hybrid in Dublin) is outside where you want to work (hybrid in Rabat)"), a time-zone failure names both ranges, and the "wanted arrangements" sentence stays for an arrangement that isn't wanted.
 
 The "After the checks" steps below were not run, because checks 2 and 3 failed: the `a680c99` PR was not opened and the worktrees were not removed.
 

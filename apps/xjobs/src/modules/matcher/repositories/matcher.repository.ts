@@ -272,8 +272,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
         .build(),
     );
     const cities = await this.db.query(
-      raw.sql`SELECT id, "countryCode" FROM cities`
-        .returnsRow({ id: UUID, countryCode: TEXT })
+      raw.sql`SELECT id, "countryCode", name FROM cities`
+        .returnsRow({ id: UUID, countryCode: TEXT, name: TEXT })
         .build(),
     );
     const countries = await this.db.query(
@@ -300,6 +300,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
           cities.map((c) => [c.id as string, c.countryCode as string]),
         ),
         countries: new Set(countries.map((c) => c.code as string)),
+        nameOfCity: new Map(
+          cities.map((c) => [c.id as string, c.name as string]),
+        ),
       },
       implies: new Map(
         tags.map((t) => [

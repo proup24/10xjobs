@@ -163,25 +163,38 @@ function combineOpenings(
       },
     ];
   }
-  // The listing supplies only the place, to each opening with none; the description's
-  // arrangement, confidence and time zones stand.
-  const placed: FactOpening[] =
-    place !== null
-      ? described.map((o) =>
-          o.places.length > 0
-            ? o
-            : {
-                ...o,
-                places: [place],
-                placeStrictness: 'label',
-                quote: [o.quote, listingQuote(listing.locationText)]
-                  .filter(Boolean)
-                  .join(' | '),
-                placesSource: 'linkedin',
-              },
-        )
-      : described;
-  return placed.map((o) => fillArrangement(o, top, listing.arrangement));
+  // The listing supplies only the place, to each opening with none, or whose office only
+  // mentions an area; the description's arrangement, confidence and time zones stand.
+  const filled = described.map((o) =>
+    fillArrangement(o, top, listing.arrangement),
+  );
+  if (place === null) return filled;
+  return filled.map((o) =>
+    o.places.length > 0 && !officeInMentionedArea(o)
+      ? o
+      : {
+          ...o,
+          places: [place],
+          placeStrictness: 'label',
+          quote: [o.quote, listingQuote(listing.locationText)]
+            .filter(Boolean)
+            .join(' | '),
+          placesSource: 'linkedin',
+        },
+  );
+}
+
+/**
+ * An office opening (hybrid, onsite or unstated) whose places are only mentioned regions or
+ * worldwide: "solutions across EMEA" names a business area, not where the office is, so the
+ * listing's place says more. A mentioned city or country stays: it is usually the office.
+ */
+function officeInMentionedArea(o: FactOpening): boolean {
+  return (
+    o.placeStrictness === 'mention' &&
+    !o.arrangements.includes('remote') &&
+    o.places.every((p) => p.kind === 'region' || p.kind === 'worldwide')
+  );
 }
 
 /**
