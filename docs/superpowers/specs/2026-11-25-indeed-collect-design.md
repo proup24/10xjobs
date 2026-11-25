@@ -85,12 +85,12 @@ Three profiles: about $0.80 a day. Repeat rows cost Apify money only: ingest dro
 
 An engine-only table (RLS on, no policies), say `indeed_markets`, in the Prisma contract:
 
-| Column           | Meaning                                                                         |
-| ---------------- | ------------------------------------------------------------------------------- |
-| `site`           | valig's `country` code, primary key (`us`, `uk`, `br`, `pl`, `ca`, `ma`, …)     |
-| `country`        | the country as the profile's place vocabulary names it, to match on-site places |
-| `mainRemote`     | true for a market every profile with Indeed on searches remote                  |
-| `remoteLocation` | the location text that means remote on that site, default `Remote`              |
+| Column           | Meaning                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| `site`           | valig's `country` code, primary key (`us`, `uk`, `br`, `pl`, `ca`, `ma`, …)                      |
+| `countryCode`    | the ISO 3166-1 alpha-2 code (`uk` → `GB`), matched against the profile's country and city places |
+| `mainRemote`     | true for a market every profile with Indeed on searches remote                                   |
+| `remoteLocation` | the location text that means remote on that site, default `Remote`                               |
 
 - Seeded with every site valig's schema lists (62), `mainRemote` true for `us`, `br`, `pl`, `uk`, `ca`.
 - `remoteLocation` is data because only the US and UK sites were checked. Brazil, Poland and Canada are checked in the rollout, and a row update fixes a wrong one.
@@ -98,7 +98,7 @@ An engine-only table (RLS on, no policies), say `indeed_markets`, in the Prisma 
 
 ### Searches (recipes)
 
-`indeedRecipes(input)` builds one recipe per search place, for the profile's position and ranked skills, through a new `INDEED` builder in `CHANNEL_QUERY_BUILDERS`:
+`indeedRecipes(input)` builds one recipe per search place, for the profile's position and ranked skills, built directly like `postRecipes` (not through `CHANNEL_QUERY_BUILDERS`). The profile's search input carries its places' country codes and the market rows, so the recipes stay a pure function:
 
 - **Remote:** one recipe per `mainRemote` market, with `type: remote`, location the market's `remoteLocation`, and params `{ site, location }`. It's built whenever the profile wants remote at all (`locations.remote` not empty), whatever the regions.
 - **Named countries** _(user)_: each country the profile names for remote, hybrid or on-site that resolves to a market row gets **one** search of its whole site, with an empty location and `type` left to the matcher. valig has no arrangement filter, so one search covers every arrangement, and the matcher decides. Morocco returned 7 rows (about $0.002 a run). One exception: a country named only for remote that is also a main market (the US, Canada) adds nothing, because its main-market remote search covers it.
@@ -129,7 +129,7 @@ They apply only to a profile that lists Portuguese or Polish, on LinkedIn as wel
 - `channelJobsConfig[Channel.INDEED]`: queue `collect-indeed`, schedule `0 9-21 * * 1-5` in `Africa/Casablanca` (the LinkedIn job board's hours), concurrency 1, attempts 1.
 - Window: one hour, cursors moving the LinkedIn way, `maximumHours: 72` so a gap widens to Indeed's 3-day filter and no further. The exact `WindowConfig` and `resumeHours` values are left to the builder, with these two outcomes required.
 - **Daily cap:** `COLLECTION_DAILY_BUDGET_USD_INDEED`, default `1`, through `CollectionService.dailyBudget`'s per-channel env lookup. It's counted from Apify's final cost, like the LinkedIn channels. Each run's charge limit is the smaller of what's left of the day's cap and what 1,000 rows plus a start cost.
-- **Row cap reached:** a run that returns 1,000 rows is recorded as having reached its row cap, next to the existing charge-cap flag, and logged as a warning. It still counts as covering its window, since the next run looks back 24 hours anyway.
+- **Row cap reached:** a run that returns 1,000 rows lists every member in the run's existing `truncatedQueryIds` (the run record's row-limit field) and logs a warning. It still counts as covering its window, since the next run looks back 24 hours anyway.
 - **Rows per run** are kept on the run record, so the real supply per market can be read once Brazil, Poland and Canada run.
 - A failed or capped run follows the existing failure rules (`modules/collectors/README.md`).
 
