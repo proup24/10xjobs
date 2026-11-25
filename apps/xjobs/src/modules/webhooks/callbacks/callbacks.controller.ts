@@ -45,7 +45,9 @@ export class CallbacksController {
     };
     const webhookId = header('x-10xjobs-webhook');
     const received = header('x-10xjobs-signature');
-    const rawBody = req.rawBody ?? Buffer.alloc(0);
+    // Mounted raw (see callbackRawBody) the bytes are in req.body; rawBody covers other setups.
+    const rawBody =
+      req.rawBody ?? (Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0));
     const now = new Date();
 
     const webhook = webhookId
