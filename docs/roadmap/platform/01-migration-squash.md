@@ -2,6 +2,8 @@
 
 Status: Brief. Raised 2026-11-24, after PR #127's CI database job ran out of memory.
 
+**Brainstormed 2026-11-24:** the direction is a stepped migrate, not a squash. See [the design](../../superpowers/specs/2026-11-24-stepped-migrate-design.md). `rc.25` was tested and doesn't change the planner's growth. The squash sections below are kept as history.
+
 ## Goal
 
 `prisma db migrate --to db` runs in well under a gigabyte again: on CI, on the Dev database deploy, and locally for `pnpm db:reset`. It stays that way as the app grows, and we get warned well before it doesn't.

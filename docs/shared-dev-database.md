@@ -42,6 +42,8 @@ Schema changes go through the local stack, never the shared project:
 2. `pnpm db:start`, then `pnpm db:reset`.
 3. Edit the contract, run `pnpm --filter @xjobs/database db:migration:plan`, then `pnpm db:migrate`, `pnpm db:types` and `pnpm db:test`.
 
+`db:migrate` walks a fresh database through the history in steps of at most 8 new invariants (`libs/database/src/migrations-step/`), because Prisma's planner grows exponentially with the invariants it has to collect in one run.
+
 Merging to `main` applies the migration to the dev project.
 
 `db:migrate`, `db:update`, `db:init` and `db:seed` refuse any non-local `DATABASE_URL`, `DIRECT_DATABASE_URL` or `SUPABASE_URL` unless `XJOBS_ALLOW_REMOTE_DB=1` is set. The documented `pnpm` commands read the flag only from the shell or CI environment, not from `.env` (Nx loads `.env` into task env, so it could take effect through `nx run`). Pass it inline and never put it in `.env`. Never run it from your own machine against the dev project; CI does that.
