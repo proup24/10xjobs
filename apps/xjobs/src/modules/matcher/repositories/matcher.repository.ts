@@ -179,18 +179,17 @@ const TAKES_PART = (raw: Raw) =>
   raw.sql`(j.kind <> 'post_role' OR p."postSearch")`.returns(BOOL);
 
 /**
- * The row `m` was decided on the job `j`'s age as it is now: a role job's row decided
- * before its original turned POST_MAX_AGE_DAYS old is stale once that moment, plus
- * POST_AGE_STALE_MARGIN_MINUTES, has passed, with no new observation needed. The margin
- * covers a row decided on the engine clock just before the mark and written (database
- * `updatedAt`) just after it; a row written after mark + margin is current, so each row
- * is re-decided at most once. A role with no `postedAt` never ages (its check is
- * `unknown`); the explicit NOT NULL keeps the whole test false, not NULL, so its row
- * stays current.
+ * The row `m` was decided on the job `j`'s age as it is now: a role job's row is stale
+ * once its original has turned POST_MAX_AGE_DAYS old (the mark) if the row was written
+ * before mark + POST_AGE_STALE_MARGIN_MINUTES. The margin covers a row decided on the
+ * engine clock just before the mark and written (database `updatedAt`) just after it; a
+ * row written after mark + margin is current, so each row is re-decided at most once and
+ * the sweep cannot loop. A role with no `postedAt` never ages (its check is `unknown`);
+ * the explicit NOT NULL keeps the whole test false, not NULL, so its row stays current.
  */
 const ON_CURRENT_AGE = (raw: Raw) =>
   raw.sql`NOT (j.kind = 'post_role' AND j."postedAt" IS NOT NULL
-    AND j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int, mins => ${POST_AGE_STALE_MARGIN_MINUTES}::int) <= now()
+    AND j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int) <= now()
     AND m."updatedAt" < j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int, mins => ${POST_AGE_STALE_MARGIN_MINUTES}::int))`.returns(
     BOOL,
   );

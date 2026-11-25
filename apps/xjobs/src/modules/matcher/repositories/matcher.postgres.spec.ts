@@ -16,6 +16,8 @@ import {
   POST_MAX_AGE_DAYS,
 } from '../config/matcher.config';
 import { PrismaRatesRepository } from 'src/modules/rates/rates.repository';
+import { rolePost } from '../rules/fixtures.testing';
+import { checkPostAge } from '../rules/post';
 import {
   PrismaMatcherRepository,
   type StoredMatch,
@@ -1260,6 +1262,46 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(await repo.listStaleJobs(10)).toEqual([role.id]);
       // Written after mark + margin: current, so the sweep does not loop.
       await setMatchUpdatedAt(role.id, new Date(mark + margin + 60_000));
+      expect(await repo.listStaleJobs(10)).toEqual([]);
+    });
+
+    it('a role whose original turned 30 a moment ago is stale at once, not only after the margin', async () => {
+      const p = await profile({ postSearch: true });
+      const postedAt = new Date(
+        Date.now() - POST_MAX_AGE_DAYS * DAY - 2 * 60_000,
+      );
+      const role = await roleJob({ postedAt });
+      await facts(role);
+      await repo.upsertMatches([row(p, role)]);
+      // Decided on day 29; the mark passed two minutes ago, inside the margin.
+      await setMatchUpdatedAt(role.id, new Date(postedAt.getTime() + 29 * DAY));
+      expect(await repo.listStaleJobs(10)).toEqual([role.id]);
+    });
+
+    it('a role qualified on day 29 is stale after the mark, re-decided rejected, then current', async () => {
+      const p = await profile({ postSearch: true });
+      const postedAt = new Date(
+        Date.now() - POST_MAX_AGE_DAYS * DAY - 3_600_000,
+      );
+      const role = await roleJob({ postedAt });
+      await facts(role);
+      const decideAt = (ms: number) => {
+        const check = checkPostAge(
+          rolePost({ ageDays: (ms - postedAt.getTime()) / DAY }),
+        );
+        return row(p, role, {
+          outcome: check.outcome === 'fail' ? 'rejected' : 'qualified',
+          checks: [check],
+        });
+      };
+      const day29 = postedAt.getTime() + 29 * DAY;
+      await repo.upsertMatches([decideAt(day29)]);
+      await setMatchUpdatedAt(role.id, new Date(day29));
+      expect((await matchRow(p.id, role.id))?.outcome).toBe('qualified');
+      expect(await repo.listStaleJobs(10)).toEqual([role.id]);
+      // The sweep re-decides it now, just after day 30.
+      await repo.upsertMatches([decideAt(Date.now())]);
+      expect((await matchRow(p.id, role.id))?.outcome).toBe('rejected');
       expect(await repo.listStaleJobs(10)).toEqual([]);
     });
 

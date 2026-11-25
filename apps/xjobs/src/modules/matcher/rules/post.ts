@@ -29,9 +29,11 @@ export function checkBlockedAuthor(
   blocked: string[],
 ): Check {
   const hits = post.authors.filter((a) => blocked.includes(a.key));
+  // Only the matched keys are stored on the profile side, not the user's whole blocked
+  // list, so a row's checks stay small.
   const base = {
     rule: 'blockedAuthor' as const,
-    profileValue: blocked,
+    profileValue: hits.map((a) => a.key),
     ...restsOn(null),
   };
   if (hits.length > 0)
@@ -49,24 +51,28 @@ export function checkBlockedAuthor(
   };
 }
 
-/** Fails when the post is older than `POST_MAX_AGE_DAYS`; unknown when its date is. */
+/**
+ * Fails when the post is more than `POST_MAX_AGE_DAYS` old (30.0 days passes, 30.01 fails),
+ * so a role re-decided at the sweep's 30-day mark comes out rejected; unknown when its date
+ * is. A negative age (clock skew) counts as 0.
+ */
 export function checkPostAge(post: PostContext): Check {
+  const age = post.ageDays === null ? null : Math.max(0, post.ageDays);
   const base = {
     rule: 'postAge' as const,
-    jobValue: post.ageDays,
+    jobValue: age === null ? null : Math.round(age * 100) / 100,
     profileValue: POST_MAX_AGE_DAYS,
     ...restsOn(null),
   };
-  if (post.ageDays === null)
+  if (age === null)
     return {
       ...base,
       outcome: 'unknown',
       reason: "the post's date is unknown",
     };
-  const days = Math.floor(post.ageDays);
   return {
     ...base,
-    outcome: days > POST_MAX_AGE_DAYS ? 'fail' : 'pass',
-    reason: `posted ${days} days ago`,
+    outcome: age > POST_MAX_AGE_DAYS ? 'fail' : 'pass',
+    reason: `posted ${Math.floor(age)} days ago`,
   };
 }

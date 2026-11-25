@@ -108,7 +108,7 @@ When the job offers no sponsorship and states no requirement, the facts derive `
 
 **Blocked author** (post roles): `fail`, sure, when any author of the post (each sharer or poster in `postSources`, and each share's original author) is in the user's `blocked_authors`; the reason is `you blocked <name>`. Otherwise `pass`. Keys compare lowercased (`profile:<publicIdentifier>` or `company:<universalName>`).
 
-**Post age** (post roles): `fail`, sure, when the original post is more than `POST_MAX_AGE_DAYS` (30) whole days old at decision time; the reason is `posted <n> days ago`. `unknown` when the role has no `postedAt`. Ageing needs no new observation: a role row decided before its original turned 30 days old is stale once that moment passes (`j."postedAt" + 30 days <= now()` and the row's `updatedAt` is before it), so the sweep re-decides it and it comes out `rejected`.
+**Post age** (post roles): `fail`, sure, when the original post is more than `POST_MAX_AGE_DAYS` (30) days old at decision time, on the raw age (30.0 days passes, 30.01 fails; a negative age from clock skew counts as 0); the reason is `posted <n> days ago`, with n the whole days. `unknown` when the role has no `postedAt`. Ageing needs no new observation: a role row is stale once its original is 30 days old (`j."postedAt" + 30 days <= now()`) if the row was written before that mark plus `POST_AGE_STALE_MARGIN_MINUTES` (5), so the sweep re-decides it and it comes out `rejected`; a row written after mark + margin is current, so it is re-decided once.
 
 ## Matchable jobs
 
