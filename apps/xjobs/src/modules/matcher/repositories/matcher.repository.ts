@@ -230,6 +230,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
         acceptsSponsorship: null,
       },
       eligibilityVersion: eligibility.get(p.userId)?.version ?? 0,
+      // Task 4 loads the real values.
+      blockedAuthors: [],
+      postSearch: false,
     }));
   }
 

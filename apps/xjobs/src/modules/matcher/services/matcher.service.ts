@@ -56,6 +56,8 @@ export class MatcherService {
       factsHash: built.factsHash,
       needsReview: candidate.needsReview,
       facts: built.facts,
+      // Task 4 loads the post context of a role job.
+      post: null,
     };
     const profiles = await this.repo.listPublishedProfiles(
       opts.force

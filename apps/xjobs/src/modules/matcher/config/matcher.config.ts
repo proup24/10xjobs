@@ -1,5 +1,7 @@
 /** Bump when a rule changes, so stored decisions can be told apart. */
 export const MATCHER_VERSION = 12;
+/** The oldest an original post may be, in days, before a role from it fails. */
+export const POST_MAX_AGE_DAYS = 30;
 /** Years above the profile's experience that a job may ask before it fails. */
 export const SENIORITY_YEARS_MARGIN = 2;
 /** The lowest stack score that still qualifies. */

@@ -12,7 +12,10 @@ export type RuleName =
   | 'contractType'
   | 'languages'
   | 'postingLanguage'
-  | 'workAuthorization';
+  | 'workAuthorization'
+  | 'hiringVerdict'
+  | 'blockedAuthor'
+  | 'postAge';
 
 /**
  * Whether a check's outcome rests on an unsure value (a fail so marked goes to review),
@@ -56,6 +59,15 @@ export interface MatchEligibility {
   acceptsSponsorship: boolean | null;
 }
 
+/** What a LinkedIn post role job adds to the listing rules: the post's verdict, authors and age. */
+export interface PostContext {
+  verdictConfidence: 'sure' | 'unsure';
+  /** Every author of the post and of the posts it reshares: `key` identifies the author, `name` may be empty. */
+  authors: { key: string; name: string }[];
+  /** Days since the earliest original's date; null when unknown. */
+  ageDays: number | null;
+}
+
 export interface MatchProfile {
   id: string;
   userId: string;
@@ -78,6 +90,10 @@ export interface MatchProfile {
   /** Spoken languages, ISO 639-1; non-empty. */
   languages: { lang: string; level: LanguageLevel }[];
   eligibility: MatchEligibility;
+  /** The author keys the user blocked. */
+  blockedAuthors: string[];
+  /** Whether the profile searches LinkedIn posts. */
+  postSearch: boolean;
   /** No rule reads these: each decision records them, and a row decided before either changed is stale. `profiles.matchVersion`, bumped by triggers on any matching change. */
   matchVersion: number;
   /** `users.eligibilityVersion`, bumped by triggers whenever the eligibility changes. */
@@ -91,6 +107,8 @@ export interface MatchJob {
   /** From the current extraction; not part of the facts. */
   needsReview: boolean;
   facts: JobFactsDocument;
+  /** Null for a listing. */
+  post: PostContext | null;
 }
 
 const RANK: Record<CheckOutcome, number> = { pass: 2, unknown: 1, fail: 0 };

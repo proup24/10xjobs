@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import { decide, type MatchContext } from './decide';
-import { exampleProfile, factsDoc } from './fixtures.testing';
+import { exampleProfile, factsDoc, rolePost } from './fixtures.testing';
+import type { PostContext } from './types';
 import type { MatchJob } from './types';
 
 const ctx: MatchContext = {
@@ -55,6 +56,12 @@ const job = (facts: JobFactsDocument, needsReview = false): MatchJob => ({
   factsHash: 'h1',
   needsReview,
   facts,
+  post: null,
+});
+
+const roleJob = (post: Partial<PostContext> = {}): MatchJob => ({
+  ...job(passingDoc()),
+  post: rolePost(post),
 });
 
 describe('decide', () => {
@@ -562,5 +569,71 @@ describe('decide', () => {
       expect(d.checks[0]).toMatchObject({ outcome: 'fail', unsure: false });
       expect(d.outcome).toBe('rejected');
     });
+  });
+});
+
+describe('decide for post roles', () => {
+  const rules = [
+    'position',
+    'seniority',
+    'location',
+    'stack',
+    'salary',
+    'currency',
+    'contractType',
+    'languages',
+    'postingLanguage',
+    'workAuthorization',
+  ];
+
+  it('a listing keeps ten checks', () => {
+    const d = decide(job(passingDoc()), exampleProfile(), ctx);
+    expect(d.checks).toHaveLength(10);
+  });
+
+  it('a role has thirteen, in order', () => {
+    const d = decide(roleJob(), exampleProfile(), ctx);
+    expect(d.checks.map((c) => c.rule)).toEqual([
+      ...rules,
+      'hiringVerdict',
+      'blockedAuthor',
+      'postAge',
+    ]);
+    expect(d.outcome).toBe('qualified');
+  });
+
+  it('an unsure verdict on an otherwise qualified role is review on hiringVerdict/verdict', () => {
+    const d = decide(
+      roleJob({ verdictConfidence: 'unsure' }),
+      exampleProfile(),
+      ctx,
+    );
+    expect(d.outcome).toBe('review');
+    expect(d.review).toEqual({ rule: 'hiringVerdict', field: 'verdict' });
+  });
+
+  it('a blocked author rejects an otherwise qualified role', () => {
+    const profile = { ...exampleProfile(), blockedAuthors: ['profile:a'] };
+    const d = decide(
+      roleJob({ authors: [{ key: 'profile:a', name: 'Ann' }] }),
+      profile,
+      ctx,
+    );
+    expect(d.outcome).toBe('rejected');
+  });
+
+  it('an old original rejects', () => {
+    const d = decide(roleJob({ ageDays: 45 }), exampleProfile(), ctx);
+    expect(d.outcome).toBe('rejected');
+    expect(d.checks.at(-1)).toMatchObject({
+      rule: 'postAge',
+      reason: 'posted 45 days ago',
+    });
+  });
+
+  it('an unknown post age leaves the role qualified and unverified', () => {
+    const d = decide(roleJob({ ageDays: null }), exampleProfile(), ctx);
+    expect(d.outcome).toBe('qualified');
+    expect(d.unverified).toBe(true);
   });
 });
