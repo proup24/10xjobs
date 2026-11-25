@@ -126,7 +126,7 @@ export class PrismaCallbacksRepository extends CallbacksRepository {
         t,
       );
       await tx.query(
-        raw.sql`UPDATE webhook_callbacks SET result = ${result.result}::text
+        raw.sql`UPDATE webhook_callbacks SET result = ${result.result}::text, "updatedAt" = now()
           WHERE id = ${logged.id as string}::uuid
           RETURNING id`
           .returnsRow({ id: UUID })

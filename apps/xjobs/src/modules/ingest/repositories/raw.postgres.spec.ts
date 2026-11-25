@@ -688,6 +688,79 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
         ]);
       });
 
+      const sources = async () =>
+        (await db.orm.public.JobDecision.all()).map((d) => ({
+          jobId: d.jobId,
+          source: d.source,
+        }));
+
+      it('keeps a webhook decision source when its job merges away', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'dismissed', t1, 'role');
+        await db.execute(
+          db.raw
+            .sql`UPDATE job_decisions SET source = 'webhook' WHERE "jobId" = ${old.id}::uuid`
+            .affectedCount()
+            .build(),
+        );
+        await save(liJob('4483941772'), t2);
+        expect(await sources()).toEqual([
+          { jobId: moved.id, source: 'webhook' },
+        ]);
+      });
+
+      it('takes the source of the winning decision when both jobs were decided', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'applied', t1, null);
+        await decide(moved.id, 'dismissed', t2, 'role');
+        await db.execute(
+          db.raw
+            .sql`UPDATE job_decisions SET source = 'webhook' WHERE "jobId" = ${old.id}::uuid`
+            .affectedCount()
+            .build(),
+        );
+        await save(liJob('4483941772'), t3);
+        expect(await sources()).toEqual([
+          { jobId: moved.id, source: 'webhook' },
+        ]);
+      });
+
+      it('copies the source back to a merged job that revives', async () => {
+        const { old, moved } = await mergeSetup();
+        await decide(old.id, 'dismissed', t1, 'role');
+        await db.execute(
+          db.raw
+            .sql`UPDATE job_decisions SET source = 'webhook' WHERE "jobId" = ${old.id}::uuid`
+            .affectedCount()
+            .build(),
+        );
+        await save(liJob('4483941772'), t2);
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t2,
+        );
+        const item = await rawItemId('id:4483941774');
+        await db.execute(
+          db.raw
+            .sql`UPDATE normalized_versions SET "jobKey" = 'linkedin-job:4483941772'
+            WHERE "rawVersionId" IN (SELECT id FROM raw_item_versions WHERE "rawItemId" = ${item}::uuid)`
+            .affectedCount()
+            .build(),
+        );
+        await save(
+          liJob('4483941774', { applyType: 'EASY_APPLY', applyUrl: '' }),
+          t3,
+        );
+        expect(
+          (await sources()).sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        ).toEqual(
+          [
+            { jobId: old.id, source: 'webhook' },
+            { jobId: moved.id, source: 'webhook' },
+          ].sort((a, b) => a.jobId.localeCompare(b.jobId)),
+        );
+      });
+
       it('keeps applied when an applied and a dismissed job merge', async () => {
         const { old, moved } = await mergeSetup();
         await decide(old.id, 'applied', t1, null);

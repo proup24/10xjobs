@@ -106,11 +106,11 @@ export function verify(rawBody, headers, secret) {
 
 Your receiver can call back to 10xjobs. A callback proves the webhook is alive and, optionally, reports what you did with a job.
 
-**A receiver that never calls back lets its user's searches pause after 24 hours.** Send a `ping` now and then, or report feedback on jobs.
+**Searches pause only when a match has waited 24 hours with no activity of any kind, and activity in the app counts too.** If you use only this receiver and it never calls back, your searches pause once a match has waited 24 hours. Send a `ping` now and then, or report feedback on jobs.
 
 `POST <web app address>/api/webhooks/callback`, with these headers:
 
-- `X-10xjobs-Webhook`: the webhook id.
+- `X-10xjobs-Webhook`: the webhook id, shown on the Webhook page (outgoing deliveries don't carry it).
 - `X-10xjobs-Timestamp`: Unix seconds. Accepted within 300 seconds either way.
 - `X-10xjobs-Signature`: `v1=` plus the hex HMAC-SHA256 of `${timestamp}.${rawBody}`, keyed by the webhook secret (the same scheme as above).
 
@@ -136,9 +136,21 @@ export async function callBack(url, webhookId, secret, body) {
 
 Bodies (version 1):
 
+A ping:
+
 ```json
 { "version": 1, "type": "ping" }
+```
+
+Feedback that you applied:
+
+```json
 { "version": 1, "type": "feedback", "jobId": "<job id>", "status": "applied" }
+```
+
+Feedback that you dismissed, with an optional reason and note:
+
+```json
 { "version": 1, "type": "feedback", "jobId": "<job id>", "status": "dismissed", "reason": "stack", "note": "optional, up to 500 characters" }
 ```
 
@@ -151,7 +163,8 @@ Responses:
 - An existing decision is never changed: you get `already_decided`.
 - `401`: unsigned, bad signature, a timestamp more than 300 seconds off, an unknown webhook, or a replay (the same signature twice).
 - `429`: more than 60 calls in a minute for one webhook.
-- `413`: the body is too large.
+- `413`: the body is too large; the body is `{"version":1,"error":"too_large"}`.
+- `503`: the web app could not reach the engine; the body is `{"version":1,"error":"unavailable"}`. Retry it later.
 
 Every `200` counts as activity for the user, including `invalid`.
 

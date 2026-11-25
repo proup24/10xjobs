@@ -683,9 +683,15 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
         .build(),
     );
     const callbacks = await this.db.query(
-      raw.sql`DELETE FROM webhook_callbacks
-        WHERE "receivedAt" < ${before}::timestamptz
-        RETURNING id`
+      // The newest callback of each webhook stays: the Webhook page and the
+      // activity signal read it, however old it is.
+      raw.sql`DELETE FROM webhook_callbacks c
+        WHERE c."receivedAt" < ${before}::timestamptz
+          AND EXISTS (
+            SELECT 1 FROM webhook_callbacks n
+            WHERE n."webhookId" = c."webhookId"
+              AND (n."receivedAt", n.id) > (c."receivedAt", c.id))
+        RETURNING c.id`
         .returnsRow({ id: UUID })
         .build(),
     );

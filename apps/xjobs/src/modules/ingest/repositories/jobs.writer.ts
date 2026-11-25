@@ -403,11 +403,11 @@ async function moveDecisions(
   await tx.execute(
     tx.raw.sql`WITH moved AS (
         DELETE FROM public.job_decisions WHERE "jobId" = ${fromJobId}::uuid
-        RETURNING "userId", status, reason, note, "decidedAt", "matchSnapshot"
+        RETURNING "userId", status, reason, note, "decidedAt", "matchSnapshot", source
       )
       INSERT INTO public.job_decisions
-        ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
-      SELECT "userId", ${toJobId}::uuid, status, reason, note, "decidedAt", "matchSnapshot"
+        ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot", source)
+      SELECT "userId", ${toJobId}::uuid, status, reason, note, "decidedAt", "matchSnapshot", source
       FROM moved
       ON CONFLICT ("userId", "jobId") DO UPDATE SET
         status = EXCLUDED.status,
@@ -415,6 +415,7 @@ async function moveDecisions(
         note = EXCLUDED.note,
         "decidedAt" = EXCLUDED."decidedAt",
         "matchSnapshot" = EXCLUDED."matchSnapshot",
+        source = EXCLUDED.source,
         "updatedAt" = now()
       WHERE (CASE EXCLUDED.status WHEN 'applied' THEN 3 WHEN 'dismissed' THEN 2 ELSE 1 END)
           > (CASE job_decisions.status WHEN 'applied' THEN 3 WHEN 'dismissed' THEN 2 ELSE 1 END)
@@ -474,8 +475,8 @@ async function copyDecisionsBack(
         SELECT id FROM chain WHERE depth > 0 ORDER BY depth DESC LIMIT 1
       )
       INSERT INTO job_decisions
-        ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot")
-      SELECT d."userId", ${jobId}::uuid, d.status, d.reason, d.note, d."decidedAt", d."matchSnapshot"
+        ("userId", "jobId", status, reason, note, "decidedAt", "matchSnapshot", source)
+      SELECT d."userId", ${jobId}::uuid, d.status, d.reason, d.note, d."decidedAt", d."matchSnapshot", d.source
       FROM job_decisions d JOIN root ON d."jobId" = root.id
       ON CONFLICT DO NOTHING`
       .affectedCount()

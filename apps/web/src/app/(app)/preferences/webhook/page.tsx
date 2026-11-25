@@ -3,6 +3,7 @@ import { WebhookDeliveries } from '@/components/preferences/webhook-deliveries';
 import { WebhookForm } from '@/components/preferences/webhook-form';
 import { TextLink } from '@/components/ui/text';
 import { SECTION_TITLES, preferencesTitle } from '@/lib/preferences/titles';
+import { callbackUrlFor } from '@/lib/webhook/callback-url';
 import { loadWebhook } from '@/lib/webhook/load';
 import { preferenceProfiles } from '../data';
 import { requireSignedIn } from '../guard';
@@ -21,13 +22,11 @@ export default async function Page() {
   const { webhook, deliveries } = await loadWebhook(supabase, labels);
   // The web app has no site-URL setting: build the callback URL from the request's origin.
   const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
-  const proto =
-    h.get('x-forwarded-proto') ??
-    (host.startsWith('localhost') || host.startsWith('127.')
-      ? 'http'
-      : 'https');
-  const callbackUrl = `${proto}://${host}/api/webhooks/callback`;
+  const callbackUrl = callbackUrlFor({
+    forwardedHost: h.get('x-forwarded-host'),
+    host: h.get('host'),
+    forwardedProto: h.get('x-forwarded-proto'),
+  });
   return (
     <div className="flex flex-col gap-10">
       <section aria-labelledby="webhook-title" className="flex flex-col gap-6">
