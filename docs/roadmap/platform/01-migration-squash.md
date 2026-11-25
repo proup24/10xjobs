@@ -1,6 +1,6 @@
 # 01: Migration squash
 
-Status: Brief. Raised 2026-11-24, after PR #127's CI database job ran out of memory.
+Status: built as a stepped migrate in PR #131 (verified on Dev 2026-11-25); the squash was not chosen. Raised 2026-11-24, after PR #127's CI database job ran out of memory. Left: file the prisma-next issue about the planner's memory growth.
 
 **Brainstormed 2026-11-24:** the direction is a stepped migrate, not a squash. See [the design](../../superpowers/specs/2026-11-24-stepped-migrate-design.md). `rc.25` was tested and doesn't change the planner's growth. The squash sections below are kept as history.
 
