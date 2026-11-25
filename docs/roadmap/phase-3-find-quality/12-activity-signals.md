@@ -4,7 +4,7 @@ Found 2026-11-24 during the [slice 11](11-monday-checks.md) weekday checks on `1
 
 ## Background
 
-Paused searches (PRs 123 and 124, spec `docs/superpowers/specs/2026-11-23-paused-searches-design.md`) stop a user's search builders when a qualified match has waited in their Matches list for more than 24 hours and the user shows no activity in that time. Activity is any one of four signals, all read by `pausedUsersCte` in `apps/xjobs/src/modules/activity/activity.sql.ts`:
+Paused searches (PRs 123 and 124, spec `docs/superpowers/specs/2026-11-23-paused-searches-design.md`) stop a user's search builders when a qualified match has waited in their Matches list for more than 24 hours and the user shows no activity in that time. Activity is any one of four signals (before this slice), all read by `pausedUsersCte` in `apps/xjobs/src/modules/activity/activity.sql.ts`:
 
 - a decision on a job (`job_decisions."decidedAt"`, any status);
 - a delivered match webhook (`webhook_deliveries`, `kind = 'match'`, `status = 'delivered'`, meaning the receiver answered with a 2xx);
@@ -19,17 +19,24 @@ Paused searches (PRs 123 and 124, spec `docs/superpowers/specs/2026-11-23-paused
 
 ## Scope
 
-1. **Count viewing jobs as activity.** Add `job_views."viewedAt"` in `(t − 24h, t]` as a fifth signal in `pausedUsersCte`. `job_views` is written by `markViewed` in the web app when the user opens a job's post or apply link from the match detail. It keeps the first view only (`ignoreDuplicates`), so a repeat view of the same job writes nothing; viewing a new job does.
+1. **Count viewing jobs as activity.** Add `job_views."viewedAt"` in `(t − 24h, t]` as a fifth signal (review choices, below, are a sixth) in `pausedUsersCte`. `job_views` is written by `markViewed` in the web app when the user opens a job's post or apply link from the match detail. It keeps the first view only (`ignoreDuplicates`), so a repeat view of the same job writes nothing; viewing a new job does.
 2. **Count a webhook only with feedback from the receiver.** A delivered webhook (2xx) would no longer count by itself. Activity would come from the receiver reporting back what the user did with the job (applied, dismissed). This reverses a non-goal in the paused-searches spec ("A receiver calling back into 10xjobs to report applications", with delivery success chosen as the middle ground) _(owner, 2026-11-24)_. It needs a callback endpoint authenticated with the webhook's secret, a payload format in `docs/webhooks.md`, and a mapping from the callback to `job_decisions` or a new signal.
+
+### Owner's answers (2026-11-25)
+
+The open questions are answered _(see the [spec](../../superpowers/specs/2026-11-24-activity-signals-design.md) and the [plan](../../superpowers/plans/2026-11-25-activity-signals.md))_:
+
+- The detail panel does not count. Only clicking out to the post or apply link writes `job_views`.
+- Only the first view of each job is kept.
+- Review choices count (`match_reviews."createdAt"`).
+- A callback writes a decision (`job_decisions`, `source = 'webhook'`) when it reports what the user did with a job.
+- There is no notice outside the app: no event, no email.
+- Webhook users get no longer window: a receiver that never calls back pauses its user after 24 hours.
 
 ## Open questions
 
-- Should opening a match's detail panel also count? Today it writes nothing; only clicking out to the post or apply link writes `job_views`. Counting it needs a new record from the web app.
-- Should the first view be the only one kept? A user rereading the same jobs every day writes no new rows, and would pause.
-- For the webhook callback: does a callback write a `job_decisions` row (and so show in the app as applied or dismissed), or only count as activity? What does a receiver with no callback get: paused after 24 hours, or a longer window?
-- A user whose webhook keeps failing gets no deliveries, so today they pause unless they act in the app. Should they be told why, given the webhook turns itself off after 10 failures?
-- Should a match review (`match_reviews`) count as activity? Review is its own list, but deciding a review is working the list.
+None. The owner answered them in Scope, under Owner's answers.
 
 ## Suggested path
 
-Part 1 is small: one more `NOT EXISTS` in `pausedUsersCte`, a Postgres spec case, and a line in the paused-searches spec. It can ship on its own. Part 2 is a feature with its own spec: an API, its authentication, receiver docs and the web app's webhook page.
+Part 1 is small: two more `NOT EXISTS` (views and reviews) in `pausedUsersCte`, a Postgres spec case, and a line in the paused-searches spec. It can ship on its own. Part 2 is a feature with its own spec: an API, its authentication, receiver docs and the web app's webhook page.
