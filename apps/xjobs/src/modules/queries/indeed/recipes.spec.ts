@@ -134,9 +134,45 @@ describe('indeedPlaces', () => {
     ).toEqual([{ site: 'ma', location: '', type: Arrangement.unstated }]);
   });
 
+  it('searches the whole site for a remote city in a non-main market', () => {
+    const places = indeedPlaces(
+      input({
+        remote: ['Casablanca, Morocco'],
+        countries: { remote: [country('MA', 'Casablanca')] },
+      }),
+    );
+    expect(places.map((p) => p.site)).toEqual([
+      'br',
+      'ca',
+      'ma',
+      'pl',
+      'uk',
+      'us',
+    ]);
+    expect(places.find((p) => p.site === 'ma')).toEqual({
+      site: 'ma',
+      location: '',
+      type: Arrangement.unstated,
+    });
+  });
+
+  it('adds nothing for a remote city in a main market', () => {
+    const places = indeedPlaces(
+      input({
+        remote: ['Austin, United States'],
+        countries: { remote: [country('US', 'Austin')] },
+      }),
+    );
+    expect(places.map((p) => p.site)).toEqual(remoteMain);
+  });
+
   it('builds nothing for a profile with only region places', () => {
-    expect(indeedPlaces(input({ countries: { onsite: [] } }))).toEqual([]);
-    expect(indeedRecipes(input())).toEqual([]);
+    const regionOnly = input({
+      countries: { onsite: [] },
+      locations: { remote: [], hybrid: [], onsite: ['Europe'] },
+    });
+    expect(indeedPlaces(regionOnly)).toEqual([]);
+    expect(indeedRecipes(regionOnly)).toEqual([]);
   });
 
   it('builds nothing without market rows', () => {
@@ -196,6 +232,16 @@ describe('indeedRecipes', () => {
       input({ remote: ['Europe'], seniorities: ['junior'] }),
     );
     expect(a.map((r) => r.hash)).toEqual(b.map((r) => r.hash));
+  });
+
+  it('the hash changes with the location', () => {
+    const [paris] = indeedRecipes(
+      input({ countries: { onsite: [country('FR', 'Paris')] } }),
+    );
+    const [lyon] = indeedRecipes(
+      input({ countries: { onsite: [country('FR', 'Lyon')] } }),
+    );
+    expect(paris.hash).not.toBe(lyon.hash);
   });
 
   it('recipes carry no seniority', () => {

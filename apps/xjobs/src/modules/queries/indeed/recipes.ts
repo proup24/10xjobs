@@ -33,7 +33,9 @@ const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 export function indeedPlaces(input: QuerySearchProfileInput): IndeedPlace[] {
   const markets = input.indeedMarkets ?? [];
   if (markets.length === 0) return [];
-  const bySite = new Map(markets.map((market) => [market.countryCode, market]));
+  const byCountry = new Map(
+    markets.map((market) => [market.countryCode, market]),
+  );
   const places: IndeedPlace[] = [];
 
   if (input.locations.remote.length > 0)
@@ -54,7 +56,7 @@ export function indeedPlaces(input: QuerySearchProfileInput): IndeedPlace[] {
   ];
   for (const arrangement of arrangements) {
     for (const place of input.placeCountries?.[arrangement] ?? []) {
-      const market = bySite.get(place.countryCode);
+      const market = byCountry.get(place.countryCode);
       if (!market) continue;
       if (arrangement === Arrangement.remote && market.mainRemote) continue;
       if (place.city === null || arrangement === Arrangement.remote)
