@@ -1090,6 +1090,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           title: 'Backend Engineer',
           companyName: 'Acme',
           extractionId,
+          linkKeys: [],
         });
         expect(await jobRow(id)).toMatchObject({
           kind: 'post_role',
@@ -1118,6 +1119,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           title: 'Senior Backend Engineer',
           companyName: null,
           extractionId: next,
+          linkKeys: [],
         });
         expect(again).toBe(id);
         expect(await jobRow(id)).toMatchObject({
@@ -1125,6 +1127,26 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           companyName: null,
           currentExtractionId: next,
         });
+      });
+
+      it('upsertRoleJob writes linkKeys', async () => {
+        const { postId, extractionId } = await roleSetup();
+        const role = (linkKeys: string[]) =>
+          repo.upsertRoleJob({
+            postJobId: postId,
+            roleKey: 'a',
+            title: 'Role a',
+            companyName: null,
+            extractionId,
+            linkKeys,
+          });
+        const id = await role(['ats:greenhouse/acme/1', 'linkedin-job:2']);
+        expect((await jobRow(id)).linkKeys).toEqual([
+          'ats:greenhouse/acme/1',
+          'linkedin-job:2',
+        ]);
+        await role([]);
+        expect((await jobRow(id)).linkKeys).toEqual([]);
       });
 
       it("upsertRoleJob sets postedAt to the original's date", async () => {
@@ -1141,6 +1163,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
                 title: 'T',
                 companyName: null,
                 extractionId,
+                linkKeys: [],
               }),
             )
           ).postedAt;
@@ -1169,6 +1192,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
             title: `Role ${roleKey}`,
             companyName: 'Acme',
             extractionId,
+            linkKeys: [],
           });
         const a = await role('a');
         const b = await role('b');
@@ -1213,6 +1237,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           title: 'Backend Engineer',
           companyName: 'Acme',
           extractionId,
+          linkKeys: [],
         });
         await db.orm.public.NormalizedJob.where({ id }).updateAll({
           processingStatus: 'pending',
@@ -1236,6 +1261,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
             title: `Role ${roleKey}`,
             companyName: 'Acme',
             extractionId,
+            linkKeys: [],
           });
         const a = await role('a');
         const b = await role('b');

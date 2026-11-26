@@ -1,0 +1,123 @@
+[
+  {
+    "id": "column.public.normalized_jobs.linkKeys",
+    "label": "Add column \"linkKeys\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "linkKeys",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"linkKeys\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "normalized_jobs", "linkKeys"],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"linkKeys\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"linkKeys\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"linkKeys\" text[] DEFAULT '{}' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"linkKeys\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "normalized_jobs", "linkKeys"],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"linkKeys\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"linkKeys\" has type \"text[]\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": ["public", "normalized_jobs", "linkKeys", "text[]"]
+      },
+      {
+        "description": "verify column \"linkKeys\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": ["public", "normalized_jobs", "linkKeys", "NO"]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.normalized_jobs.normalized_jobs_linkKeys_elem_not_null_4d31732c",
+    "label": "Add check constraint \"normalized_jobs_linkKeys_elem_not_null_4d31732c\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "normalized_jobs_linkKeys_elem_not_null_4d31732c",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_jobs_linkKeys_elem_not_null_4d31732c\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_linkKeys_elem_not_null_4d31732c",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_jobs_linkKeys_elem_not_null_4d31732c\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"normalized_jobs_linkKeys_elem_not_null_4d31732c\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD CONSTRAINT \"normalized_jobs_linkKeys_elem_not_null_4d31732c\" CHECK (array_position(\"linkKeys\", NULL) IS NULL)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"normalized_jobs_linkKeys_elem_not_null_4d31732c\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "normalized_jobs_linkKeys_elem_not_null_4d31732c",
+          "public",
+          "\"public\".\"normalized_jobs\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "indexes.normalized_jobs_linkKeys_gin",
+    "invariantId": "role-link-keys-index",
+    "label": "GIN index on normalized_jobs.\"linkKeys\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "normalized_jobs"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "index linkKeys for array containment and overlap",
+        "sql": "CREATE INDEX IF NOT EXISTS normalized_jobs_link_keys_gin ON public.normalized_jobs USING gin (\"linkKeys\")"
+      }
+    ],
+    "postcheck": []
+  }
+]

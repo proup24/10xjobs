@@ -1,0 +1,7 @@
+{
+  "from": "0c74e930b09092645e0058b0a3fe21e9324c1a44e0e7ad61e1ca876cc385b365",
+  "to": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72",
+  "providedInvariants": ["role-link-keys-index"],
+  "createdAt": "2026-11-26T18:56:08.059Z",
+  "migrationHash": "5ca4b236601abbec3e2ba49d8e17f24eab9dc8d9ad661859700d22154014696e"
+}

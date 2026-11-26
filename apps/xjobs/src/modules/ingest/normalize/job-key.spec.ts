@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Channel } from 'src/common/enums';
 import { emptyRecord, type NormalizedRecord } from '.';
-import { canonicalApplyUrl, jobKey } from './job-key';
+import { canonicalApplyUrl, jobKey, linkKeysOf } from './job-key';
 import { comparableText } from './posts/clean';
 import type { PostAuthor, PostDetail } from './record';
 
@@ -381,5 +381,52 @@ describe('jobKey for posts', () => {
         }),
       ),
     ).toBe('linkedin-post:9');
+  });
+});
+
+describe('linkKeysOf', () => {
+  it('names a LinkedIn job by its id', () => {
+    expect(
+      linkKeysOf(['https://www.linkedin.com/jobs/view/4490421090/?trk=x']),
+    ).toEqual(['linkedin-job:4490421090']);
+  });
+
+  it('names an Ashby or Greenhouse posting by its ats key', () => {
+    expect(
+      linkKeysOf(['https://boards.greenhouse.io/affirm/jobs/6544291003']),
+    ).toEqual(['ats:greenhouse/affirm/6544291003']);
+    expect(
+      linkKeysOf([`https://jobs.ashbyhq.com/acme/${ashbyId}?utm_source=x`]),
+    ).toEqual([`ats:ashby/acme/${ashbyId}`]);
+  });
+
+  it('keeps a url with an identifier as its canonical url', () => {
+    expect(
+      linkKeysOf([
+        'https://jobs.lever.co/acme/5f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f/?utm_source=x',
+      ]),
+    ).toEqual([
+      'url:https://jobs.lever.co/acme/5f1c2d3e-4a5b-4c6d-8e7f-9a0b1c2d3e4f',
+    ]);
+  });
+
+  it('drops a link that names no job', () => {
+    expect(
+      linkKeysOf([
+        'https://example.com/careers',
+        'not a url',
+        'https://www.linkedin.com/in/someone',
+      ]),
+    ).toEqual([]);
+  });
+
+  it('removes duplicates and sorts', () => {
+    expect(
+      linkKeysOf([
+        'https://www.linkedin.com/jobs/view/2/',
+        'https://www.linkedin.com/jobs/view/1/?x=1',
+        'https://www.linkedin.com/jobs/view/2/?trk=y',
+      ]),
+    ).toEqual(['linkedin-job:1', 'linkedin-job:2']);
   });
 });

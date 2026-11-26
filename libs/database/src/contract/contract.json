@@ -3883,6 +3883,16 @@
                   }
                 }
               },
+              "linkKeys": {
+                "many": {
+                  "elementNullable": false
+                },
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "listingState": {
                 "nullable": true,
                 "type": {
@@ -4427,6 +4437,9 @@
                 },
                 "lastSeenAt": {
                   "column": "lastSeenAt"
+                },
+                "linkKeys": {
+                  "column": "linkKeys"
                 },
                 "listingState": {
                   "column": "listingState"
@@ -12083,6 +12096,11 @@
                   "prefix": "normalized_jobs_kind"
                 },
                 {
+                  "expression": "array_position(\"linkKeys\", NULL) IS NULL",
+                  "name": "normalized_jobs_linkKeys_elem_not_null_4d31732c",
+                  "prefix": "normalized_jobs_linkKeys_elem_not_null"
+                },
+                {
                   "expression": "(status = 'merged') = (\"mergedIntoId\" IS NOT NULL)",
                   "name": "normalized_jobs_merged_into_49ee8511",
                   "prefix": "normalized_jobs_merged_into"
@@ -12259,6 +12277,18 @@
                   "typeParams": {
                     "precision": 3
                   }
+                },
+                "linkKeys": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": []
+                  },
+                  "many": {
+                    "elementNullable": false
+                  },
+                  "nullable": false
                 },
                 "listingState": {
                   "codecId": "pg/text@1",
@@ -15870,7 +15900,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "0c74e930b09092645e0058b0a3fe21e9324c1a44e0e7ad61e1ca876cc385b365"
+    "storageHash": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72"
   },
   "execution": {
     "executionHash": "dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7",

@@ -126,6 +126,8 @@ export interface MemoryJob extends Omit<JobForProcessing, 'kind'> {
   /** Set on a `post_role` job: its post job and its role within it. */
   parentJobId: string | null;
   roleKey: string | null;
+  /** A `post_role` job's apply links as job keys. */
+  linkKeys: string[];
   processingStatus:
     | 'pending'
     | 'processing'
@@ -185,6 +187,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       silenced: false,
       parentJobId: null,
       roleKey: null,
+      linkKeys: [],
       processingStatus: 'pending',
       processingReason: 'new',
       mergedIntoId: null,
@@ -569,6 +572,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       processingStartedAt: null,
       processedAt: this.now(),
       currentExtractionId: input.extractionId,
+      linkKeys: input.linkKeys,
     };
     if (existing) {
       Object.assign(existing, fields);

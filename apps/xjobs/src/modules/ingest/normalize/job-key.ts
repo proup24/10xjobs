@@ -52,6 +52,40 @@ function atsKey(value: string): string | null {
   }
 }
 
+/** `ats:…` for an Ashby or Greenhouse posting, else `url:<canonical>` when the URL carries an identifier. */
+function applyUrlKey(value: string): string | null {
+  const ats = atsKey(value);
+  if (ats) return ats;
+  const canonical = canonicalApplyUrl(value);
+  if (!canonical) return null;
+  const { pathname, search } = new URL(canonical);
+  return normalizeConfig.identifierPattern.test(pathname + search)
+    ? `url:${canonical}`
+    : null;
+}
+
+const LINKEDIN_JOB_VIEW = /^\/jobs\/view\/(?:[^/]*-)?(\d+)\/?$/;
+
+/**
+ * The job keys a post role's apply links resolve to, sorted and unique: a
+ * LinkedIn `/jobs/view/<id>` link is `linkedin-job:<id>`, any other link is
+ * keyed as `jobKey` keys an apply URL (`ats:…`, or `url:…` with an
+ * identifier). A link that names no job is dropped.
+ */
+export function linkKeysOf(links: string[]): string[] {
+  const keys = new Set<string>();
+  for (const link of links) {
+    const url = httpUrl(link);
+    const id =
+      url && isLinkedinHost(url)
+        ? LINKEDIN_JOB_VIEW.exec(url.pathname)?.[1]
+        : undefined;
+    const key = id ? `linkedin-job:${id}` : applyUrlKey(link);
+    if (key) keys.add(key);
+  }
+  return [...keys].sort();
+}
+
 function sourceId(sourceKey: string): string {
   return sourceKey.startsWith('id:') ? sourceKey.slice(3) : sourceKey;
 }
@@ -117,16 +151,8 @@ export function jobKey(
       // keys by LinkedIn id so it joins harvestapi's job later.
       if (isTrialChannel(channel)) return `linkedin-job:${sourceId(sourceKey)}`;
       const apply = record.applyUrl;
-      if (apply) {
-        const ats = atsKey(apply);
-        if (ats) return ats;
-        const canonical = canonicalApplyUrl(apply);
-        if (canonical) {
-          const { pathname, search } = new URL(canonical);
-          if (normalizeConfig.identifierPattern.test(pathname + search))
-            return `url:${canonical}`;
-        }
-      }
+      const key = apply ? applyUrlKey(apply) : null;
+      if (key) return key;
       return `linkedin-job:${sourceId(sourceKey)}`;
     }
     case Channel.INDEED:
