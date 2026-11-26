@@ -756,3 +756,56 @@ export async function cleanupDetailedJobs(): Promise<void> {
     if (error) throw new Error(`Could not delete ${table}: ${error.message}`);
   }
 }
+
+/**
+ * A listing (`kind = 'job'`) keyed `jobKey`, with one LINKEDIN_JOB_BOARD source. With
+ * `linkedinId` that source's `sourceKey` is `id:<linkedinId>`, as ingest keys a harvestapi item.
+ */
+export async function seedKeyedListing(opts: {
+  jobKey: string;
+  linkedinId?: string;
+  status?: 'active' | 'merged';
+}): Promise<SeededJob> {
+  const job = await seedDetailedJob({ status: opts.status });
+  const { error } = await admin()
+    .from('normalized_jobs')
+    .update({ jobKey: opts.jobKey })
+    .eq('id', job.jobId);
+  if (error) throw new Error(`Could not set jobKey: ${error.message}`);
+  if (opts.linkedinId) {
+    const source = await admin()
+      .from('normalized_job_sources')
+      .select('rawItemId')
+      .eq('jobId', job.jobId)
+      .single();
+    if (source.error)
+      throw new Error(`Could not read the source: ${source.error.message}`);
+    const raw = await admin()
+      .from('raw_items')
+      .update({ sourceKey: `id:${opts.linkedinId}` })
+      .eq('id', source.data.rawItemId as string);
+    if (raw.error)
+      throw new Error(`Could not set sourceKey: ${raw.error.message}`);
+  }
+  return job;
+}
+
+/** A post role job (with its parent post) whose apply links resolve to `linkKeys`. */
+export async function seedLinkedRole(
+  linkKeys: string[],
+  opts: { status?: 'active' | 'merged' } = {},
+): Promise<SeededJob> {
+  const parent = await seedDetailedJob({ channels: [] });
+  // The role is created after its parent, so cleanup deletes it first.
+  const role = await seedDetailedJob({ channels: [], status: opts.status });
+  const { error } = await admin()
+    .from('normalized_jobs')
+    .update({ kind: 'post_role', parentJobId: parent.jobId, linkKeys })
+    .eq('id', role.jobId);
+  if (error) throw new Error(`Could not make a post role: ${error.message}`);
+  return role;
+}
+
+/** A LinkedIn job id no other test uses. */
+export const linkedinJobId = (): string =>
+  String(4_000_000_000 + Math.floor(Math.random() * 1e9));

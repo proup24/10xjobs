@@ -38,6 +38,7 @@
     "webhook-listings-only",
     "job-decisions-update-source",
     "indeed-markets-seed",
-    "role-link-keys-index"
+    "role-link-keys-index",
+    "job-link-group"
   ]
 }

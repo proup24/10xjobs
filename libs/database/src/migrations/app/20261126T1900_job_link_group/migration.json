@@ -1,0 +1,7 @@
+{
+  "from": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72",
+  "to": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72",
+  "providedInvariants": ["job-link-group"],
+  "createdAt": "2026-11-26T19:00:00.000Z",
+  "migrationHash": "999ada124b30975209afc1e54f8853e485d494e387c752dc4921dae59b6fa67a"
+}

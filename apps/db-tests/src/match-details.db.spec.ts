@@ -5,8 +5,11 @@ import {
   cleanupDetailedJobs,
   detailedDocument,
   publishProfile,
+  linkedinJobId,
   seedDetailedJob,
   seedFactConflict,
+  seedKeyedListing,
+  seedLinkedRole,
   seedMatchOn,
   seedProfile,
   type SeededJob,
@@ -912,5 +915,63 @@ describe('match_details kind filter', () => {
 
   it('returns both with a null p_kind', async () => {
     expect(await call({ p_kind: null })).toEqual([listing, role].sort());
+  });
+});
+
+describe('match_details linked decisions', () => {
+  let d: TestUser;
+  let profile: string;
+
+  const statusOf = async (jobId: string, kind: 'job' | 'post_role') => {
+    const { data, error } = await d.client.rpc('match_details', {
+      p_job_id: jobId,
+      p_kind: kind,
+    });
+    if (error) throw new Error(error.message);
+    const rows = data as Array<{ decisionStatus: string | null }>;
+    expect(rows).toHaveLength(1);
+    return rows[0].decisionStatus;
+  };
+
+  /** A listing keyed by its apply URL and a role linking it by its LinkedIn id, both matched. */
+  const linkedPair = async () => {
+    const id = linkedinJobId();
+    const listing = await seedKeyedListing({
+      jobKey: `url:https://careers.acme.example/jobs/${id}`,
+      linkedinId: id,
+    });
+    const role = await seedLinkedRole([`linkedin-job:${id}`]);
+    await seedMatchOn(d.id, profile, listing);
+    await seedMatchOn(d.id, profile, role);
+    return { listing: listing.jobId, role: role.jobId };
+  };
+
+  const decide = async (jobId: string, status: string) => {
+    const { error } = await d.client
+      .from('job_decisions')
+      .insert({ userId: d.id, jobId, status });
+    expect(error).toBeNull();
+  };
+
+  beforeAll(async () => {
+    d = await createTestUser();
+    profile = await seedProfile(d.id);
+    await publishProfile(profile);
+  });
+
+  it("an applied decision on the listing shows as decisionStatus 'applied' on the linked role's row", async () => {
+    const pair = await linkedPair();
+    expect(await statusOf(pair.role, 'post_role')).toBeNull();
+    await decide(pair.listing, 'applied');
+    expect(await statusOf(pair.role, 'post_role')).toBe('applied');
+    expect(await statusOf(pair.listing, 'job')).toBe('applied');
+  });
+
+  it("an applied decision on the role shows as decisionStatus 'applied' on the linked listing's row", async () => {
+    const pair = await linkedPair();
+    expect(await statusOf(pair.listing, 'job')).toBeNull();
+    await decide(pair.role, 'applied');
+    expect(await statusOf(pair.listing, 'job')).toBe('applied');
+    expect(await statusOf(pair.role, 'post_role')).toBe('applied');
   });
 });

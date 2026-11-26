@@ -2510,6 +2510,10 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      group_decision_status: {
+        Args: { p_job: string; p_user: string };
+        Returns: string;
+      };
       job_decision_list: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -2531,6 +2535,8 @@ export type Database = {
           title: string;
         }[];
       };
+      job_link_group: { Args: { p_job: string }; Returns: string[] };
+      job_link_keys: { Args: { p_job: string }; Returns: string[] };
       job_postings: {
         Args: { p_job_id: string };
         Returns: {
