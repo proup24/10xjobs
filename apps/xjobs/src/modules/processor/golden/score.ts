@@ -1,6 +1,7 @@
 import type { NewAttempt } from '../repositories/processor.repository';
 import type { Confidence, DecidedBy, ExtractionDocument } from '../schema';
 import type {
+  DraftedKey,
   GoldenCase,
   GoldenFacts,
   GoldenPlace,
@@ -67,13 +68,49 @@ export interface RequiredDiff {
   extra: string[];
 }
 
+/**
+ * An unreviewed draft next to the document's answer, so agreements can be
+ * confirmed and disagreements reviewed. `agrees` is null for `requirements`,
+ * which a human always reads (their domain and years have no label yet).
+ */
+export interface DraftCheck {
+  label: unknown;
+  got: unknown;
+  quote: string;
+  confidence: Confidence | null;
+  agrees: boolean | null;
+}
+
 export interface FactScores {
   caseId: string;
   facts: Partial<Record<FactName, FactScore>>;
+  /** Unscored: one entry per drafted key still `reviewed: false`. */
+  drafts: Partial<Record<DraftedKey, DraftCheck>>;
   requirements: RequirementCounts | null;
   required: RequiredDiff | null;
   generatorCalls: number;
   costUsd: number;
+}
+
+/** One wrong fact in one case, to tell a model miss from a wrong label. */
+export interface EvalMiss {
+  caseId: string;
+  title: string;
+  fact: string;
+  confidence: string | null;
+  want: unknown;
+  got: unknown;
+  quote: string;
+}
+
+/** What `processor:eval` writes for the listing set (`reportFileName`). */
+export interface ListingReportFile extends EvalReport {
+  failed: string[];
+  stoppedOnLimit: unknown;
+  notRun: string[];
+  config: unknown;
+  misses: EvalMiss[];
+  scores: FactScores[];
 }
 
 /** What one job's attempt rows add up to. */
@@ -175,11 +212,52 @@ export function scoreCase(
   return {
     caseId: c.id,
     facts,
+    drafts: draftChecks(doc, c),
     requirements: scoreRequirements(doc, c),
     required: requiredDiff(doc, c),
     generatorCalls: extra.generatorCalls ?? 0,
     costUsd: extra.costUsd ?? 0,
   };
+}
+
+const LABEL_FACTS = [
+  'arrangement',
+  'contractType',
+  'isSoftwareEngineeringRole',
+] as const;
+
+function draftChecks(
+  doc: ExtractionDocument,
+  c: GoldenCase,
+): FactScores['drafts'] {
+  const drafts: FactScores['drafts'] = {};
+  for (const key of LABEL_FACTS) {
+    const d = c.drafted[key];
+    if (!d || d.reviewed) continue;
+    const fact = doc[key];
+    drafts[key] = {
+      label: d.value,
+      got: fact.value,
+      quote: fact.quote ?? '',
+      confidence: fact.confidence,
+      agrees: sameScalar(fact.value, d.value),
+    };
+  }
+  if (c.drafted.requirements && !c.drafted.requirements.reviewed)
+    drafts.requirements = {
+      label: c.expected.requirements ?? null,
+      got: (doc.techStack.value?.requirements ?? []).map((r) => ({
+        text: r.technology.text,
+        code: r.technology.code,
+        kind: r.kind,
+        domain: r.domain,
+        years: r.years,
+      })),
+      quote: '',
+      confidence: doc.techStack.confidence,
+      agrees: null,
+    };
+  return drafts;
 }
 
 function expectedFacts(c: GoldenCase): Partial<Record<string, unknown>> {

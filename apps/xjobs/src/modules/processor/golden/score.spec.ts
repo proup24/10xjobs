@@ -82,6 +82,44 @@ describe('scoreCase', () => {
     expect(scores.facts.arrangement).toBeUndefined();
   });
 
+  it('keeps the answer next to each unreviewed draft, to confirm or review it', () => {
+    const c = matchingCase();
+    c.drafted.arrangement = { value: 'unstated', reviewed: false };
+    c.drafted.contractType = { value: 'full_time', reviewed: false };
+    c.drafted.requirements = { value: null, reviewed: false };
+    const doc = fixtureDocument();
+    doc.arrangement.value = null;
+    doc.contractType.quote = 'Full-time';
+    const { drafts } = scoreCase(doc, c);
+    // null and 'unstated' read alike, as in scoring.
+    expect(drafts.arrangement).toMatchObject({
+      label: 'unstated',
+      agrees: true,
+    });
+    expect(drafts.contractType).toEqual({
+      label: 'full_time',
+      got: 'full_time',
+      quote: 'Full-time',
+      confidence: 'sure',
+      agrees: true,
+    });
+    expect(drafts.isSoftwareEngineeringRole).toBeUndefined();
+    expect(drafts.requirements).toMatchObject({ agrees: null });
+    expect(drafts.requirements?.got).toEqual([
+      { text: 'Node', code: 'nodejs', kind: 'main', domain: null, years: null },
+      { text: 'SQL', code: 'sql', kind: 'must', domain: null, years: null },
+      { text: 'Rust', code: 'rust', kind: 'nice', domain: null, years: null },
+    ]);
+  });
+
+  it('marks a draft the answer disagrees with', () => {
+    const c = matchingCase();
+    c.drafted.isSoftwareEngineeringRole = { value: false, reviewed: false };
+    expect(
+      scoreCase(fixtureDocument(), c).drafts.isSoftwareEngineeringRole,
+    ).toMatchObject({ label: false, got: true, agrees: false });
+  });
+
   it('flags a sure fact the golden value contradicts', () => {
     const doc = fixtureDocument();
     doc.seniority.value = 'junior';
