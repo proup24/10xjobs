@@ -103,7 +103,7 @@ export type FinishOutcome =
 export interface MarkPendingResult {
   marked: number;
   skippedArchived: number;
-  /** Never processed: the prefilter's recheck reopens them; `jobIds` still sends one. */
+  /** Never processed: the prefilter's recheck reopens them. `jobIds` sends one to `pending`, and the next sweep skips it again if it still fails the check. */
   leftSkipped: number;
 }
 

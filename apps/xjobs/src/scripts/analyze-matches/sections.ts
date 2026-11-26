@@ -1,4 +1,5 @@
 import type { createDatabaseClient } from 'src/database';
+import { skippableListingSql } from '../skip-share';
 import { postExtractionSql, shapePostExtraction } from './post-extraction';
 
 type Db = ReturnType<typeof createDatabaseClient>;
@@ -231,18 +232,21 @@ export const SECTIONS: {
       shapePostExtraction(rows as never, now).map((r) => ({ ...r })),
   },
   {
-    // New listings = kind 'job' rows first seen in the last 7 days; skipped =
+    // New listings = active LinkedIn job board listings (the processor's
+    // scope; ATS and merged rows are never skipped) first seen in the last 7
+    // days; skipped =
     // those whose current status is 'skipped' (the pre-LLM check). The sample
     // is random, so it differs on every run.
     title:
-      "14. Skipped before processing (last 7 days; new listings = kind 'job' first seen in the window)",
+      '14. Skipped before processing (last 7 days; new LinkedIn listings first seen in the window)',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
         WITH new_listings AS (
           SELECT id, title, "processingStatus", "processingSkip"
           FROM normalized_jobs
-          WHERE kind = 'job' AND "firstSeenAt" >= now() - interval '7 days'),
+          WHERE ${skippableListingSql(raw)}
+            AND "firstSeenAt" >= now() - interval '7 days'),
         skipped AS (
           SELECT * FROM new_listings WHERE "processingStatus" = 'skipped')
         SELECT 'by_tag_country' AS part, "processingSkip"->>'tag' AS tag,

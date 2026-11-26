@@ -14,6 +14,13 @@ import {
   type SkipReason,
 } from '../rules/check';
 
+/** A published profile whose recheck is due. */
+export interface UncheckedProfile {
+  id: string;
+  matchVersion: number;
+  changedAt: Date;
+}
+
 /** A listing the prefilter may check: never processed, not joined, in the processor's scope. */
 export type UncheckedJob = PrefilterJob & { id: string };
 
@@ -25,7 +32,12 @@ export type UncheckedJob = PrefilterJob & { id: string };
  * a post, a post role or a joined job is never skipped.
  */
 export abstract class PrefilterRepository {
-  /** Unchecked `pending` listings, in the order `listPendingInScope` claims them. */
+  /**
+   * Unchecked `pending` listings that could be skipped at all (tagged hybrid or
+   * onsite, with a country, not remote-allowed), in the order
+   * `listPendingInScope` claims them. A listing that passes whatever the demand
+   * is never listed, so a backlog of them cannot hide skippable ones behind it.
+   */
   abstract listUncheckedPending(limit: number): Promise<UncheckedJob[]>;
   /** The same test for one job; null when it is not one the prefilter may check. */
   abstract findUncheckedPending(jobId: string): Promise<UncheckedJob | null>;
@@ -47,11 +59,12 @@ export abstract class PrefilterRepository {
   abstract countReopenable(filter: { firstSeenSince: Date }): Promise<number>;
   /**
    * Published profiles whose `matchVersion` the prefilter has not rechecked
-   * at yet (a new publish, or an edit such as the places).
+   * at yet (a new publish, or an edit such as the places), with when each
+   * changed: the later of `publishedAt` and `updatedAt`. The web app's edits
+   * do not always touch `updatedAt`, so this can be earlier than the change,
+   * never later than the tick that reads it.
    */
-  abstract listUnrecheckedProfiles(): Promise<
-    { id: string; matchVersion: number }[]
-  >;
+  abstract listUnrecheckedProfiles(): Promise<UncheckedProfile[]>;
   /**
    * Records the version a profile was rechecked at. Writing it never bumps
    * `matchVersion` (the profile trigger leaves the column out).
@@ -114,6 +127,8 @@ export class PrismaPrefilterRepository extends PrefilterRepository {
           j.title, j.location, j."descriptionText"
         FROM normalized_jobs j
         WHERE ${uncheckedSql(raw)} AND j.status = 'active' AND j.kind = 'job'
+          AND j."workplaceType" IN ('hybrid', 'onsite')
+          AND j."countryCode" IS NOT NULL AND j."remoteAllowed" IS NOT TRUE
           AND j.id IN (${linkedInJobIds(raw)})
         ORDER BY j."processingRequestedAt" ASC NULLS FIRST, j.id ASC
         LIMIT ${limit}::int`
@@ -214,15 +229,19 @@ export class PrismaPrefilterRepository extends PrefilterRepository {
     return rows.length;
   }
 
-  async listUnrecheckedProfiles(): Promise<
-    { id: string; matchVersion: number }[]
-  > {
+  async listUnrecheckedProfiles(): Promise<UncheckedProfile[]> {
     const profiles = await this.db.orm.public.Profile.where({
       state: 'published',
     }).all();
     return profiles
       .filter((p) => p.prefilterCheckedVersion !== p.matchVersion)
-      .map((p) => ({ id: p.id, matchVersion: p.matchVersion }));
+      .map((p) => ({
+        id: p.id,
+        matchVersion: p.matchVersion,
+        changedAt: new Date(
+          Math.max(p.updatedAt.getTime(), p.publishedAt?.getTime() ?? 0),
+        ),
+      }));
   }
 
   async setRecheckedVersion(

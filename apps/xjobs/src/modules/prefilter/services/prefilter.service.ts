@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RECHECK_WINDOW_MS } from '../config/prefilter.config';
+import {
+  RECHECK_MAX_LOOKBACK_MS,
+  RECHECK_WINDOW_MS,
+} from '../config/prefilter.config';
 import { PrefilterRepository } from '../repositories/prefilter.repository';
 import {
   checkBeforeProcessing,
@@ -24,8 +27,10 @@ export class PrefilterService {
 
   /**
    * When a published profile is new or changed (its `matchVersion` is not the
-   * one last rechecked), sends the listings skipped in the last 24 hours back
-   * to `pending` once, so `skipPending` checks them against the new demand.
+   * one last rechecked), sends the listings skipped in the 24 hours before the
+   * earliest such change back to `pending` once (a worker stop between the
+   * change and this tick does not shorten the window; it reaches back at most
+   * `RECHECK_MAX_LOOKBACK_MS` from `now`), so `skipPending` checks them against the new demand.
    * Returns how many were reopened. Only skipped jobs move: nothing narrows
    * the other way, so unpublishing or narrowing never touches a processed job
    * or a match. Runs before `skipPending`; a failure throws.
@@ -33,8 +38,17 @@ export class PrefilterService {
   async recheckProfiles(now: Date): Promise<number> {
     const profiles = await this.repo.listUnrecheckedProfiles();
     if (profiles.length === 0) return 0;
+    const changedAt = Math.min(
+      now.getTime(),
+      ...profiles.map((p) => p.changedAt.getTime()),
+    );
     const reopened = await this.repo.reopenSkipped({
-      firstSeenSince: new Date(now.getTime() - RECHECK_WINDOW_MS),
+      firstSeenSince: new Date(
+        Math.max(
+          changedAt - RECHECK_WINDOW_MS,
+          now.getTime() - RECHECK_MAX_LOOKBACK_MS,
+        ),
+      ),
     });
     for (const p of profiles)
       await this.repo.setRecheckedVersion(p.id, p.matchVersion);

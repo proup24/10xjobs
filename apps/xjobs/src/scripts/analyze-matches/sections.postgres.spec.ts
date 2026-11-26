@@ -40,6 +40,68 @@ describe.skipIf(!url)(
       return row.id;
     }
 
+    /** A LinkedIn job board (or other channel) source for `jobId`: raw item, version, normalized version, link. */
+    async function source(jobId: string, channel = 'LINKEDIN_JOB_BOARD') {
+      const run = await db.orm.public.SearchSegmentRun.create({
+        channel,
+        segmentKey: 'k',
+        segmentHash: randomUUID(),
+        queryIds: [],
+        windowStart: t0,
+        windowEnd: new Date(t0.getTime() + 3_600_000),
+        startedAt: t0,
+        finishedAt: t0,
+        status: 'succeeded',
+        fetched: 0,
+        costMicroUsd: null,
+        capped: false,
+        truncatedQueryIds: [],
+        perQuery: {},
+        error: null,
+      } as never);
+      const batch = await db.orm.public.CollectionBatch.create({
+        channel,
+        segmentRunId: run.id,
+        storageKey: `${channel}/x/${run.id}.json`,
+        formatVersion: 1,
+        observedAt: t0,
+        itemCount: 1,
+        actor: 'test',
+        apifyRunId: null,
+        status: 'ingested',
+      } as never);
+      const item = await db.orm.public.RawItem.create({
+        channel,
+        sourceKey: randomUUID(),
+        kind: 'job',
+        firstSeenAt: t0,
+        lastSeenAt: t0,
+        latestVersionId: null,
+      } as never);
+      const version = await db.orm.public.RawItemVersion.create({
+        rawItemId: item.id,
+        contentHash: randomUUID(),
+        payload: {},
+        firstBatchId: batch.id,
+        firstSeenAt: t0,
+        lastSeenAt: t0,
+      } as never);
+      const normalized = await db.orm.public.NormalizedVersion.create({
+        rawVersionId: version.id,
+        normalizerVersion: 1,
+        status: 'valid',
+        reason: null,
+        record: {},
+        jobKey: randomUUID(),
+      } as never);
+      await db.orm.public.NormalizedJobSource.create({
+        jobId,
+        rawItemId: item.id,
+        normalizedVersionId: normalized.id,
+        linkedAt: t0,
+      } as never);
+    }
+
     async function extraction(
       jobId: string,
       docType: 'listing' | 'post',
@@ -207,6 +269,7 @@ describe.skipIf(!url)(
         firstSeenAt: Date = now,
       ) => {
         const id = await job('job');
+        await source(id);
         await db.orm.public.NormalizedJob.where({ id }).updateAll({
           processingStatus: 'skipped',
           processingSkip: { version: 1, tag, country },
@@ -220,10 +283,25 @@ describe.skipIf(!url)(
       await skip('hybrid', 'DE', 'Hybrid Dev');
       await skip('onsite', 'DE', 'Old Dev', new Date('2026-01-01T00:00:00Z'));
       const processed = await job('job');
+      await source(processed);
       await db.orm.public.NormalizedJob.where({ id: processed }).updateAll({
         firstSeenAt: now,
         lastSeenAt: now,
       } as never);
+      // An ATS listing and a merged row never count, skipped or not.
+      for (const [channel, status] of [
+        ['ASHBY', 'active'],
+        ['LINKEDIN_JOB_BOARD', 'merged'],
+      ] as const) {
+        const other = await job('job');
+        await source(other, channel);
+        await db.orm.public.NormalizedJob.where({ id: other }).updateAll({
+          status,
+          mergedIntoId: status === 'merged' ? processed : null,
+          firstSeenAt: now,
+          lastSeenAt: now,
+        } as never);
+      }
       const post = await job('post'); // not a listing
       await db.orm.public.NormalizedJob.where({ id: post }).updateAll({
         firstSeenAt: now,

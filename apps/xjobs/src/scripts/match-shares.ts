@@ -9,12 +9,14 @@
  * the shares. The window is `updatedAt`, not `decidedAt`: a re-match that keeps
  * the outcome keeps `decidedAt` but still bumps `updatedAt`. The tables are
  * printed once per job kind: listings (`job`) and LinkedIn post roles
- * (`post_role`). One line reports the listings (`kind = 'job'`) first seen in the
- * same window that the pre-LLM check skipped, and their share of those listings.
+ * (`post_role`). One line reports the active LinkedIn job board listings first
+ * seen in the same window that the pre-LLM check skipped, and their share of
+ * those listings (the processor's scope, so ATS listings do not dilute it).
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
 import { createDatabaseClient } from 'src/database';
+import { skipShareLine, skipShareSql } from './skip-share';
 import { MATCHER_VERSION } from 'src/modules/matcher/config/matcher.config';
 import {
   MATCH_JOB_KINDS,
@@ -68,20 +70,11 @@ async function main(): Promise<void> {
     console.log(
       `Match shares: last ${days} days, matcher version >= ${MATCHER_VERSION}, ${rows.length} decisions`,
     );
-    const [skip] = (await db.query(
-      raw.sql`SELECT count(*) FILTER (WHERE "processingStatus" = 'skipped')::int AS skipped,
-          count(*)::int AS total
-        FROM normalized_jobs
-        WHERE kind = 'job'
-          AND "firstSeenAt" >= now() - make_interval(days => ${days}::int)`
-        .returnsRow({ skipped: 'pg/int4@1', total: 'pg/int4@1' })
-        .build(),
-    )) as { skipped: number; total: number }[];
-    const skipped = skip?.skipped ?? 0;
-    const newListings = skip?.total ?? 0;
-    console.log(
-      `Skipped before processing: ${skipped} of ${newListings} new listings (${newListings === 0 ? 'n/a' : ((skipped / newListings) * 100).toFixed(1) + '%'})`,
-    );
+    const [skip] = (await db.query(skipShareSql(raw, days))) as {
+      skipped: number;
+      total: number;
+    }[];
+    console.log(skipShareLine(skip?.skipped ?? 0, skip?.total ?? 0));
     for (const kind of MATCH_JOB_KINDS) {
       const result = byKind[kind];
       console.log(`\n== ${kind}: ${result.total} decisions ==`);

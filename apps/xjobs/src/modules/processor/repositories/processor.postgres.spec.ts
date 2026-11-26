@@ -17,6 +17,7 @@ import {
 import { PrismaPlaceVocabularyRepository } from 'src/modules/facts/places/place-vocabulary.repository';
 import { PrismaVocabRepository } from './vocab.repository';
 import { PrismaPrefilterRepository } from 'src/modules/prefilter/repositories/prefilter.repository';
+import { skipShareLine, skipShareSql } from 'src/scripts/skip-share';
 import { PREFILTER_VERSION } from 'src/modules/prefilter/config/prefilter.config';
 import type { SeedEnvironmentVariables } from 'src/config';
 import { loadOutcomes } from 'src/scripts/actor-compare/queries';
@@ -902,6 +903,38 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     } as const;
     const onsiteFR = { workplaceType: 'onsite', countryCode: 'FR' } as const;
 
+    it('the skip share counts only active LinkedIn job board listings first seen in the window', async () => {
+      const now = new Date();
+      const month = new Date(now.getTime() - 30 * 24 * 3_600_000);
+      const skipped = {
+        ...onsiteFR,
+        processingStatus: 'skipped',
+        firstSeenAt: now,
+      };
+      expect(await db.query(skipShareSql(db.raw, 7))).toEqual([
+        { skipped: 0, total: 0 },
+      ]);
+
+      await job(skipped);
+      await job({ ...onsiteFR, firstSeenAt: now });
+      // None of these belong in the denominator.
+      await job({ ...skipped, channels: [Channel.ASHBY] });
+      await job({ ...skipped, channels: [Channel.GREEN_HOUSE] });
+      await job({ ...skipped, kind: 'post' });
+      await job({ ...skipped, firstSeenAt: month });
+      await job({
+        ...skipped,
+        status: 'merged',
+        mergedIntoId: await job({ ...onsiteFR, firstSeenAt: month }),
+      });
+
+      expect(await db.query(skipShareSql(db.raw, 7))).toEqual([
+        { skipped: 1, total: 2 },
+      ]);
+      expect(skipShareLine(1, 2)).toContain('1 of 2');
+      expect(skipShareLine(0, 0)).toContain('n/a');
+    });
+
     it('lists only never-processed, unjoined, in-scope pending listings in claim order', async () => {
       const later = await job({
         ...onsiteFR,
@@ -916,6 +949,15 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       const extractionId = await repo.saveExtraction(extraction(extracted));
       await db.orm.public.NormalizedJob.where({ id: extracted }).updateAll({
         currentExtractionId: extractionId,
+      });
+
+      // Jobs that pass whatever the demand is are not listed.
+      await job({ workplaceType: 'remote', countryCode: 'FR' });
+      await job({ workplaceType: null, countryCode: 'FR' });
+      await job({ workplaceType: 'onsite', countryCode: null });
+      const remoteOk = await job(onsiteFR);
+      await db.orm.public.NormalizedJob.where({ id: remoteOk }).updateAll({
+        remoteAllowed: true,
       });
 
       const listed = await prefilter.listUncheckedPending(10);
@@ -1043,8 +1085,18 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
         await update('publish');
         const published = await state();
         expect(await unrechecked()).toEqual([
-          { id, matchVersion: published.matchVersion },
+          {
+            id,
+            matchVersion: published.matchVersion,
+            changedAt: expect.any(Date),
+          },
         ]);
+        // The change time is the later of publishedAt and updatedAt.
+        const [first] = await unrechecked();
+        const row = await db.orm.public.Profile.where({ id }).first();
+        expect(first.changedAt.getTime()).toBe(
+          Math.max(row!.updatedAt.getTime(), row!.publishedAt?.getTime() ?? 0),
+        );
 
         // Recording the check clears it and leaves matchVersion alone.
         await prefilter.setRecheckedVersion(id, published.matchVersion);
@@ -1066,7 +1118,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           onsite: [],
         });
         expect(await unrechecked()).toEqual([
-          { id, matchVersion: published.matchVersion + 1 },
+          {
+            id,
+            matchVersion: published.matchVersion + 1,
+            changedAt: expect.any(Date),
+          },
         ]);
       } finally {
         await db.execute(

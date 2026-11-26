@@ -35,9 +35,9 @@ Precision over volume: prefer a tailored application over a fast one.
 - `pnpm db:seed`: seed the database (same guard).
 - `pnpm users link <email>`: print a sign-in link without sending email.
 - `pnpm --filter @xjobs/xjobs db:regenerate`: move published profiles to the current query recipe; run once after a recipe version bump.
-- `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump.
+- `pnpm --filter @xjobs/xjobs db:renormalize`: rebuild normalized jobs from raw storage; run once after a `NORMALIZER_VERSION` bump, then `db:recheck-skips`.
 - `pnpm --filter @xjobs/xjobs db:reprocess -- <flags>`: send in-scope jobs back to the processor (`--null-status`, `--failed`, `--all-in-scope`, `--job <id>`); run after a prompt, schema or model change.
-- `pnpm --filter @xjobs/xjobs db:recheck-skips -- [--dry-run]`: send listings the prefilter skipped in the last 24 hours (by first seen; not closed or expired) back to `pending`, so the processor checks them again; run once after a `PREFILTER_VERSION` bump (a profile change does it by itself; remote needs `XJOBS_ALLOW_REMOTE_DB=1`).
+- `pnpm --filter @xjobs/xjobs db:recheck-skips -- [--dry-run]`: send listings the prefilter skipped in the last 24 hours (by first seen; not closed or expired) back to `pending`, so the processor checks them again; run once after a `PREFILTER_VERSION` bump or after `db:renormalize` (a profile change does it by itself; remote needs `XJOBS_ALLOW_REMOTE_DB=1`).
 - `pnpm --filter @xjobs/xjobs db:archive-actor -- --actor <name> [--dry-run]`: archive every job seen only in that Apify actor's batches and delete their matches (one transaction; run `--dry-run` first; remote needs `XJOBS_ALLOW_REMOTE_DB=1`). Nothing un-archives a job except a new ingest observation.
 - `pnpm --filter @xjobs/xjobs db:publish-drafts -- [--dry-run]`: publish every draft that has a resume (one-off for profiles made before publish-on-finish; remote needs `XJOBS_ALLOW_REMOTE_DB=1`).
 - `pnpm --filter @xjobs/xjobs db:role-links -- [--dry-run]`: recompute every LinkedIn post role job's `linkKeys` (the job keys its apply links resolve to) and `postedAt` from its post's current extraction; one-off for roles written before they stored link keys (remote needs `XJOBS_ALLOW_REMOTE_DB=1`).

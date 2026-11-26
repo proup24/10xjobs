@@ -97,9 +97,10 @@ export async function processProcessJob(
     const released = await deps.repo.releaseStale(
       new Date(now.getTime() - deps.config.claimTimeoutMs),
     );
-    // Skipping costs no model call, so it runs while paused or over budget too;
-    // the same limit and order as `listPendingInScope`, so each listing it
-    // lists was checked first. A failure fails the sweep before any claim.
+    // Skipping costs no model call, so it runs while paused or over budget too.
+    // It lists only listings that could be skipped, so the first batch of the
+    // claim order may pass unchecked; correctness past it rests on `skipJob`
+    // in PROCESS_JOB. A failure fails the sweep before any claim.
     // First, jobs skipped in the last 24 hours go back when a profile changed.
     await deps.prefilter.recheckProfiles(now);
     const prefilter = await deps.prefilter.skipPending(

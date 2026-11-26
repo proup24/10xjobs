@@ -7,6 +7,7 @@ import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
 import {
   PrefilterRepository,
   type UncheckedJob,
+  type UncheckedProfile,
 } from '../repositories/prefilter.repository';
 import {
   onSiteDemand,
@@ -46,6 +47,8 @@ export class MemoryPrefilterRepository extends PrefilterRepository {
     id?: string;
     matchVersion?: number;
     prefilterCheckedVersion?: number | null;
+    /** When the profile was published or last changed; defaults to now. */
+    changedAt?: Date;
   }[] = [];
   places: PlaceIndex = {
     countriesOfRegion: new Map([['EU', new Set(['FR', 'DE'])]]),
@@ -122,7 +125,13 @@ export class MemoryPrefilterRepository extends PrefilterRepository {
 
   async listUncheckedPending(limit: number): Promise<UncheckedJob[]> {
     return [...this.jobs.values()]
-      .filter((j) => this.unchecked(j))
+      .filter(
+        (j) =>
+          this.unchecked(j) &&
+          (j.workplaceType === 'hybrid' || j.workplaceType === 'onsite') &&
+          j.countryCode !== null &&
+          j.remoteAllowed !== true,
+      )
       .sort(
         (a, b) =>
           (a.processingRequestedAt?.getTime() ?? -Infinity) -
@@ -189,17 +198,20 @@ export class MemoryPrefilterRepository extends PrefilterRepository {
     return n;
   }
 
-  async listUnrecheckedProfiles(): Promise<
-    { id: string; matchVersion: number }[]
-  > {
+  async listUnrecheckedProfiles(): Promise<UncheckedProfile[]> {
     return this.profiles
       .map((p, i) => ({
         id: p.id ?? `p${i}`,
         matchVersion: p.matchVersion ?? 0,
         checked: p.prefilterCheckedVersion ?? null,
+        changedAt: p.changedAt ?? this.now(),
       }))
       .filter((p) => p.checked !== p.matchVersion)
-      .map(({ id, matchVersion }) => ({ id, matchVersion }));
+      .map(({ id, matchVersion, changedAt }) => ({
+        id,
+        matchVersion,
+        changedAt,
+      }));
   }
 
   async setRecheckedVersion(

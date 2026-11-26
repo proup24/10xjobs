@@ -32,6 +32,23 @@ describe('PrefilterService', () => {
     expect(repo.job('ma').processingStatus).toBe('pending');
   });
 
+  it('does not list pending jobs that pass the check, so a backlog of them cannot starve skippable jobs', async () => {
+    const { repo, service } = setup();
+    repo.addJob({ id: 'a-remote', workplaceType: 'remote', countryCode: 'FR' });
+    repo.addJob({ id: 'b-untagged', workplaceType: null, countryCode: 'FR' });
+    repo.addJob({
+      id: 'c-nocountry',
+      workplaceType: 'onsite',
+      countryCode: null,
+    });
+    repo.addJob({ id: 'd-remoteok', ...onsiteFR, remoteAllowed: true });
+    repo.addJob({ id: 'e-fr', ...onsiteFR });
+
+    expect(await repo.listUncheckedPending(10)).toHaveLength(1);
+    expect(await service.skipPending(1)).toEqual({ checked: 1, skipped: 1 });
+    expect(repo.job('e-fr').processingStatus).toBe('skipped');
+  });
+
   it('leaves a job with an extraction pending', async () => {
     const { repo, service } = setup();
     repo.addJob({ id: 'fr', ...onsiteFR, currentExtractionId: 'e1' });
@@ -282,6 +299,43 @@ describe('PrefilterService', () => {
       repo.profiles[0].matchVersion = 1;
       expect(await service.recheckProfiles(NOW)).toBe(1);
       expect(repo.job('a').processingStatus).toBe('pending');
+    });
+
+    it('a profile changed 30 hours ago reopens jobs first seen in the 24 hours before the change', async () => {
+      const { repo, service } = setup();
+      repo.profiles[0].changedAt = hoursAgo(30);
+      const skipped = (id: string, h: number) =>
+        repo.addJob({
+          id,
+          ...onsiteFR,
+          firstSeenAt: hoursAgo(h),
+          processingStatus: 'skipped',
+        });
+      skipped('before-change', 50);
+      skipped('too-old', 60);
+      skipped('after-change', 2);
+
+      expect(await service.recheckProfiles(NOW)).toBe(2);
+      expect(repo.job('before-change').processingStatus).toBe('pending');
+      expect(repo.job('after-change').processingStatus).toBe('pending');
+      expect(repo.job('too-old').processingStatus).toBe('skipped');
+
+      // An unchanged second tick reopens nothing.
+      repo.job('before-change').processingStatus = 'skipped';
+      expect(await service.recheckProfiles(NOW)).toBe(0);
+    });
+
+    it('a stale change time never reaches back past the lookback cap', async () => {
+      const { repo, service } = setup();
+      repo.profiles[0].changedAt = hoursAgo(24 * 40);
+      repo.addJob({
+        id: 'old',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(24 * 20),
+        processingStatus: 'skipped',
+      });
+
+      expect(await service.recheckProfiles(NOW)).toBe(0);
     });
 
     it('a reopened job that still fails the check is skipped again by skipPending', async () => {
