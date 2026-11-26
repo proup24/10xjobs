@@ -975,6 +975,113 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       });
     });
 
+    it('a profile is rechecked once per publish or places edit, and recording the check never bumps matchVersion', async () => {
+      const userId = randomUUID();
+      const { raw } = db;
+      // This database has only the processor's code lists: skip the profile code check.
+      await db.execute(
+        raw.sql`ALTER TABLE profiles DISABLE TRIGGER profiles_check_codes`
+          .affectedCount()
+          .build(),
+      );
+      await db.execute(
+        raw.sql`INSERT INTO auth.users (id, aud, role, email) VALUES (${userId}::uuid, 'authenticated', 'authenticated', ${`${userId}@example.com`})`
+          .affectedCount()
+          .build(),
+      );
+      await db.execute(
+        raw.sql`INSERT INTO users (id, "createdAt", "updatedAt") VALUES (${userId}::uuid, now(), now()) ON CONFLICT (id) DO NOTHING`
+          .affectedCount()
+          .build(),
+      );
+      const created = await db.orm.public.Profile.create({
+        userId,
+        position: 'backend_engineer',
+        yearsOfExperience: 6,
+        timezoneCurrent: 60,
+        timezoneMin: -60,
+        timezoneMax: 180,
+        engagements: ['employee'],
+        seniorities: ['senior'],
+        noticePeriodDays: 30,
+        contractTypes: ['full_time'],
+        locations: {
+          remote: [{ kind: 'region', code: 'EMEA' }],
+          hybrid: [],
+          onsite: [],
+        },
+        languages: [{ lang: 'en', level: 'fluent' }],
+        salaryMin: null,
+        salaryCurrency: null,
+        salaryPeriod: null,
+        acceptsAnyCurrency: true,
+        acceptedCurrencies: [],
+      } as never);
+      const id = created.id;
+      const update = async (set: string, locations?: unknown) => {
+        const statement =
+          set === 'locations'
+            ? raw.sql`UPDATE profiles SET locations = ${JSON.stringify(locations)}::jsonb WHERE id = ${id}::uuid`
+            : set === 'publish'
+              ? raw.sql`UPDATE profiles SET state = 'published', "publishedAt" = now() WHERE id = ${id}::uuid`
+              : raw.sql`UPDATE profiles SET state = 'draft', "publishedAt" = NULL WHERE id = ${id}::uuid`;
+        await db.execute(statement.affectedCount().build());
+      };
+      const state = async () => {
+        const [row] = await db.query(
+          raw.sql`SELECT "matchVersion" FROM profiles WHERE id = ${id}::uuid`
+            .returnsRow({ matchVersion: 'pg/int4@1' })
+            .build(),
+        );
+        return { matchVersion: Number(row?.matchVersion) };
+      };
+      const unrechecked = async () =>
+        (await prefilter.listUnrecheckedProfiles()).filter((p) => p.id === id);
+      try {
+        // A draft is not listed; publishing asks for a recheck.
+        expect(await unrechecked()).toEqual([]);
+        await update('publish');
+        const published = await state();
+        expect(await unrechecked()).toEqual([
+          { id, matchVersion: published.matchVersion },
+        ]);
+
+        // Recording the check clears it and leaves matchVersion alone.
+        await prefilter.setRecheckedVersion(id, published.matchVersion);
+        expect(await unrechecked()).toEqual([]);
+        expect((await state()).matchVersion).toBe(published.matchVersion);
+
+        // Unpublish, then republish with no edit: rechecked again.
+        await update('unpublish');
+        expect(await unrechecked()).toEqual([]);
+        await update('publish');
+        expect(await unrechecked()).toHaveLength(1);
+        expect((await state()).matchVersion).toBe(published.matchVersion);
+        await prefilter.setRecheckedVersion(id, published.matchVersion);
+
+        // A places edit bumps matchVersion, so it is rechecked.
+        await update('locations', {
+          remote: [],
+          hybrid: [{ kind: 'country', code: 'MA' }],
+          onsite: [],
+        });
+        expect(await unrechecked()).toEqual([
+          { id, matchVersion: published.matchVersion + 1 },
+        ]);
+      } finally {
+        await db.execute(
+          raw.sql`ALTER TABLE profiles ENABLE TRIGGER profiles_check_codes`
+            .affectedCount()
+            .build(),
+        );
+        await db.execute(
+          raw.sql`DELETE FROM profiles WHERE id = ${id}::uuid`
+            .affectedCount()
+            .build(),
+        );
+      }
+    });
+
     it('reopenSkipped leaves a skipped post alone, and countReopenable counts what it would reopen', async () => {
       const since = new Date(t0.getTime() - minutes(60));
       const listing = await job(onsiteFR);

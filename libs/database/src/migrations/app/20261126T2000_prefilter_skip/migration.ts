@@ -20,7 +20,11 @@ const bumpProfileMatchVersion = `CREATE OR REPLACE FUNCTION public.bump_profile_
   LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
 BEGIN
   IF TG_TABLE_NAME = 'profiles' THEN
-    -- BEFORE UPDATE. Every column bumps unless listed here, so a new column bumps by default.
+    -- BEFORE UPDATE. A (re)publish asks for a recheck: demand was empty while it was unpublished.
+    IF OLD.state IS DISTINCT FROM 'published' AND NEW.state = 'published' THEN
+      NEW."prefilterCheckedVersion" := NULL;
+    END IF;
+    -- Every column bumps unless listed here, so a new column bumps by default.
     IF (to_jsonb(NEW) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','indeedSearch','prefilterCheckedVersion','createdAt','updatedAt'])
        IS DISTINCT FROM
        (to_jsonb(OLD) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','indeedSearch','prefilterCheckedVersion','createdAt','updatedAt']) THEN
