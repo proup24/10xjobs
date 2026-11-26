@@ -13,7 +13,12 @@
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/tsconfig.spec.json"
     ],
-    "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
+    "sharedGlobals": [
+      "{workspaceRoot}/.github/workflows/**/*",
+      "{workspaceRoot}/.github/ci/**/*",
+      "{workspaceRoot}/tsconfig.json",
+      "{workspaceRoot}/vitest.config.mts"
+    ]
   },
   "plugins": [
     {
@@ -120,6 +125,11 @@
         "style": "css",
         "linter": "eslint"
       }
+    }
+  },
+  "pluginsConfig": {
+    "@nx/js": {
+      "projectsAffectedByDependencyUpdates": "auto"
     }
   }
 }

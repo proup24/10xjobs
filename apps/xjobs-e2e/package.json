@@ -13,6 +13,13 @@
           "@xjobs/xjobs:serve"
         ]
       }
+    },
+    "namedInputs": {
+      "default": [
+        "{projectRoot}/**/*",
+        "sharedGlobals",
+        "{workspaceRoot}/docker-compose.yaml"
+      ]
     }
   },
   "devDependencies": {

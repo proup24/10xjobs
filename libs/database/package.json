@@ -70,5 +70,15 @@
     "@types/pg": "^8.23.1",
     "prisma": "8.0.0-rc.28",
     "tsx": "^4.23.15"
+  },
+  "nx": {
+    "namedInputs": {
+      "default": [
+        "{projectRoot}/**/*",
+        "sharedGlobals",
+        "{workspaceRoot}/supabase/**/*",
+        "{workspaceRoot}/scripts/**/*"
+      ]
+    }
   }
 }
