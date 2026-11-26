@@ -1,6 +1,24 @@
 # 12: Activity signals for paused searches
 
-Found 2026-11-24 during the [slice 11](11-monday-checks.md) weekday checks on `10xjobs-dev`. The owner asked for this slice. Its brainstorm comes first.
+Found 2026-11-24 during the [slice 11](11-monday-checks.md) weekday checks on `10xjobs-dev`. The owner asked for this slice.
+
+**Built (2026-11-26).** Part 1 is PR 133 and part 2 is PR 141. See the [spec](../../superpowers/specs/2026-11-24-activity-signals-design.md) and the [plan](../../superpowers/plans/2026-11-25-activity-signals.md).
+
+## Built
+
+- **Part 1 (PR 133).** Opening a job's post or apply link (`job_views."viewedAt"`, first view only) and choosing on a review (`match_reviews."createdAt"`) now count as activity in `pausedUsersCte` and `lastActiveAt`.
+- **Part 2 (PR 141).** A delivered webhook no longer counts. A receiver keeps its user active only by calling the signed callback API, `POST <web app>/api/webhooks/callback`, which the web app forwards to the engine.
+  - Requests are signed with the webhook secret, an HMAC of `${timestamp}.${rawBody}`, and accepted within 300 s.
+  - Every authenticated request is logged in `webhook_callbacks`. That log is the new signal, the replay guard, and the source of "Last callback" on the Webhook page.
+  - Feedback (`applied` or `dismissed`) writes a decision with `job_decisions.source = 'webhook'`. It follows merges and never changes an existing decision.
+  - The receiver docs are in [`docs/webhooks.md`](../../webhooks.md#calling-back), under "Calling back".
+- **Verified on dev (2026-11-26).**
+  - Migration `20261126T1549_webhook_callbacks` is applied.
+  - A signed ping through `https://10xjobs.vercel.app/api/webhooks/callback` got `200 ok` and logged one row.
+  - A replay of the same request and a wrong signature both got `401` and wrote nothing.
+- **Left open for the owner:**
+  - Undoing a review deletes its row, so the undo is not a signal.
+  - `job_decisions.source` can be set by the user on their own decisions. Nothing reads it for trust today. If it ever drives behaviour, add `WITH CHECK (source = 'app')` to the owner policies.
 
 ## Background
 

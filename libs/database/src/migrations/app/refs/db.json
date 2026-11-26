@@ -1,5 +1,5 @@
 {
-  "hash": "e895fa0426d33acc98a4ca64cd48bed7a9b21d8e3e52eee9f083ed68c0b324b1",
+  "hash": "0c74e930b09092645e0058b0a3fe21e9324c1a44e0e7ad61e1ca876cc385b365",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -36,6 +36,7 @@
     "blocked-authors-eligibility",
     "match-details-kind",
     "webhook-listings-only",
+    "job-decisions-update-source",
     "indeed-markets-seed"
   ]
 }

@@ -82,8 +82,7 @@ export class PrismaActivityRepository extends ActivityRepository {
             (SELECT max(d."decidedAt") FROM public.job_decisions d WHERE d."userId" = u.id),
             (SELECT max(v."viewedAt") FROM public.job_views v WHERE v."userId" = u.id),
             (SELECT max(r."createdAt") FROM public.match_reviews r WHERE r."userId" = u.id),
-            (SELECT max(x."deliveredAt") FROM public.webhook_deliveries x
-              WHERE x."userId" = u.id AND x.kind = 'match' AND x.status = 'delivered'),
+            (SELECT max(x."receivedAt") FROM public.webhook_callbacks x WHERE x."userId" = u.id),
             (SELECT max(p."publishedAt") FROM public.profiles p
               WHERE p."userId" = u.id AND p.state = 'published')) AS "lastActiveAt"
         FROM public.users u

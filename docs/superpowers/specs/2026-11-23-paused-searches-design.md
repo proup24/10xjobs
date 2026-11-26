@@ -122,4 +122,4 @@ Two more signals count as activity, as part 1 of the [activity signals spec](202
 - A job view: `job_views."viewedAt"`, the first time the user opens a job's post or apply link. Repeat views write nothing and do not count. Opening the detail panel does not count.
 - A review choice: `match_reviews."createdAt"`, when the user picks qualified or rejected on a review.
 
-Both are read by `pausedUsersCte` with the same 24-hour window as the other signals. Part 2 of that spec changes the webhook signal and is not covered here.
+Both are read by `pausedUsersCte` with the same 24-hour window as the other signals. Part 2 of that spec changes the webhook signal: signed callbacks (`webhook_callbacks."receivedAt"`) replace delivered webhooks as the signal, reversing the last non-goal. The partial index `webhook_deliveries_user_delivered`, which only the old rule read, was dropped in the `webhook_callbacks` migration.

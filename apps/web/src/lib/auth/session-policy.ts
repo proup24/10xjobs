@@ -1,5 +1,10 @@
 export const MAX_SESSION_AGE_SECONDS = 604_800;
-export const PUBLIC_PATHS = ['/sign-in', '/auth/confirm', '/design'];
+export const PUBLIC_PATHS = [
+  '/sign-in',
+  '/auth/confirm',
+  '/design',
+  '/api/webhooks/callback',
+];
 
 export type SessionClaims = {
   sub: string;

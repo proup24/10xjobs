@@ -25,6 +25,8 @@ vi.mock('sonner', () => ({ toast }));
 
 const SECRET = 'abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG';
 const ON: WebhookView = {
+  id: 'wh-123',
+  lastCallbackAt: null,
   url: 'https://hooks.example.com/a',
   secret: SECRET,
   enabled: true,
@@ -44,10 +46,12 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const CALLBACK_URL = 'https://app.example.com/api/webhooks/callback';
+
 function renderForm(webhook: WebhookView | null) {
   return render(
     <UnsavedChangesProvider>
-      <WebhookForm webhook={webhook} />
+      <WebhookForm webhook={webhook} callbackUrl={CALLBACK_URL} />
     </UnsavedChangesProvider>,
   );
 }
@@ -56,6 +60,22 @@ const button = (name: string | RegExp) => screen.getByRole('button', { name });
 const urlInput = () => screen.getByLabelText('URL') as HTMLInputElement;
 
 describe('WebhookForm', () => {
+  it('shows the id, the callback URL and Never', () => {
+    renderForm(ON);
+    expect(screen.getByText('wh-123')).toBeTruthy();
+    expect(screen.getByText(CALLBACK_URL)).toBeTruthy();
+    expect(screen.getByText(/Never/)).toBeTruthy();
+    fireEvent.click(button('Copy ID'));
+  });
+
+  it('shows the last callback date', () => {
+    renderForm({ ...ON, lastCallbackAt: '2026-11-25T10:00:00Z' });
+    expect(screen.queryByText(/Never/)).toBeNull();
+    expect(screen.getByText(/Last callback/).textContent).toMatch(
+      /25 Nov, 10:00 UTC/,
+    );
+  });
+
   it('none: only the URL and Save', () => {
     renderForm(null);
     expect(urlInput().value).toBe('');

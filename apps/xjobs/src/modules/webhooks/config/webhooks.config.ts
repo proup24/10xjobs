@@ -11,4 +11,6 @@ export const WEBHOOK_CONFIG = {
   sweep: { everyMs: 60_000, limit: 200 },
   stuckSendingMs: 300_000,
   retentionDays: 30,
+  callbackToleranceSeconds: 300,
+  callbackPerMinute: 60,
 } as const;

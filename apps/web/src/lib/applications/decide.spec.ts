@@ -217,6 +217,7 @@ describe('saveDecision', () => {
       status: 'dismissed',
       reason: 'location',
     });
+    expect(kept).toMatchObject({ source: 'app' });
     expect(kept).not.toHaveProperty('decidedAt');
     expect(kept).not.toHaveProperty('jobId');
     expect(kept).not.toHaveProperty('userId');

@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e895fa0426d33acc98a4ca64cd48bed7a9b21d8e3e52eee9f083ed68c0b324b1'>;
+  StorageHashBase<'0c74e930b09092645e0058b0a3fe21e9324c1a44e0e7ad61e1ca876cc385b365'>;
 export type ExecutionHash =
-  ExecutionHashBase<'cceaa40ea325e2a7bda66c7c86613fba202704d857905768b448e51c2dc54839'>;
+  ExecutionHashBase<'dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -813,6 +813,7 @@ export namespace Models {
     matchSnapshot: FieldOutputTypes['public']['JobDecision']['matchSnapshot'];
     note: FieldOutputTypes['public']['JobDecision']['note'];
     reason: FieldOutputTypes['public']['JobDecision']['reason'];
+    source: FieldOutputTypes['public']['JobDecision']['source'];
     status: FieldOutputTypes['public']['JobDecision']['status'];
     updatedAt: FieldOutputTypes['public']['JobDecision']['updatedAt'];
     userId: FieldOutputTypes['public']['JobDecision']['userId'];
@@ -1348,6 +1349,7 @@ export namespace Models {
     jobMatches: public_JobMatch[];
     jobViews: public_JobView[];
     matchReviews: public_MatchReview[];
+    webhookCallbacks: public_WebhookCallback[];
     webhookDeliveries: public_WebhookDelivery[];
     webhooks: public_Webhook[];
     readonly [RelationKeys]?:
@@ -1357,6 +1359,7 @@ export namespace Models {
       | 'jobMatches'
       | 'jobViews'
       | 'matchReviews'
+      | 'webhookCallbacks'
       | 'webhookDeliveries'
       | 'webhooks';
   };
@@ -1373,9 +1376,25 @@ export namespace Models {
     updatedAt: FieldOutputTypes['public']['Webhook']['updatedAt'];
     url: FieldOutputTypes['public']['Webhook']['url'];
     userId: FieldOutputTypes['public']['Webhook']['userId'];
+    callbacks: public_WebhookCallback[];
     deliveries: public_WebhookDelivery[];
     user: public_User;
-    readonly [RelationKeys]?: 'deliveries' | 'user';
+    readonly [RelationKeys]?: 'callbacks' | 'deliveries' | 'user';
+  };
+  export type public_WebhookCallback = {
+    createdAt: FieldOutputTypes['public']['WebhookCallback']['createdAt'];
+    id: FieldOutputTypes['public']['WebhookCallback']['id'];
+    jobId: FieldOutputTypes['public']['WebhookCallback']['jobId'];
+    receivedAt: FieldOutputTypes['public']['WebhookCallback']['receivedAt'];
+    result: FieldOutputTypes['public']['WebhookCallback']['result'];
+    signature: FieldOutputTypes['public']['WebhookCallback']['signature'];
+    type: FieldOutputTypes['public']['WebhookCallback']['type'];
+    updatedAt: FieldOutputTypes['public']['WebhookCallback']['updatedAt'];
+    userId: FieldOutputTypes['public']['WebhookCallback']['userId'];
+    webhookId: FieldOutputTypes['public']['WebhookCallback']['webhookId'];
+    user: public_User;
+    webhook: public_Webhook;
+    readonly [RelationKeys]?: 'user' | 'webhook';
   };
   export type public_WebhookDelivery = {
     attempts: FieldOutputTypes['public']['WebhookDelivery']['attempts'];
@@ -1461,6 +1480,7 @@ export declare const models: {
     TechTag: Models.public_TechTag;
     User: Models.public_User;
     Webhook: Models.public_Webhook;
+    WebhookCallback: Models.public_WebhookCallback;
     WebhookDelivery: Models.public_WebhookDelivery;
     WorkAuthorization: Models.public_WorkAuthorization;
   };
@@ -2523,6 +2543,16 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly source: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'app'>;
+                  };
                   readonly many: false;
                 };
                 readonly status: {
@@ -6021,6 +6051,128 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly webhook_callbacks: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly jobId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly receivedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly result: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly signature: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly type: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly webhookId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['webhookId', 'signature'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'webhook_callbacks_userId_idx_a489d58a';
+                  readonly prefix: 'webhook_callbacks_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'webhook_callbacks_userId_receivedAt_idx_5746e510';
+                  readonly prefix: 'webhook_callbacks_userId_receivedAt_idx';
+                  readonly columns: readonly ['userId', 'receivedAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'webhook_callbacks_webhookId_userId_idx_f48d66cb';
+                  readonly prefix: 'webhook_callbacks_webhookId_userId_idx';
+                  readonly columns: readonly ['webhookId', 'userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'webhook_callbacks';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'webhook_callbacks';
+                    readonly columns: readonly ['webhookId', 'userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'webhooks';
+                    readonly columns: readonly ['id', 'userId'];
+                  };
+                },
+              ];
+            };
             readonly webhook_deliveries: {
               columns: {
                 readonly attempts: {
@@ -6177,13 +6329,6 @@ type ContractBase = Omit<
                   readonly name: 'webhook_deliveries_userId_idx_a489d58a';
                   readonly prefix: 'webhook_deliveries_userId_idx';
                   readonly columns: readonly ['userId'];
-                  readonly unique: false;
-                },
-                {
-                  readonly name: 'webhook_deliveries_user_delivered_6332df6c';
-                  readonly prefix: 'webhook_deliveries_user_delivered';
-                  readonly columns: readonly ['userId', 'deliveredAt'];
-                  readonly where: "status = 'delivered'";
                   readonly unique: false;
                 },
                 {
@@ -6663,6 +6808,10 @@ type ContractBase = Omit<
     };
     readonly tech_tags: { readonly namespace: 'public' & NamespaceId; readonly model: 'TechTag' };
     readonly users: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+    readonly webhook_callbacks: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'WebhookCallback';
+    };
     readonly webhook_deliveries: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'WebhookDelivery';
@@ -7681,6 +7830,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly source: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly status: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -7732,6 +7885,7 @@ type ContractBase = Omit<
                 readonly matchSnapshot: { readonly column: 'matchSnapshot' };
                 readonly note: { readonly column: 'note' };
                 readonly reason: { readonly column: 'reason' };
+                readonly source: { readonly column: 'source' };
                 readonly status: { readonly column: 'status' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly userId: { readonly column: 'userId' };
@@ -10891,6 +11045,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['userId'];
                 };
               };
+              readonly webhookCallbacks: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WebhookCallback';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly webhookDeliveries: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -11002,6 +11167,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly callbacks: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'WebhookCallback';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id', 'userId'];
+                  readonly targetFields: readonly ['webhookId', 'userId'];
+                };
+              };
               readonly deliveries: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -11039,6 +11215,101 @@ type ContractBase = Omit<
                 readonly updatedAt: { readonly column: 'updatedAt' };
                 readonly url: { readonly column: 'url' };
                 readonly userId: { readonly column: 'userId' };
+              };
+            };
+          };
+          readonly WebhookCallback: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly jobId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly receivedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly result: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly signature: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly type: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly webhookId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly webhook: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Webhook';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['webhookId', 'userId'];
+                  readonly targetFields: readonly ['id', 'userId'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'webhook_callbacks';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly jobId: { readonly column: 'jobId' };
+                readonly receivedAt: { readonly column: 'receivedAt' };
+                readonly result: { readonly column: 'result' };
+                readonly signature: { readonly column: 'signature' };
+                readonly type: { readonly column: 'type' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
+                readonly webhookId: { readonly column: 'webhookId' };
               };
             };
           };
@@ -11824,6 +12095,23 @@ type ContractBase = Omit<
           readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
           readonly ref: {
             readonly entry: 'users';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'webhook_callbacks';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'webhook_callbacks';
             readonly field: 'updatedAt';
             readonly namespace: 'public';
           };

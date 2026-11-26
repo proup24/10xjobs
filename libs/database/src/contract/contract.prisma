@@ -135,6 +135,7 @@ model User {
   factReports        FactReport[]
   webhooks           Webhook[]
   webhookDeliveries  WebhookDelivery[]
+  webhookCallbacks   WebhookCallback[]
   blockedAuthors     BlockedAuthor[]
   +Timestamps
 
@@ -1193,8 +1194,11 @@ model JobDecision {
   note          String?
   decidedAt     TimestamptzJsDate(3) @default(now())
   matchSnapshot Jsonb?
+  // 'app' (the web app) or 'webhook' (a signed callback from the user's receiver).
+  source        String               @default("app")
   +Timestamps
 
+  @@check(expression: sql`source IN ('app','webhook')`, name: "job_decisions_source")
   @@check(expression: sql`status IN ('applied','dismissed','expired')`, name: "job_decisions_status")
   @@check(expression: sql`reason IS NULL OR reason IN ('role','seniority','location','stack','salary','contract','languages','work_authorization','company','other')`, name: "job_decisions_reason")
   @@check(expression: sql`note IS NULL OR char_length(note) <= 500`, name: "job_decisions_note_length")
@@ -1311,6 +1315,7 @@ model Webhook {
   lastSuccessAt       TimestamptzJsDate(3)?
   lastFailureAt       TimestamptzJsDate(3)?
   deliveries          WebhookDelivery[]
+  callbacks           WebhookCallback[]
   +Timestamps
 
   @@check(expression: sql`"disabledReason" IN ('user', 'failing')`, name: "webhooks_disabled_reason")
@@ -1370,7 +1375,6 @@ model WebhookDelivery {
   @@check(expression: sql`kind <> 'match' OR ("profileId" IS NOT NULL AND "jobId" IS NOT NULL AND trigger IS NOT NULL)`, name: "webhook_deliveries_match_complete")
   @@index([profileId, jobId], where: sql`kind = 'match'`, unique: true, name: "webhook_deliveries_match_once")
   @@index([webhookId, status, createdAt])
-  @@index([userId, deliveredAt], where: sql`status = 'delivered'`, name: "webhook_deliveries_user_delivered")
   @@map("webhook_deliveries")
   @@rls
 }
@@ -1378,6 +1382,40 @@ model WebhookDelivery {
 // Owners read their deliveries. Only the engine and SECURITY DEFINER functions write them.
 policy_select webhook_deliveries_owner_read {
   target = WebhookDelivery
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+// One signed callback the engine received for a user's webhook (ping, feedback or a rejected request),
+// with how it ended. The unique (webhookId, signature) refuses a replay. Only the engine writes it;
+// rows older than 30 days are deleted.
+model WebhookCallback {
+  id         Uuid                 @id @default(sql`gen_random_uuid()`) @onCreate(uuid(7))
+  userId     Uuid
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  webhookId  Uuid
+  webhook    Webhook              @relation(fields: [webhookId, userId], references: [id, userId], onDelete: Cascade)
+  receivedAt TimestamptzJsDate(3) @default(now())
+  // 'ping', 'feedback' or 'invalid'.
+  type       String
+  // The job a feedback callback named; no foreign key, so a deleted job leaves the log intact.
+  jobId      Uuid?
+  // 'ok', 'saved', 'already_decided', 'not_matched' or 'invalid'.
+  result     String
+  signature  String
+  +Timestamps
+
+  @@check(expression: sql`type IN ('ping', 'feedback', 'invalid')`, name: "webhook_callbacks_type")
+  @@check(expression: sql`result IN ('ok', 'saved', 'already_decided', 'not_matched', 'invalid')`, name: "webhook_callbacks_result")
+  @@unique([webhookId, signature])
+  @@index([userId, receivedAt])
+  @@map("webhook_callbacks")
+  @@rls
+}
+
+// Owners read their callbacks. No write policy: only the engine writes.
+policy_select webhook_callbacks_owner_read {
+  target = WebhookCallback
   roles = [authenticated]
   using = sql`"userId" = auth.uid()`
 }

@@ -2,6 +2,7 @@ export { createEngineClient } from './client';
 export type {
   AuthorView,
   AutoSilenceCandidateView,
+  CallbackHeader,
   DropView,
   EngineClient,
   EngineClientDeps,

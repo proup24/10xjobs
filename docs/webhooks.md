@@ -102,6 +102,72 @@ export function verify(rawBody, headers, secret) {
 }
 ```
 
+## Calling back
+
+Your receiver can call back to 10xjobs. A callback proves the webhook is alive and, optionally, reports what you did with a job.
+
+**Searches pause only when a match has waited 24 hours with no activity of any kind, and activity in the app counts too.** If you use only this receiver and it never calls back, your searches pause once a match has waited 24 hours. Send a `ping` now and then, or report feedback on jobs.
+
+`POST <web app address>/api/webhooks/callback`, with these headers:
+
+- `X-10xjobs-Webhook`: the webhook id, shown on the Webhook page (outgoing deliveries don't carry it).
+- `X-10xjobs-Timestamp`: Unix seconds. Accepted within 300 seconds either way.
+- `X-10xjobs-Signature`: `v1=` plus the hex HMAC-SHA256 of `${timestamp}.${rawBody}`, keyed by the webhook secret (the same scheme as above).
+
+```js
+import { createHmac } from 'node:crypto';
+
+export async function callBack(url, webhookId, secret, body) {
+  const rawBody = JSON.stringify(body);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = 'v1=' + createHmac('sha256', secret).update(`${timestamp}.${rawBody}`).digest('hex');
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-10xjobs-webhook': webhookId,
+      'x-10xjobs-timestamp': String(timestamp),
+      'x-10xjobs-signature': signature,
+    },
+    body: rawBody,
+  });
+}
+```
+
+Bodies (version 1):
+
+A ping:
+
+```json
+{ "version": 1, "type": "ping" }
+```
+
+Feedback that you applied:
+
+```json
+{ "version": 1, "type": "feedback", "jobId": "<job id>", "status": "applied" }
+```
+
+Feedback that you dismissed, with an optional reason and note:
+
+```json
+{ "version": 1, "type": "feedback", "jobId": "<job id>", "status": "dismissed", "reason": "stack", "note": "optional, up to 500 characters" }
+```
+
+`reason` is one of `role`, `seniority`, `location`, `stack`, `salary`, `contract`, `languages`, `work_authorization`, `company`, `other`. `reason` and `note` are allowed only with `dismissed`.
+
+Responses:
+
+- `200` with `{ "version": 1, "result": ... }`. `result` is `ok` (ping), `saved` (feedback recorded), `already_decided`, `not_matched` (the job is not one of this user's matches) or `invalid` (the body was signed but malformed; `error` says why). `saved` and `already_decided` carry `jobId`, and `already_decided` also carries `decision`.
+- Feedback on a merged job is applied to the job it was merged into; the response `jobId` is that job.
+- An existing decision is never changed: you get `already_decided`.
+- `401`: unsigned, bad signature, a timestamp more than 300 seconds off, an unknown webhook, or a replay (the same signature twice).
+- `429`: more than 60 calls in a minute for one webhook.
+- `413`: the body is too large; the body is `{"version":1,"error":"too_large"}`.
+- `503`: the web app could not reach the engine; the body is `{"version":1,"error":"unavailable"}`. Retry it later.
+
+Every `200` counts as activity for the user, including `invalid`.
+
 ## Delivery
 
 - **Success** is any 2xx response. The response body is read up to 1 KB and dropped, never stored.

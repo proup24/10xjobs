@@ -14,6 +14,15 @@ const expired = {
 };
 
 describe('decideRoute', () => {
+  it('lets the webhook callback route through with no session', () =>
+    expect(
+      decideRoute({
+        pathname: '/api/webhooks/callback',
+        claims: null,
+        nowSeconds: now,
+      }),
+    ).toEqual({ action: 'continue' }));
+
   it('sends a signed-out request for / to /sign-in', () =>
     expect(
       decideRoute({ pathname: '/', claims: null, nowSeconds: now }),

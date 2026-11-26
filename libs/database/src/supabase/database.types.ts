@@ -552,6 +552,7 @@ export type Database = {
           matchSnapshot: Json | null;
           note: string | null;
           reason: string | null;
+          source: string;
           status: string;
           updatedAt: string;
           userId: string;
@@ -565,6 +566,7 @@ export type Database = {
           matchSnapshot?: Json | null;
           note?: string | null;
           reason?: string | null;
+          source?: string;
           status: string;
           updatedAt?: string;
           userId: string;
@@ -577,6 +579,7 @@ export type Database = {
           matchSnapshot?: Json | null;
           note?: string | null;
           reason?: string | null;
+          source?: string;
           status?: string;
           updatedAt?: string;
           userId?: string;
@@ -2232,6 +2235,61 @@ export type Database = {
           updatedAt?: string;
         };
         Relationships: [];
+      };
+      webhook_callbacks: {
+        Row: {
+          createdAt: string;
+          id: string;
+          jobId: string | null;
+          receivedAt: string;
+          result: string;
+          signature: string;
+          type: string;
+          updatedAt: string;
+          userId: string;
+          webhookId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          id?: string;
+          jobId?: string | null;
+          receivedAt?: string;
+          result: string;
+          signature: string;
+          type: string;
+          updatedAt?: string;
+          userId: string;
+          webhookId: string;
+        };
+        Update: {
+          createdAt?: string;
+          id?: string;
+          jobId?: string | null;
+          receivedAt?: string;
+          result?: string;
+          signature?: string;
+          type?: string;
+          updatedAt?: string;
+          userId?: string;
+          webhookId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'webhook_callbacks_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'webhook_callbacks_webhookId_userId_fkey';
+            columns: ['webhookId', 'userId'];
+            isOneToOne: false;
+            referencedRelation: 'webhooks';
+            referencedColumns: ['id', 'userId'];
+          },
+        ];
       };
       webhook_deliveries: {
         Row: {
