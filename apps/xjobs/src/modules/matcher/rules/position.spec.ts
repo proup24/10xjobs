@@ -44,6 +44,42 @@ describe('checkPosition', () => {
     ).toBe('fullstack_engineer');
   });
 
+  describe('tech_lead', () => {
+    const lead = { ...profile, position: 'tech_lead' };
+    const leadRole = (roleKind: string, seniority: string) => {
+      const d = withRole(roleKind);
+      d.seniority.value = seniority;
+      return d;
+    };
+    it('tech_lead passes on lead fullstack_engineer', () => {
+      const c = checkPosition(leadRole('fullstack_engineer', 'lead'), lead);
+      expect(c).toMatchObject({
+        outcome: 'pass',
+        reason: 'lead-level fullstack_engineer counts for tech_lead',
+        unsure: false,
+      });
+    });
+    it('tech_lead still fails on senior fullstack_engineer', () => {
+      expect(
+        checkPosition(leadRole('fullstack_engineer', 'senior'), lead).outcome,
+      ).toBe('fail');
+    });
+    it('backend_engineer still fails on lead fullstack_engineer', () => {
+      expect(
+        checkPosition(leadRole('fullstack_engineer', 'lead'), profile).outcome,
+      ).toBe('fail');
+    });
+    it('an unsure lead seniority makes the pass unsure on seniority', () => {
+      const d = leadRole('fullstack_engineer', 'lead');
+      d.seniority.confidence = 'unsure';
+      expect(checkPosition(d, lead)).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'seniority',
+      });
+    });
+  });
+
   describe('unsure', () => {
     it('a failing role resting on an unsure position is unsure, on that field', () => {
       const d = withRole('fullstack_engineer');

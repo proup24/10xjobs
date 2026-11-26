@@ -322,6 +322,23 @@ describe('decide', () => {
       ],
     } as JobFactsDocument['openings'][number];
 
+    it('a tech_lead profile without lead in its seniorities is rejected on seniority for a lead role', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.position.value = { roleKind: 'fullstack_engineer', title: 'x' };
+            x.seniority.value = 'lead';
+          }),
+        ),
+        { ...exampleProfile(), position: 'tech_lead' },
+        ctx,
+      );
+      const by = Object.fromEntries(d.checks.map((c) => [c.rule, c.outcome]));
+      expect(by.position).toBe('pass');
+      expect(by.seniority).toBe('fail');
+      expect(d.outcome).toBe('rejected');
+    });
+
     it('a sure fail rejects', () => {
       const d = decide(
         job(

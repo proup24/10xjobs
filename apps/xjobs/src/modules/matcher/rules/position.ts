@@ -58,6 +58,24 @@ export function checkPosition(
           : null),
     );
   }
+  if (
+    profile.position === 'tech_lead' &&
+    !unstated &&
+    doc.isSoftwareEngineeringRole.value === true &&
+    doc.seniority.value === 'lead'
+  ) {
+    const unsure = (f: { confidence: string }) => f.confidence === 'unsure';
+    return check(
+      'pass',
+      roleKind,
+      `lead-level ${roleKind} counts for tech_lead`,
+      (unsure(doc.position) ? 'position' : null) ??
+        (unsure(doc.seniority) ? 'seniority' : null) ??
+        (unsure(doc.isSoftwareEngineeringRole)
+          ? 'isSoftwareEngineeringRole'
+          : null),
+    );
+  }
   if (unstated) {
     return check(
       'unknown',
