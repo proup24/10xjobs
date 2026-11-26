@@ -95,6 +95,7 @@ describe('MemoryProcessorRepository posts', () => {
         title: `Role ${roleKey}`,
         companyName: null,
         extractionId,
+        linkKeys: [],
       });
     const a = await role('a');
     const b = await role('b');

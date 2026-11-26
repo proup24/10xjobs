@@ -629,6 +629,8 @@ model NormalizedJob {
   parent                NormalizedJob?        @relation("PostRoles", fields: [parentJobId], references: [id], onDelete: Restrict)
   roles                 NormalizedJob[]       @relation("PostRoles")
   roleKey               String?
+  // A post_role job's apply links as job keys (sorted, unique): linkedin-job:, ats: or url:. Empty on a listing.
+  linkKeys              String[]              @default([])
   title                 String?
   companyName           String?
   companyUrl            String?

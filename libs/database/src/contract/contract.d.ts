@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'0c74e930b09092645e0058b0a3fe21e9324c1a44e0e7ad61e1ca876cc385b365'>;
+  StorageHashBase<'84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72'>;
 export type ExecutionHash =
   ExecutionHashBase<'dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7'>;
 export type ProfileHash =
@@ -1006,6 +1006,7 @@ export namespace Models {
     jobKey: FieldOutputTypes['public']['NormalizedJob']['jobKey'];
     kind: FieldOutputTypes['public']['NormalizedJob']['kind'];
     lastSeenAt: FieldOutputTypes['public']['NormalizedJob']['lastSeenAt'];
+    linkKeys: FieldOutputTypes['public']['NormalizedJob']['linkKeys'];
     listingState: FieldOutputTypes['public']['NormalizedJob']['listingState'];
     location: FieldOutputTypes['public']['NormalizedJob']['location'];
     mergedIntoId: FieldOutputTypes['public']['NormalizedJob']['mergedIntoId'];
@@ -3974,6 +3975,16 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
+                };
+                readonly linkKeys: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', readonly []>;
+                  };
+                  readonly many: { readonly elementNullable: false };
                 };
                 readonly listingState: {
                   readonly dataType: 'pg/text';
@@ -8958,6 +8969,11 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly linkKeys: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+                readonly many: { readonly elementNullable: false };
+              };
               readonly listingState: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -9304,6 +9320,7 @@ type ContractBase = Omit<
                 readonly jobKey: { readonly column: 'jobKey' };
                 readonly kind: { readonly column: 'kind' };
                 readonly lastSeenAt: { readonly column: 'lastSeenAt' };
+                readonly linkKeys: { readonly column: 'linkKeys' };
                 readonly listingState: { readonly column: 'listingState' };
                 readonly location: { readonly column: 'location' };
                 readonly mergedIntoId: { readonly column: 'mergedIntoId' };

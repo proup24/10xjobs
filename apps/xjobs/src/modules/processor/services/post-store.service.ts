@@ -4,6 +4,7 @@ import {
   PROCESSOR_CONFIG,
   type ProcessorConfig,
 } from '../config/processor.config';
+import { linkKeysOf } from 'src/modules/ingest/normalize/job-key';
 import type { PostingInput } from '../models/types';
 import { postPromptHash } from '../prompts/prompt';
 import {
@@ -212,6 +213,7 @@ export class PostStore {
         title: role.title,
         companyName: role.employer.name,
         extractionId: roleRows[i],
+        linkKeys: linkKeysOf(role.howToApply.links),
       });
     await this.repo.archiveRoleJobs(
       postJobId,

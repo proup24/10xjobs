@@ -1177,6 +1177,7 @@ export type Database = {
           jobKey: string;
           kind: string;
           lastSeenAt: string;
+          linkKeys: string[];
           listingState: string | null;
           location: string | null;
           mergedIntoId: string | null;
@@ -1238,6 +1239,7 @@ export type Database = {
           jobKey: string;
           kind: string;
           lastSeenAt: string;
+          linkKeys?: string[];
           listingState?: string | null;
           location?: string | null;
           mergedIntoId?: string | null;
@@ -1298,6 +1300,7 @@ export type Database = {
           jobKey?: string;
           kind?: string;
           lastSeenAt?: string;
+          linkKeys?: string[];
           listingState?: string | null;
           location?: string | null;
           mergedIntoId?: string | null;

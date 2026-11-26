@@ -7,6 +7,7 @@
     "db:analyze": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/analyze-matches.ts",
     "db:regenerate": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/regenerate-query-search.ts",
     "db:publish-drafts": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/publish-drafts.ts",
+    "db:role-links": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/role-links.ts",
     "db:renormalize": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/renormalize-jobs.ts",
     "db:rematch": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/rematch-jobs.ts",
     "db:reprocess": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/reprocess-jobs.ts",

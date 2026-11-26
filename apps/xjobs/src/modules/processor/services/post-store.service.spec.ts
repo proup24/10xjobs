@@ -158,6 +158,25 @@ describe('PostStore', () => {
     });
   });
 
+  it('role jobs get the link keys of their links', async () => {
+    const doc = fixtureHiringPost();
+    doc.roles[0].howToApply.links = [
+      'https://www.linkedin.com/jobs/view/4490421090/?trk=x',
+      'https://example.com/careers',
+    ];
+    const key = store.reuseKey({
+      jobId: 'post-1',
+      title: null,
+      description: 'text',
+      truncated: false,
+    });
+    await store.save('post-1', key, assembledOf(doc), vocabulary, log);
+    expect(roleJobs().map((r) => [r.roleKey, r.linkKeys])).toEqual([
+      ['backend-engineer', ['linkedin-job:4490421090']],
+      ['senior-backend-engineer', []],
+    ]);
+  });
+
   it('save: a junk post makes no role rows and archives the role jobs', async () => {
     const key = store.reuseKey({
       jobId: 'post-1',

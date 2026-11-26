@@ -159,11 +159,11 @@ describe('planSteps', () => {
 describe('real history', () => {
   const appDir = path.resolve(__dirname, '../migrations/app');
 
-  it('real history from empty: every step ≤ 8, last is db, all 37 covered', () => {
+  it('real history from empty: every step ≤ 8, last is db, all 38 covered', () => {
     const edges = loadEdges(appDir);
     const dbRef = loadDbRef(appDir);
     const steps = planSteps(edges, dbRef, null);
-    expect(dbRef.invariants).toHaveLength(37);
+    expect(dbRef.invariants).toHaveLength(38);
     expect(steps.some((s) => s.oversized)).toBe(false);
     for (const s of steps)
       expect(s.newInvariants.length).toBeLessThanOrEqual(8);

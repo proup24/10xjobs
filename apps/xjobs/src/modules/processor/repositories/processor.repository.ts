@@ -65,6 +65,8 @@ export interface RoleJobInput {
   companyName: string | null;
   /** The role's listing-shaped extraction, made current. */
   extractionId: string;
+  /** The job keys the role's apply links resolve to (`linkKeysOf`). */
+  linkKeys: string[];
 }
 
 export interface NewAttempt extends ModelCallMeta {
@@ -684,6 +686,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
         processingStartedAt: null,
         processedAt: new Date(),
         currentExtractionId: input.extractionId,
+        linkKeys: input.linkKeys,
       };
       const existing = await jobs
         .where({ parentJobId: input.postJobId, roleKey: input.roleKey })
