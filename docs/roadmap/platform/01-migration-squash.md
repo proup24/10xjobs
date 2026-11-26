@@ -2,7 +2,7 @@
 
 Status: Built 2026-11-25 as a stepped migrate (PR #131), not a squash. Raised 2026-11-24, after PR #127's CI database job ran out of memory.
 
-**Result:** a fresh database migrates in 5 steps of at most 8 invariants, at about 318 MB peak with a 2 GB heap (it needed more than 12 GB). A fresh run matched dev's marker, ledger and schema. The first Dev database run after merge took one `--to db` step and applied nothing. Left: the drafted prisma-next issue in the PR body, for the maintainer to file.
+**Result:** a fresh database migrates in 5 steps of at most 8 invariants, at about 318 MB peak with a 2 GB heap (it needed more than 12 GB). A fresh run matched dev's marker, ledger and schema. The first Dev database run after merge took one `--to db` step and applied nothing. Reported upstream as [prisma/orm#31210](https://github.com/prisma/orm/issues/31210) (2026-11-25); once Prisma fixes it, `libs/database/src/migrations-step/` can go.
 
 **Brainstormed 2026-11-24:** the direction is a stepped migrate, not a squash. See [the design](../../superpowers/specs/2026-11-24-stepped-migrate-design.md). `rc.25` was tested and doesn't change the planner's growth. The squash sections below are kept as history.
 

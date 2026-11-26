@@ -18,7 +18,7 @@ export class MemoryMatcherRepository extends MatcherRepository {
   factsHashes = new Map<string, string>();
   /** Jobs whose stored facts are closed. */
   closedJobs = new Set<string>();
-  /** Jobs whose status is not `active` (mirrors `status <> 'active'`). */
+  /** Jobs whose status is not `active` or that are archived (mirrors `deleteInactive`). */
   inactiveJobs = new Set<string>();
   profiles: MatchProfile[] = [];
   rows: Stored[] = [];
@@ -44,23 +44,28 @@ export class MemoryMatcherRepository extends MatcherRepository {
     opts: { onlyStaleFor?: StaleFor } = {},
   ): Promise<MatchProfile[]> {
     const stale = opts.onlyStaleFor;
+    // A role job takes only profiles with post search on (no age staleness here).
+    const role =
+      stale !== undefined &&
+      this.candidates.get(stale.jobId)?.kind === 'post_role';
     return Promise.resolve(
       this.profiles.filter(
         (p) =>
           !stale ||
-          !this.rows.some(
-            (r) =>
-              r.profileId === p.id &&
-              r.jobId === stale.jobId &&
-              r.factsHash === stale.factsHash &&
-              r.extractionId === stale.extractionId &&
-              r.matcherVersion >= MATCHER_VERSION &&
-              // A null profileVersion is stale; a null eligibilityVersion is not.
-              r.profileVersion !== null &&
-              r.profileVersion >= p.matchVersion &&
-              (r.eligibilityVersion === null ||
-                r.eligibilityVersion >= p.eligibilityVersion),
-          ),
+          ((!role || p.postSearch) &&
+            !this.rows.some(
+              (r) =>
+                r.profileId === p.id &&
+                r.jobId === stale.jobId &&
+                r.factsHash === stale.factsHash &&
+                r.extractionId === stale.extractionId &&
+                r.matcherVersion >= MATCHER_VERSION &&
+                // A null profileVersion is stale; a null eligibilityVersion is not.
+                r.profileVersion !== null &&
+                r.profileVersion >= p.matchVersion &&
+                (r.eligibilityVersion === null ||
+                  r.eligibilityVersion >= p.eligibilityVersion),
+            )),
       ),
     );
   }
@@ -107,8 +112,17 @@ export class MemoryMatcherRepository extends MatcherRepository {
     return Promise.resolve([...this.candidates.keys()].sort());
   }
 
+  /** Also drops role rows of profiles with post search off. */
   deleteInactive(): Promise<number> {
-    const keep = this.rows.filter((r) => !this.inactiveJobs.has(r.jobId));
+    const postSearch = new Map(this.profiles.map((p) => [p.id, p.postSearch]));
+    const keep = this.rows.filter(
+      (r) =>
+        !this.inactiveJobs.has(r.jobId) &&
+        !(
+          this.candidates.get(r.jobId)?.kind === 'post_role' &&
+          postSearch.get(r.profileId) === false
+        ),
+    );
     const n = this.rows.length - keep.length;
     this.rows = keep;
     return Promise.resolve(n);

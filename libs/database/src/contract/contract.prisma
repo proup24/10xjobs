@@ -135,6 +135,7 @@ model User {
   webhooks           Webhook[]
   webhookDeliveries  WebhookDelivery[]
   webhookCallbacks   WebhookCallback[]
+  blockedAuthors     BlockedAuthor[]
   +Timestamps
 
   @@map("users")
@@ -201,6 +202,44 @@ policy_all work_authorizations_owner {
   roles = [authenticated]
   using = sql`"userId" = auth.uid()`
   withCheck = sql`"userId" = auth.uid()`
+}
+
+// A LinkedIn post author the user never wants roles from. authorKey is `profile:<slug>` or
+// `company:<slug>`, the same key silenced_authors uses. Any change bumps
+// users.eligibilityVersion (trigger), so the matcher re-decides the user's post roles.
+model BlockedAuthor {
+  id         Uuid    @id @onCreate(uuid(7))
+  userId     Uuid
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorKey  String
+  profileUrl String?
+  name       String?
+  +Timestamps
+
+  @@check(expression: sql`"authorKey" ~ '^(profile|company):.+$'`, name: "blocked_authors_author_key")
+  @@unique([userId, authorKey])
+  @@index([userId])
+  @@map("blocked_authors")
+  @@rls
+}
+
+// Owners read, add and remove their blocks. No update: a block is added or removed.
+policy_select blocked_authors_owner_read {
+  target = BlockedAuthor
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
+}
+
+policy_insert blocked_authors_owner_insert {
+  target = BlockedAuthor
+  roles = [authenticated]
+  withCheck = sql`"userId" = auth.uid()`
+}
+
+policy_delete blocked_authors_owner_delete {
+  target = BlockedAuthor
+  roles = [authenticated]
+  using = sql`"userId" = auth.uid()`
 }
 
 // A user may maintain multiple independent job-seeker profiles, one per target position.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkLines, notCheckedText, type Labels } from './checks';
+import { checkLines, notCheckedText, ruleLabel, type Labels } from './checks';
 
 const labels: Labels = {
   positions: [{ value: 'fullstack_engineer', label: 'Full-stack engineer' }],
@@ -325,5 +325,13 @@ describe('notCheckedText', () => {
     expect(notCheckedText()).toBe(
       'Not checked yet: engagement. Check it in the post.',
     );
+  });
+});
+
+describe('ruleLabel', () => {
+  it('names the post rules', () => {
+    expect(ruleLabel('blockedAuthor')).toBe('Blocked author');
+    expect(ruleLabel('hiringVerdict')).toBe('Hiring post');
+    expect(ruleLabel('postAge')).toBe('Post age');
   });
 });

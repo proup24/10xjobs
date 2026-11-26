@@ -1,0 +1,11 @@
+{
+  "from": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558",
+  "to": "bfda5e93e4e7ecad4a8630730b553996ce2a804563293fb68414cf72428dbed1",
+  "providedInvariants": [
+    "blocked-authors-eligibility",
+    "match-details-kind",
+    "webhook-listings-only"
+  ],
+  "createdAt": "2026-11-25T12:48:29.194Z",
+  "migrationHash": "fec3d33af4c340261c989679303a6b9a90e4eb24aeaf37894a220fc0bae0e7c6"
+}

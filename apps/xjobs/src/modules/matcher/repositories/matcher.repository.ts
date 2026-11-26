@@ -4,10 +4,15 @@ import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction } from '@xjobs/database';
 import { FACTS_VERSION } from 'src/modules/facts/config/facts.config';
 import { RatesRepository } from 'src/modules/rates';
-import { linkedInJobIds } from 'src/modules/processor';
+import { hasLinkedInSourceSql } from 'src/modules/processor';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import type { PlacesByArrangement } from 'src/modules/users/types/place.types';
-import { MATCH_BACKFILL_DAYS, MATCHER_VERSION } from '../config/matcher.config';
+import {
+  MATCH_BACKFILL_DAYS,
+  MATCHER_VERSION,
+  POST_AGE_STALE_MARGIN_MINUTES,
+  POST_MAX_AGE_DAYS,
+} from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
 import type {
   Check,
@@ -37,10 +42,50 @@ export interface StaleFor {
   extractionId: string;
 }
 
+/** What a role job's post adds: read from the parent post job and the role job. */
+export interface CandidatePost {
+  /** The parent's post extraction's verdict confidence; a null one counts as unsure. */
+  verdictConfidence: 'sure' | 'unsure';
+  /** Every source's author and each share's original author, deduplicated by key. */
+  authors: { key: string; name: string }[];
+  /** The role job's `postedAt`: the original post's date. */
+  postedAt: Date | null;
+}
+
 /** A matchable job's current extraction, which the facts are built from. */
 export interface MatchCandidate {
   extractionId: string;
   needsReview: boolean;
+  kind: 'job' | 'post_role';
+  /** Set on a `post_role` job, null on a listing. */
+  post: CandidatePost | null;
+}
+
+/**
+ * The authors of a post job's `postSources` (`{ sources: PostDetail[] }`): each
+ * source's author and each share's original author, in order, deduplicated by
+ * key. An author with no key cannot be blocked and is left out. Keys are
+ * lowercased, as Prepare writes them, so they compare with the blocked keys.
+ */
+export function postAuthors(
+  postSources: unknown,
+): { key: string; name: string }[] {
+  const field = (v: unknown, key: string): unknown =>
+    v && typeof v === 'object' ? (v as Record<string, unknown>)[key] : null;
+  const sources = field(postSources, 'sources');
+  const out = new Map<string, string>();
+  const add = (author: unknown) => {
+    const key = field(author, 'key');
+    if (typeof key !== 'string' || key === '') return;
+    const name = field(author, 'name');
+    const k = key.toLowerCase();
+    if (!out.has(k)) out.set(k, typeof name === 'string' ? name : '');
+  };
+  for (const s of Array.isArray(sources) ? sources : []) {
+    add(field(s, 'author'));
+    add(field(field(s, 'original'), 'author'));
+  }
+  return [...out].map(([key, name]) => ({ key, name }));
 }
 
 /** Every read and write the matcher makes. */
@@ -50,7 +95,9 @@ export abstract class MatcherRepository {
   /**
    * Published profiles with skills. `onlyStaleFor`: only those whose row for that job is
    * missing, or has another factsHash, another extractionId, or an older matcherVersion,
-   * or was decided before the profile's last edit or the user's last eligibility change.
+   * or was decided before the profile's last edit or the user's last eligibility change,
+   * or (a role job) before its original turned POST_MAX_AGE_DAYS old; and for a role job
+   * only profiles with post search on.
    */
   abstract listPublishedProfiles(opts?: {
     onlyStaleFor?: StaleFor;
@@ -70,7 +117,10 @@ export abstract class MatcherRepository {
   abstract listStaleJobs(limit: number): Promise<string[]>;
   /** Every matchable job id (for db:rematch). */
   abstract listMatchableJobs(): Promise<string[]>;
-  /** Deletes rows of jobs that are no longer status='active'; returns how many. */
+  /**
+   * Deletes rows of jobs that are no longer status='active' or are archived, and rows of
+   * role jobs for profiles with post search off; returns how many.
+   */
   abstract deleteInactive(): Promise<number>;
   abstract matchesForJob(jobId: string): Promise<StoredMatch[]>;
 }
@@ -81,15 +131,19 @@ const UUID = 'pg/uuid@1';
 const TEXT = 'pg/text@1';
 const BOOL = 'pg/bool@1';
 const JSONB = 'pg/jsonb@1';
+const TIMESTAMP = 'pg/timestamptz-date@1';
 
 /**
  * What makes a job matchable, over `normalized_jobs j` joined with its
- * current extraction `e`: an active, processed, open LinkedIn job seen within
- * the backfill window, with a current-schema (v3) extraction.
+ * current extraction `e`: an active, processed, open LinkedIn job or LinkedIn
+ * post role seen within the backfill window, with a current-schema (v3)
+ * extraction. `processed` keeps archived roles out; a `post` job is never
+ * matched (its roles are). The LinkedIn source test is the correlated one:
+ * inside the OR, `id IN (linkedInJobIds)` would hash every LinkedIn source.
  */
 function matchable(raw: Raw) {
-  return raw.sql`j.status = 'active' AND j.kind = 'job'
-    AND j.id IN (${linkedInJobIds(raw)})
+  return raw.sql`j.status = 'active'
+    AND ((j.kind = 'job' AND ${hasLinkedInSourceSql(raw, 'j')}) OR j.kind = 'post_role')
     AND j."processingStatus" = 'processed' AND NOT j.closed
     AND j."lastSeenAt" >= now() - make_interval(days => ${MATCH_BACKFILL_DAYS}::int)
     AND e."schemaVersion" = ${EXTRACTION_SCHEMA_VERSION}::int`.returns(BOOL);
@@ -118,17 +172,41 @@ const ON_CURRENT_PROFILE = (raw: Raw) =>
   );
 
 /**
- * A published profile `p` has no row for the job `j` decided on its facts `f` and its
- * current extraction (whose `needsReview` the decision reads) by this matcher, on the
- * profile and eligibility as they are now.
+ * The profile `p` takes part in the job `j`'s decision: every published profile for a
+ * listing, only those with post search on for a role job.
+ */
+const TAKES_PART = (raw: Raw) =>
+  raw.sql`(j.kind <> 'post_role' OR p."postSearch")`.returns(BOOL);
+
+/**
+ * The row `m` was decided on the job `j`'s age as it is now: a role job's row is stale
+ * once its original has turned POST_MAX_AGE_DAYS old (the mark) if the row was written
+ * before mark + POST_AGE_STALE_MARGIN_MINUTES. The margin covers a row decided on the
+ * engine clock just before the mark and written (database `updatedAt`) just after it; a
+ * row written after mark + margin is current, so each row is re-decided at most once and
+ * the sweep cannot loop. A role with no `postedAt` never ages (its check is `unknown`);
+ * the explicit NOT NULL keeps the whole test false, not NULL, so its row stays current.
+ */
+const ON_CURRENT_AGE = (raw: Raw) =>
+  raw.sql`NOT (j.kind = 'post_role' AND j."postedAt" IS NOT NULL
+    AND j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int) <= now()
+    AND m."updatedAt" < j."postedAt" + make_interval(days => ${POST_MAX_AGE_DAYS}::int, mins => ${POST_AGE_STALE_MARGIN_MINUTES}::int))`.returns(
+    BOOL,
+  );
+
+/**
+ * A published profile `p` that takes part in the job `j` has no row for it decided on
+ * its facts `f` and its current extraction (whose `needsReview` the decision reads) by
+ * this matcher, on the profile, eligibility and post age as they are now.
  */
 const STALE_ROW = (raw: Raw) =>
-  raw.sql`NOT EXISTS (
+  raw.sql`${TAKES_PART(raw)} AND NOT EXISTS (
     SELECT 1 FROM job_matches m JOIN users u ON u.id = m."userId"
     WHERE m."profileId" = p.id AND m."jobId" = j.id
       AND m."factsHash" = f."factsHash" AND m."extractionId" = j."currentExtractionId"
       AND m."matcherVersion" >= ${MATCHER_VERSION}::int
-      AND ${ON_CURRENT_PROFILE(raw)})`.returns(BOOL);
+      AND ${ON_CURRENT_PROFILE(raw)}
+      AND ${ON_CURRENT_AGE(raw)})`.returns(BOOL);
 
 @Injectable()
 export class PrismaMatcherRepository extends MatcherRepository {
@@ -146,18 +224,38 @@ export class PrismaMatcherRepository extends MatcherRepository {
   async loadCandidate(jobId: string): Promise<MatchCandidate | null> {
     const { raw } = this.db;
     const [row] = await this.db.query(
-      raw.sql`SELECT e.id AS "extractionId", e."needsReview"
+      raw.sql`SELECT e.id AS "extractionId", e."needsReview", j.kind, j."postedAt",
+          pe."verdictConfidence", pj."postSources"
         FROM normalized_jobs j JOIN job_extractions e ON e.id = j."currentExtractionId"
+        LEFT JOIN normalized_jobs pj ON pj.id = j."parentJobId"
+        LEFT JOIN job_extractions pe ON pe.id = pj."currentExtractionId" AND pe."docType" = 'post'
         WHERE j.id = ${jobId}::uuid AND ${matchable(raw)}`
-        .returnsRow({ extractionId: UUID, needsReview: BOOL })
+        .returnsRow({
+          extractionId: UUID,
+          needsReview: BOOL,
+          kind: TEXT,
+          postedAt: TIMESTAMP,
+          verdictConfidence: TEXT,
+          postSources: JSONB,
+        })
         .build(),
     );
-    return row
-      ? {
-          extractionId: row.extractionId as string,
-          needsReview: row.needsReview as boolean,
-        }
-      : null;
+    if (!row) return null;
+    const kind = row.kind as MatchCandidate['kind'];
+    return {
+      extractionId: row.extractionId as string,
+      needsReview: row.needsReview as boolean,
+      kind,
+      post:
+        kind === 'post_role'
+          ? {
+              verdictConfidence:
+                row.verdictConfidence === 'sure' ? 'sure' : 'unsure',
+              authors: postAuthors(row.postSources),
+              postedAt: (row.postedAt as Date | null) ?? null,
+            }
+          : null,
+    };
   }
 
   async listPublishedProfiles(
@@ -170,13 +268,15 @@ export class PrismaMatcherRepository extends MatcherRepository {
           (
             await this.db.query(
               raw.sql`SELECT p.id FROM profiles p
-                WHERE p.state = 'published' AND NOT EXISTS (
+                JOIN normalized_jobs j ON j.id = ${stale.jobId}::uuid
+                WHERE p.state = 'published' AND ${TAKES_PART(raw)} AND NOT EXISTS (
                   SELECT 1 FROM job_matches m JOIN users u ON u.id = m."userId"
-                  WHERE m."profileId" = p.id AND m."jobId" = ${stale.jobId}::uuid
+                  WHERE m."profileId" = p.id AND m."jobId" = j.id
                     AND m."factsHash" = ${stale.factsHash}::text
                     AND m."extractionId" = ${stale.extractionId}::uuid
                     AND m."matcherVersion" >= ${MATCHER_VERSION}::int
-                    AND ${ON_CURRENT_PROFILE(raw)})`
+                    AND ${ON_CURRENT_PROFILE(raw)}
+                    AND ${ON_CURRENT_AGE(raw)})`
                 .returnsRow({ id: UUID })
                 .build(),
             )
@@ -200,9 +300,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
       });
       skills.set(s.profileId, list);
     }
-    const eligibility = await this.loadEligibility(
-      new Set(profiles.map((p) => p.userId)),
-    );
+    const userIds = new Set(profiles.map((p) => p.userId));
+    const eligibility = await this.loadEligibility(userIds);
+    const blocked = await this.loadBlockedAuthors(userIds);
     return profiles.map((p) => ({
       id: p.id,
       matchVersion: p.matchVersion,
@@ -230,6 +330,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
         acceptsSponsorship: null,
       },
       eligibilityVersion: eligibility.get(p.userId)?.version ?? 0,
+      blockedAuthors: blocked.get(p.userId) ?? [],
+      postSearch: p.postSearch,
     }));
   }
 
@@ -264,6 +366,26 @@ export class PrismaMatcherRepository extends MatcherRepository {
     return out;
   }
 
+  /**
+   * Each user's blocked author keys, lowercased like the post authors' keys, read once
+   * for every profile of the batch.
+   */
+  private async loadBlockedAuthors(
+    userIds: Set<string>,
+  ): Promise<Map<string, string[]>> {
+    const { orm } = this.db;
+    const ids = [...userIds];
+    const out = new Map<string, string[]>();
+    for (const b of await orm.public.BlockedAuthor.where((row) =>
+      row.userId.in(ids),
+    ).all()) {
+      const list = out.get(b.userId) ?? [];
+      list.push(b.authorKey.toLowerCase());
+      out.set(b.userId, list);
+    }
+    return out;
+  }
+
   async loadContext(): Promise<MatchContext> {
     const { raw } = this.db;
     const regions = await this.db.query(
@@ -272,8 +394,8 @@ export class PrismaMatcherRepository extends MatcherRepository {
         .build(),
     );
     const cities = await this.db.query(
-      raw.sql`SELECT id, "countryCode" FROM cities`
-        .returnsRow({ id: UUID, countryCode: TEXT })
+      raw.sql`SELECT id, "countryCode", name FROM cities`
+        .returnsRow({ id: UUID, countryCode: TEXT, name: TEXT })
         .build(),
     );
     const countries = await this.db.query(
@@ -300,6 +422,9 @@ export class PrismaMatcherRepository extends MatcherRepository {
           cities.map((c) => [c.id as string, c.countryCode as string]),
         ),
         countries: new Set(countries.map((c) => c.code as string)),
+        nameOfCity: new Map(
+          cities.map((c) => [c.id as string, c.name as string]),
+        ),
       },
       implies: new Map(
         tags.map((t) => [
@@ -392,8 +517,11 @@ export class PrismaMatcherRepository extends MatcherRepository {
   async deleteInactive(): Promise<number> {
     const { raw } = this.db;
     const rows = await this.db.query(
-      raw.sql`DELETE FROM job_matches m USING normalized_jobs j
-        WHERE j.id = m."jobId" AND j.status <> 'active'
+      raw.sql`DELETE FROM job_matches m USING normalized_jobs j, profiles p
+        WHERE j.id = m."jobId" AND p.id = m."profileId"
+          AND (j.status <> 'active'
+            OR j."processingStatus" = 'archived'
+            OR (j.kind = 'post_role' AND NOT p."postSearch"))
         RETURNING m.id`
         .returnsRow({ id: UUID })
         .build(),

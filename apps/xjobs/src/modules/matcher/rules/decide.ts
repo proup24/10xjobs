@@ -3,6 +3,7 @@ import { checkRequiredLanguages } from './languages';
 import { checkLocation } from './location';
 import type { PlaceIndex } from './places';
 import { checkPosition } from './position';
+import { checkBlockedAuthor, checkHiringVerdict, checkPostAge } from './post';
 import { checkPostingLanguage } from './posting-language';
 import { checkCurrency, checkSalary } from './salary';
 import { checkSeniority } from './seniority';
@@ -28,8 +29,9 @@ export interface Decision {
   review: { rule: RuleName; field: string } | null;
   stackScore: number | null;
   /**
-   * Always ten checks, in the order position, seniority, location, stack, salary,
-   * currency, contractType, languages, postingLanguage, workAuthorization.
+   * Ten checks for a listing, thirteen for a post role, in the order position, seniority,
+   * location, stack, salary, currency, contractType, languages, postingLanguage,
+   * workAuthorization, then (post roles) hiringVerdict, blockedAuthor, postAge.
    */
   checks: Check[];
 }
@@ -72,6 +74,12 @@ export function decide(
     checkPostingLanguage(doc, profile),
     checkWorkAuthorization(doc, profile, ctx.places),
   ];
+  if (job.post !== null)
+    checks.push(
+      checkHiringVerdict(job.post),
+      checkBlockedAuthor(job.post, profile.blockedAuthors),
+      checkPostAge(job.post),
+    );
   const fails = checks.filter((c) => c.outcome === 'fail');
   const rejected = fails.some((c) => !c.unsure);
   const doubt = fails.find(

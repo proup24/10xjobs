@@ -3,7 +3,7 @@
  * posting-language thresholds, or a change to how requirements are derived from no
  * sponsorship. Stored with each `job_facts` row.
  */
-export const FACTS_VERSION = 7;
+export const FACTS_VERSION = 8;
 
 /**
  * Extractions made from this time on read person-binding lines ("candidates must be based

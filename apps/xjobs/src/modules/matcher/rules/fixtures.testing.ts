@@ -3,7 +3,7 @@ import { combineFacts } from 'src/modules/facts/rules/combine';
 import { listingFacts, type ListingRow } from 'src/modules/facts/rules/listing';
 import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
-import type { MatchProfile } from './types';
+import type { MatchProfile, PostContext } from './types';
 
 export const CITY_A = '00000000-0000-4000-8000-00000000000a';
 export const CITY_B = '00000000-0000-4000-8000-00000000000b';
@@ -55,8 +55,20 @@ export function exampleProfile(): MatchProfile {
       residenceCountry: null,
       acceptsSponsorship: null,
     },
+    blockedAuthors: [],
+    postSearch: false,
     matchVersion: 1,
     eligibilityVersion: 0,
+  };
+}
+
+/** A sure, unblocked, 2-day-old post context, with `overrides` applied. */
+export function rolePost(overrides: Partial<PostContext> = {}): PostContext {
+  return {
+    verdictConfidence: 'sure',
+    authors: [{ key: 'profile:author', name: 'Author' }],
+    ageDays: 2,
+    ...overrides,
   };
 }
 

@@ -10,6 +10,7 @@ const idx: PlaceIndex = {
     [CITY_B, 'FR'],
   ]),
   countries: new Set(['MA', 'FR']),
+  nameOfCity: new Map([[CITY_A, 'Rabat']]),
 };
 const profile = exampleProfile();
 
@@ -114,7 +115,7 @@ describe('checkLocation', () => {
     );
     expect(c).toMatchObject({ outcome: 'fail', unsure: false });
     expect(c.reason).toBe(
-      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (hybrid, onsite)',
+      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) is outside where you want to work (hybrid or onsite in Rabat, a city in FR)',
     );
     const noHybrid = exampleProfile();
     noHybrid.locations.hybrid = [];
@@ -134,7 +135,7 @@ describe('checkLocation', () => {
         true,
       ).reason,
     ).toBe(
-      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) does not fit your wanted arrangements (onsite)',
+      'no source states the arrangement, so it is checked as office-based: job location (unstated in Berlin) is outside where you want to work (onsite in Rabat, a city in FR)',
     );
   });
   it('an opening with no arrangement and no place is unknown with office places, fail without', () => {
@@ -196,7 +197,82 @@ describe('checkLocation', () => {
     p.locations.remote = [];
     const check = checkLocation([opening({})], p, idx, true);
     expect(check.outcome).toBe('fail');
-    expect(check.reason).toContain('remote');
+    expect(check.reason).toBe(
+      'job location (remote) does not fit your wanted arrangements (hybrid, onsite)',
+    );
+  });
+  it('a place failure names the places wanted, not only the arrangements (check 7)', () => {
+    const p = exampleProfile();
+    p.locations.remote = [{ kind: 'region', code: 'EU' }];
+    p.locations.onsite = [];
+    const c = checkLocation(
+      [
+        opening({
+          arrangements: ['hybrid'],
+          places: [berlin],
+          placeStrictness: 'label',
+        }),
+      ],
+      p,
+      idx,
+      true,
+    );
+    expect(c.outcome).toBe('fail');
+    expect(c.reason).toBe(
+      'job location (hybrid in Berlin) is outside where you want to work (hybrid in Rabat, a city in FR)',
+    );
+  });
+  it('a reason also names an opening that failed on its arrangement alone', () => {
+    const p = exampleProfile();
+    p.locations.onsite = [];
+    const c = checkLocation(
+      [
+        opening({
+          arrangements: ['hybrid'],
+          places: [berlin],
+          placeStrictness: 'label',
+        }),
+        opening({
+          arrangements: ['onsite'],
+          places: [berlin],
+          placeStrictness: 'label',
+        }),
+      ],
+      p,
+      idx,
+      true,
+    );
+    expect(c.reason).toBe(
+      'job location (hybrid in Berlin; onsite in Berlin) is outside where you want to work (hybrid in Rabat, a city in FR) and does not fit your wanted arrangements (remote, hybrid)',
+    );
+  });
+  it('a reason names each cause across openings, and hybrid and onsite apart when their places differ', () => {
+    const p = exampleProfile();
+    p.locations.remote = [{ kind: 'country', code: 'MA' }];
+    p.locations.onsite = [{ kind: 'city', id: CITY_A }];
+    p.timezoneMin = 0;
+    p.timezoneMax = 90;
+    const c = checkLocation(
+      [
+        opening({
+          arrangements: ['hybrid', 'onsite'],
+          places: [berlin],
+          placeStrictness: 'label',
+        }),
+        opening({
+          places: [{ kind: 'worldwide' }],
+          placeStrictness: 'limit',
+          timezones: [{ fromUtc: -5.5, toUtc: -4, label: 'Americas' }],
+        }),
+      ],
+      p,
+      idx,
+      true,
+    );
+    expect(c.outcome).toBe('fail');
+    expect(c.reason).toBe(
+      'job location (hybrid/onsite in Berlin; remote in worldwide) is outside where you want to work (hybrid in Rabat, a city in FR; onsite in Rabat) and has time zones (UTC-5:30 to UTC-4) outside yours (UTC to UTC+1:30)',
+    );
   });
 
   describe('unsure', () => {
@@ -578,7 +654,7 @@ describe('residence', () => {
     );
     expect(c.outcome).toBe('fail');
     expect(c.reason).toBe(
-      'job location (remote in GB) does not fit your wanted arrangements (remote, hybrid, onsite)',
+      'job location (remote in GB) has time zones (UTC+9 to UTC+10) outside yours (UTC-5 to UTC+5)',
     );
   });
 });

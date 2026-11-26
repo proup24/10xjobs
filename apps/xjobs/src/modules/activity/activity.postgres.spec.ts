@@ -121,11 +121,36 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       closed?: boolean;
       factsClosed?: boolean;
       expiresAt?: Date;
+      /** A `post_role` job, under a `post` job made for it. */
+      postRole?: boolean;
     } = {},
   ): Promise<Job> {
+    const parentJobId = over.postRole
+      ? (
+          await db.orm.public.NormalizedJob.create({
+            jobKey: randomUUID(),
+            kind: 'post',
+            status: 'active',
+            mergedIntoId: null,
+            title: 'Hiring post',
+            companyName: 'Acme',
+            descriptionText: 'We are hiring.',
+            postingUrl: `https://www.linkedin.com/feed/update/${randomUUID()}`,
+            closed: false,
+            fieldSources: {},
+            firstSeenAt: hoursBefore(20 * 24),
+            lastSeenAt: hoursBefore(1),
+            processingStatus: 'processed',
+            processingReason: null,
+            processingRequestedAt: hoursBefore(20 * 24),
+            normalizerVersion: 1,
+          } as never)
+        ).id
+      : null;
     const job = await db.orm.public.NormalizedJob.create({
       jobKey: randomUUID(),
-      kind: 'job',
+      kind: over.postRole ? 'post_role' : 'job',
+      ...(parentJobId ? { parentJobId, roleKey: 'r1' } : {}),
       status: over.mergedIntoId ? 'merged' : 'active',
       mergedIntoId: over.mergedIntoId ?? null,
       title: 'Backend Engineer',
@@ -355,6 +380,16 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
     const u = await waitingUser(23);
     expect(await paused()).toEqual([]);
     expect((await repo.userState(u.userId, at, H)).paused).toBe(false);
+  });
+
+  it('treats a user whose only qualified match is a post role as having no waiting match', async () => {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    await link(profileId, await seedBuilder());
+    const role = await seedJob({ postRole: true });
+    await seedMatch(userId, profileId, role, { decidedAt: hoursBefore(25) });
+    expect(await paused()).toEqual([]);
+    expect((await repo.userState(userId, at, H)).paused).toBe(false);
   });
 
   it('does not pause an empty or fully decided list', async () => {

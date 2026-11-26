@@ -19,15 +19,15 @@ Same as Phases 1 to 4: each slice is a short brief covering the goal, what exist
 
 ## Slices
 
-| #   | Slice                                                    | Status                                                   |
-| --- | -------------------------------------------------------- | -------------------------------------------------------- |
-| 01  | [Actor sample](01-actor-sample.md)                       | Run once (2026-11-22), weekday re-run before the verdict |
-| 02  | [Indeed switch](02-indeed-switch.md)                     | Built (spec)                                             |
-| 03  | [Collect](03-collect.md)                                 | Brief                                                    |
-| 04  | [Ingest, process and match](04-ingest-process-match.md)  | Brief                                                    |
-| 05  | [Cross-source duplicates](05-cross-source-duplicates.md) | Brief                                                    |
-| 06  | [Channel compare report](06-channel-compare.md)          | Brief                                                    |
-| 07  | [Tech-hub markets](07-tech-hub-markets.md)               | Brief                                                    |
+| #   | Slice                                                    | Status                       |
+| --- | -------------------------------------------------------- | ---------------------------- |
+| 01  | [Actor sample](01-actor-sample.md)                       | Done: go, valig (2026-11-25) |
+| 02  | [Indeed switch](02-indeed-switch.md)                     | Built (spec)                 |
+| 03  | [Collect](03-collect.md)                                 | Brief                        |
+| 04  | [Ingest, process and match](04-ingest-process-match.md)  | Brief                        |
+| 05  | [Cross-source duplicates](05-cross-source-duplicates.md) | Brief                        |
+| 06  | [Channel compare report](06-channel-compare.md)          | Brief                        |
+| 07  | [Tech-hub markets](07-tech-hub-markets.md)               | Brief                        |
 
 **Slice 01 is a go/no-go gate** _(user)_: if no shortlisted actor gives usable data at a sane cost, the phase stops before any channel code. Usable means full descriptions and a stable Indeed job id; sane means start fees that don't make cost per qualified job clearly worse than harvestapi's. A missing employer apply link is not a stop: most Indeed jobs are Easily apply and have none anyway _(user)_.
 
@@ -64,6 +64,7 @@ Indeed jobs are listings, so they take the LinkedIn job-board path, not Phase 4'
   - A one-off paid script runs 3–4 shortlisted Indeed actors on the same few searches, capped (about $1) and dry-run first, like `db:split-check`. Slice 01.
   - The winner becomes the `INDEED` channel. The channel is built the slice 07 (Phase 3) way, so a later Indeed actor can run beside it as a trial channel with only its channel value, input builder, output mapper and config.
   - The sample checks whether an actor returns the employer apply link, not only Indeed's redirect, because only that link proves a duplicate. It isn't decisive: most Indeed jobs are Easily apply with no employer link _(user)_, so most overlap will be counted as likely, not proven.
+- **Slice 01 verdict: go, with valig as the `INDEED` actor** _(user, 2026-11-25)_. On the weekday re-run, valig found 81 relevant US remote jobs in 24 hours, almost none already on dev, at about a tenth of harvestapi's cost per relevant job. curious_coder, close behind on the same jobs, is the candidate for a later trial channel. UK remote and Morocco on-site are thin. See [the actors doc](../../actors/indeed-actor-sample.md).
 - **Indeed's newest date filter is the last 24 hours** (`fromage=1`; found 2026-11-22, from vendor docs). There is no one-hour window, so Indeed can't copy LinkedIn's hourly ticks; slice 03 settles the cadence and pays for repeat rows.
 
 ## Exit criteria

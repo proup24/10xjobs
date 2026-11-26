@@ -46,3 +46,19 @@ export function outcomeShares(rows: ShareRow[]): OutcomeShares {
     ),
   };
 }
+
+/** The job kinds a decision is made for. */
+export const MATCH_JOB_KINDS = ['job', 'post_role'] as const;
+export type MatchJobKind = (typeof MATCH_JOB_KINDS)[number];
+
+/** The shares of `outcomeShares`, once per job kind (each kind present, maybe empty). */
+export function outcomeSharesByKind(
+  rows: (ShareRow & { kind: string })[],
+): Record<MatchJobKind, OutcomeShares> {
+  return Object.fromEntries(
+    MATCH_JOB_KINDS.map((kind) => [
+      kind,
+      outcomeShares(rows.filter((r) => r.kind === kind)),
+    ]),
+  ) as Record<MatchJobKind, OutcomeShares>;
+}

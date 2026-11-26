@@ -45,6 +45,9 @@ const listing = (p: Partial<ListingRow> = {}): ListingRow => ({
 });
 
 const NOW = new Date('2026-11-12T12:00:00Z');
+/** The matcher clock's start. */
+const START = 1_000_000;
+const DAY = 86_400_000;
 
 function setup(
   over: {
@@ -55,7 +58,12 @@ function setup(
 ) {
   const repo = new MemoryMatcherRepository();
   const factsRepo = new MemoryFactsRepository();
-  repo.candidates.set('job-1', { extractionId: 'ext-1', needsReview: false });
+  repo.candidates.set('job-1', {
+    extractionId: 'ext-1',
+    needsReview: false,
+    kind: 'job',
+    post: null,
+  });
   factsRepo.inputs.set('job-1', {
     extractionId: 'ext-1',
     extraction: over.extraction ?? fixtureDocument(),
@@ -69,8 +77,28 @@ function setup(
     exampleProfile(),
     { ...exampleProfile(), id: 'profile-2', userId: 'user-2' },
   ];
+  // A role job of a post, decided like a listing plus the post checks.
+  repo.candidates.set('role-1', {
+    extractionId: 'ext-r',
+    needsReview: false,
+    kind: 'post_role',
+    post: {
+      verdictConfidence: 'sure',
+      authors: [{ key: 'profile:jane-doe', name: 'Jane Doe' }],
+      postedAt: new Date(START - 2 * DAY),
+    },
+  });
+  factsRepo.inputs.set('role-1', {
+    extractionId: 'ext-r',
+    extraction: fixtureDocument(),
+    schemaVersion: 3,
+    extractedAt: NOW,
+    jobUpdatedAt: NOW,
+    descriptionText: null,
+    listing: listing(),
+  });
   const facts = new FactsService(factsRepo, new StubVocabulary(), () => NOW);
-  let now = 1_000_000;
+  let now = START;
   const service = new MatcherService(repo, facts, () => now);
   const input = factsRepo.inputs.get('job-1');
   if (!input) throw new Error('no inputs');
@@ -217,7 +245,12 @@ describe('MatcherService', () => {
 
   it('marks every row unverified when the extraction needs review', async () => {
     const { repo, service } = setup();
-    repo.candidates.set('job-1', { extractionId: 'ext-1', needsReview: true });
+    repo.candidates.set('job-1', {
+      extractionId: 'ext-1',
+      needsReview: true,
+      kind: 'job',
+      post: null,
+    });
     await service.matchJob('job-1');
     const rows = await repo.matchesForJob('job-1');
     expect(rows.every((r) => r.outcome === 'rejected' || r.unverified)).toBe(
@@ -266,5 +299,89 @@ describe('MatcherService', () => {
     await service.matchJob('job-1', { force: true });
     await service.matchJob('job-1', { force: true });
     expect(repo.contextLoads).toBe(3);
+  });
+
+  describe('post role jobs', () => {
+    it('a role job is decided only for postSearch profiles', async () => {
+      const { repo, service } = setup();
+      repo.profiles[1] = { ...repo.profiles[1], postSearch: true };
+      expect(await service.matchJob('role-1')).toMatchObject({
+        status: 'matched',
+        profiles: 1,
+      });
+      expect(
+        (await repo.matchesForJob('role-1')).map((r) => r.profileId),
+      ).toEqual(['profile-2']);
+      // Forced too: post search gates role jobs however they are decided.
+      expect(await service.matchJob('role-1', { force: true })).toMatchObject({
+        profiles: 1,
+      });
+      // Listings still go to every profile.
+      expect(await service.matchJob('job-1')).toMatchObject({ profiles: 2 });
+    });
+
+    it('a role carries thirteen checks; a listing ten', async () => {
+      const { repo, service } = setup();
+      repo.profiles = repo.profiles.map((p) => ({ ...p, postSearch: true }));
+      await service.matchJob('role-1');
+      await service.matchJob('job-1');
+      const [role] = await repo.matchesForJob('role-1');
+      const [listingRow] = await repo.matchesForJob('job-1');
+      expect(role.checks).toHaveLength(13);
+      expect(role.checks.slice(10).map((c) => c.rule)).toEqual([
+        'hiringVerdict',
+        'blockedAuthor',
+        'postAge',
+      ]);
+      expect(listingRow.checks).toHaveLength(10);
+    });
+
+    it('ageDays is computed from the matcher clock', async () => {
+      const { repo, service, advance } = setup();
+      repo.profiles = [{ ...exampleProfile(), postSearch: true }];
+      const ageOf = async () =>
+        (await repo.matchesForJob('role-1'))[0].checks.find(
+          (c) => c.rule === 'postAge',
+        );
+      await service.matchJob('role-1');
+      expect(await ageOf()).toMatchObject({ outcome: 'pass', jobValue: 2 });
+      // postedAt + 31 days.
+      advance(29 * DAY);
+      await service.matchJob('role-1', { force: true });
+      expect(await ageOf()).toMatchObject({ outcome: 'fail', jobValue: 31 });
+      const [row] = await repo.matchesForJob('role-1');
+      expect(row.outcome).toBe('rejected');
+    });
+
+    it('a role with no date has an unknown postAge', async () => {
+      const { repo, service } = setup();
+      repo.profiles = [{ ...exampleProfile(), postSearch: true }];
+      const candidate = repo.candidates.get('role-1');
+      if (!candidate?.post) throw new Error('no role');
+      candidate.post.postedAt = null;
+      await service.matchJob('role-1');
+      const [row] = await repo.matchesForJob('role-1');
+      expect(row.checks.find((c) => c.rule === 'postAge')).toMatchObject({
+        outcome: 'unknown',
+        jobValue: null,
+      });
+    });
+
+    it("a blocked author rejects the role for that profile's user", async () => {
+      const { repo, service } = setup();
+      repo.profiles = [
+        {
+          ...exampleProfile(),
+          postSearch: true,
+          blockedAuthors: ['profile:jane-doe'],
+        },
+      ];
+      await service.matchJob('role-1');
+      const [row] = await repo.matchesForJob('role-1');
+      expect(row.outcome).toBe('rejected');
+      expect(row.checks.find((c) => c.rule === 'blockedAuthor')?.outcome).toBe(
+        'fail',
+      );
+    });
   });
 });

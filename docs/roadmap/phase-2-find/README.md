@@ -1,7 +1,7 @@
 # Phase 2: Find
 
 Date: 2026-11-10
-Status: draft. Slices 06 and 07 built (PRs #109 and #111, and the web-app PR).
+Status: slices 01–04 and 06–09 built. Slice 05 (the Rejected tab) is not built, and slice 10 (the launch check) has not been run.
 
 ## Intent
 
@@ -29,18 +29,18 @@ On the hosted app, with LinkedIn job-board jobs:
 
 ## Slices, in order
 
-| #   | Slice                                                         | Depends on |
-| --- | ------------------------------------------------------------- | ---------- |
-| 01  | [Engine hosting](01-engine-hosting.md)                        | none       |
-| 02  | [Web app to engine auth](02-engine-auth.md)                   | 01         |
-| 03  | [Job details for matches](03-job-details-access.md)           | none       |
-| 04  | [Matches view](04-matches-view.md)                            | 03         |
-| 05  | [Rejected view](05-rejected-view.md)                          | 04         |
-| 06  | [Publish on create](06-publish-on-create.md)                  | 02         |
-| 07  | [Edit a published profile](07-edit-published.md)              | 06         |
-| 08  | [Match on languages](08-match-languages.md)                   | none       |
-| 09  | [Match on work authorization](09-match-work-authorization.md) | 07         |
-| 10  | [Launch check](10-launch-check.md)                            | 01–09      |
+| #   | Slice                                                         | Depends on | Status                                                                   |
+| --- | ------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------ |
+| 01  | [Engine hosting](01-engine-hosting.md)                        | none       | Built (PRs 44, 65)                                                       |
+| 02  | [Web app to engine auth](02-engine-auth.md)                   | 01         | Built (PR 45)                                                            |
+| 03  | [Job details for matches](03-job-details-access.md)           | none       | Built (PR 50)                                                            |
+| 04  | [Matches view](04-matches-view.md)                            | 03         | Built (PR 51); Review list added in Phase 3 slice 02                     |
+| 05  | [Rejected view](05-rejected-view.md)                          | 04         | Not built: the matches page has Matches and Review lists only            |
+| 06  | [Publish on create](06-publish-on-create.md)                  | 02         | Built (PRs 109, 111, 112)                                                |
+| 07  | [Edit a published profile](07-edit-published.md)              | 06         | Built (PRs 109, 111, 112, 114)                                           |
+| 08  | [Match on languages](08-match-languages.md)                   | none       | Built (PRs 59, 84)                                                       |
+| 09  | [Match on work authorization](09-match-work-authorization.md) | 07         | Built (PRs 59, 85); follow-up: residency against an explicit work permit |
+| 10  | [Launch check](10-launch-check.md)                            | 01–09      | Not run; waits on 05                                                     |
 
 The UI comes first _(user)_: job details, the matches view and the Rejected tab land before publishing and editing, so matches are visible sooner. Until slice 06 lands, slices 04 and 05 are built and checked against profiles published straight through the engine (the one already on `10xjobs-dev`, or more through slice 02's publish route). Slice 08 is engine work and can run alongside any of 03–07. Slice 09 follows 07 because eligibility edits re-match the same way profile edits do.
 

@@ -1,9 +1,0 @@
-{
-  "from": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558",
-  "to": "c5aab1733fcac2a22b3f82422bdd80d9e2630474043df543fdba5a28d4abe44e",
-  "providedInvariants": [
-    "job-decisions-update-source"
-  ],
-  "createdAt": "2026-11-25T12:38:17.916Z",
-  "migrationHash": "7a765c26fc678b63e8b0ca175142e77f80dee96029da669b9bc1e6a1e4c8b455"
-}

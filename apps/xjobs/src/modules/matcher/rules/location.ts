@@ -118,6 +118,8 @@ function checkOpening(
   kept: LocationArrangement[];
   unsure: boolean;
   residence: ResidenceDetail;
+  /** Each kept arrangement and what it failed on (null when it did not fail). */
+  results: { arrangement: LocationArrangement; failedOn: FailedOn }[];
 } {
   // The most favourable arrangement: the opening checked as if it stated none. Not a
   // sure failure means the ruled-out arrangement might be what fails. Nothing is ruled
@@ -163,6 +165,7 @@ function checkOpening(
       unsure:
         !asOffice && openingUnsure(opening, 'fail', ruledOut, [], fitsUnstated),
       residence: null,
+      results: [],
     };
   }
   const results = kept.map((a) => ({
@@ -193,6 +196,10 @@ function checkOpening(
             decided: results.some((r) => r.failedOn === 'residence'),
           }
         : null,
+    results: results.map(({ arrangement, failedOn }) => ({
+      arrangement,
+      failedOn,
+    })),
   };
 }
 
@@ -262,10 +269,17 @@ export function checkLocation(
   const profileText = ALL_ARRANGEMENTS.filter(
     (a) => profile.locations[a].length > 0 && !(officeBased && a === 'remote'),
   ).join(', ');
+  const prefix = officeBased
+    ? 'no source states the arrangement, so it is checked as office-based: '
+    : '';
+  const failure =
+    outcome === 'fail' ? failureText(per, profile, idx, profileText) : null;
   const reason =
     outcome === 'fail' && residenceFailed.length > 0
       ? `job location (${textOf(residenceFailed)}, stated in the description) requires living there; you live in ${homes.join(', ')}`
-      : `${officeBased ? 'no source states the arrangement, so it is checked as office-based: ' : ''}job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
+      : failure
+        ? `${prefix}job location (${jobText || 'not stated'}) ${failure}`
+        : `${prefix}job location (${jobText || 'not stated'}) ${verb} your wanted arrangements (${profileText || 'none'})`;
   return {
     rule: 'location',
     outcome,
@@ -275,6 +289,84 @@ export function checkLocation(
     ...restsOn(unsure ? 'openings' : null),
     detail,
   };
+}
+
+/**
+ * What made a failing job miss the profile, when it is a place or a time zone: the places
+ * wanted for each arrangement that failed on its places, and the time zones that did not
+ * overlap, and the wanted arrangements when another opening failed on its arrangement
+ * alone. Null when every opening failed on its arrangement alone, which the plain
+ * "wanted arrangements" sentence already says.
+ */
+function failureText(
+  per: {
+    opening: Opening;
+    results: { arrangement: LocationArrangement; failedOn: FailedOn }[];
+  }[],
+  profile: MatchProfile,
+  idx: PlaceIndex,
+  wantedText: string,
+): string | null {
+  const failed = (f: FailedOn) =>
+    per.flatMap((p) =>
+      p.results.filter((r) => r.failedOn === f).map((r) => ({ ...r, ...p })),
+    );
+  const onPlaces = new Set(
+    [...failed('places'), ...failed('mention')].map((r) => r.arrangement),
+  );
+  // Arrangements wanting the same places read as one: "hybrid or onsite in Rabat".
+  const byPlaces = new Map<string, LocationArrangement[]>();
+  for (const a of ALL_ARRANGEMENTS.filter((x) => onPlaces.has(x))) {
+    const text = profile.locations[a]
+      .map((p) => profilePlaceText(p, idx))
+      .join(', ');
+    byPlaces.set(text, [...(byPlaces.get(text) ?? []), a]);
+  }
+  const parts: string[] = [];
+  if (byPlaces.size > 0)
+    parts.push(
+      `is outside where you want to work (${[...byPlaces]
+        .map(([text, list]) => `${list.join(' or ')} in ${text}`)
+        .join('; ')})`,
+    );
+  const zones = failed('timezones').flatMap((r) => r.opening.timezones);
+  if (zones.length > 0)
+    parts.push(
+      `has time zones (${zones.map((z) => `${utc(z.fromUtc * 60)} to ${utc(z.toUtc * 60)}`).join(', ')}) outside yours (${utc(profile.timezoneMin)} to ${utc(profile.timezoneMax)})`,
+    );
+  // An opening with no wanted arrangement failed on that alone.
+  if (parts.length > 0 && per.some((p) => p.results.length === 0))
+    parts.push(
+      `does not fit your wanted arrangements (${wantedText || 'none'})`,
+    );
+  return parts.length > 0 ? parts.join(' and ') : null;
+}
+
+/** An offset in minutes as "UTC+1", "UTC-5:30" or "UTC". */
+function utc(minutes: number): string {
+  if (minutes === 0) return 'UTC';
+  const abs = Math.abs(minutes);
+  const h = Math.floor(abs / 60);
+  const m = Math.round(abs % 60);
+  return `UTC${minutes < 0 ? '-' : '+'}${h}${m ? `:${String(m).padStart(2, '0')}` : ''}`;
+}
+
+function profilePlaceText(
+  place: MatchProfile['locations'][LocationArrangement][number],
+  idx: PlaceIndex,
+): string {
+  switch (place.kind) {
+    case 'worldwide':
+      return 'worldwide';
+    case 'city': {
+      const name = idx.nameOfCity?.get(place.id);
+      if (name) return name;
+      const country = idx.countryOfCity.get(place.id);
+      return country ? `a city in ${country}` : 'a city';
+    }
+    default:
+      return place.code;
+  }
 }
 
 function placeText(place: Opening['places'][number]): string {

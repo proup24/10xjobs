@@ -7,7 +7,7 @@ Checks run on Tuesday 2026-11-24 on `10xjobs-dev`. They were planned for Monday 
 - Slice 08: passed. Split-check is later in the week.
 - PR 125: passed.
 - PR 124: passed as specified. The UI check was not tested. Follow-up: [slice 12](12-activity-signals.md).
-- Slice 09: checks 2, 3 and 7 failed, the rest passed. The slice stays open.
+- Slice 09: checks 2, 3 and 7 failed, the rest passed. Checks 2 and 7 were fixed in PR 136 and pass on 2026-11-25; check 3 is open, so the slice stays open.
 - PR 77: passed.
 
 The worker was stopped by hand by the owner from 2026-11-23 20:00 to 2026-11-24 10:00 and from 13:00 to 18:00 on 11-24. These gaps are not outages. Tuesday is judged on the ticks at 10:00 to 12:00 (before pausing) and 19:00 to 20:00 (after pausing).
@@ -107,8 +107,17 @@ Run check 1 at any time. Run checks 2 to 8 at the end of the day, or once the pr
 **Follow-ups for the failures:**
 
 - **Check 2:** open a bug for job 01a207aa-350c-7612-80b2-9e694d3e6a25, where an EMEA mention stood in for the DK office. Look at PR 101's `checkArrangement` (a mention passed hybrid) and at a description mention outranking the LinkedIn place.
+  - Fixed in PR 136 (`FACTS_VERSION` 8). The cause is in combine, not `checkArrangement`: an opening that already had a place never took the listing's, and `EMEA` contains `MA`, so the hybrid check passed. Now an office opening (hybrid, onsite or unstated) whose places are only mentioned regions or worldwide takes the listing's place. On dev on 2026-11-25 that is 11 open jobs, none naming the LinkedIn country, 1 of them qualified (this one). Mentioned cities and countries stay: 302 of the 309 open jobs with them name the LinkedIn country.
 - **Check 3:** read the quotes, add golden cases, fix the prompt, run `processor:eval`. This is a brainstorm.
 - **Check 7:** fix the wording in `checkLocation`, so the reason names the place and not the arrangement.
+  - Fixed in PR 136 (`MATCHER_VERSION` 12). A place failure now names the places wanted per arrangement ("job location (hybrid in Dublin) is outside where you want to work (hybrid in Rabat)"), a time-zone failure names both ranges, and the "wanted arrangements" sentence stays for an arrangement that isn't wanted.
+
+**Re-check after PR 136, 2026-11-25.** Deployed 13:33 UTC; by 16:12 the sweep had rebuilt 12,718 jobs on `FACTS_VERSION` 8 and 38,115 decisions on `MATCHER_VERSION` 12. The 128 open jobs left on older facts versions have no decisions.
+
+- **Check 2: passed.** Q-C: remote-only 138, remote plus other 14, hybrid or onsite only 0, unstated 0. Job 01a207aa is rejected for all three profiles: "job location (hybrid in DK) is outside where you want to work (hybrid in MA)".
+- **Check 7: passed.** The newest location rejections each name the place that failed (for example "job location (onsite in Tampa) is outside where you want to work (onsite in MA)"), and office-based ones keep their prefix.
+- **Review share:** 429 of 38,115 decisions (1.1%), under the 3.0% bar of check 6.
+- **Check 3:** still open. It goes to the [slice 03](03-processor-quality.md) brainstorm.
 
 The "After the checks" steps below were not run, because checks 2 and 3 failed: the `a680c99` PR was not opened and the worktrees were not removed.
 
