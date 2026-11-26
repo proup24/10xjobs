@@ -1,0 +1,9 @@
+{
+  "from": "bfda5e93e4e7ecad4a8630730b553996ce2a804563293fb68414cf72428dbed1",
+  "to": "1bd6348e27d674c854f8d18362d721f5379cd5306e2108af21574ad28c31ec6e",
+  "providedInvariants": [
+    "job-decisions-update-source"
+  ],
+  "createdAt": "2026-11-26T15:49:54.002Z",
+  "migrationHash": "76181a22ab625259e58eb7e828bb8ce809745b55c221ddd04c371e49be014eee"
+}

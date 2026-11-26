@@ -63,7 +63,7 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     await db2?.close();
   });
   beforeEach(async () => {
-    await sql`TRUNCATE webhook_deliveries, webhooks, job_matches, job_facts, profile_skills, profiles, job_extractions, normalized_jobs CASCADE`;
+    await sql`TRUNCATE webhook_callbacks, webhook_deliveries, webhooks, job_matches, job_facts, profile_skills, profiles, job_extractions, normalized_jobs CASCADE`;
   });
 
   /** A signed-up user; returns its id. */
@@ -617,7 +617,11 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     const oldTest = await seedTestDelivery(s.userId, webhookId, old);
     const recentTest = await seedTestDelivery(s.userId, webhookId, recent);
 
-    expect(await repo.applyRetention(now)).toEqual({ cleared: 1, deleted: 1 });
+    expect(await repo.applyRetention(now)).toEqual({
+      cleared: 1,
+      deleted: 1,
+      callbacksDeleted: 0,
+    });
     expect(await deliveryRow(matchRow)).toMatchObject({
       status: 'delivered',
       payload: null,
@@ -626,7 +630,55 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     });
     expect(await deliveryRow(oldTest)).toBeUndefined();
     expect(await deliveryRow(recentTest)).toBeDefined();
-    expect(await repo.applyRetention(now)).toEqual({ cleared: 0, deleted: 0 });
+    expect(await repo.applyRetention(now)).toEqual({
+      cleared: 0,
+      deleted: 0,
+      callbacksDeleted: 0,
+    });
+  });
+  it('applyRetention deletes callbacks older than 30 days and keeps newer ones', async () => {
+    const userId = await seedUser();
+    const webhookId = await seedWebhook(userId);
+    const seedCallback = async (
+      receivedAt: Date,
+      forWebhook: string = webhookId,
+      forUser: string = userId,
+    ) => {
+      const id = randomUUID();
+      await db.execute(
+        db.raw.sql`INSERT INTO webhook_callbacks
+            (id, "userId", "webhookId", "receivedAt", type, result, signature, "createdAt", "updatedAt")
+          VALUES (${id}::uuid, ${forUser}::uuid, ${forWebhook}::uuid,
+            ${receivedAt.toISOString()}::timestamptz, 'ping', 'ok', ${randomUUID()},
+            ${receivedAt.toISOString()}::timestamptz, now())`
+          .affectedCount()
+          .build(),
+      );
+      return id;
+    };
+    await seedCallback(ago(31 * 86_400_000));
+    const recent = await seedCallback(ago(29 * 86_400_000));
+    // A webhook whose callbacks are all old keeps its newest one.
+    const otherUser = await seedUser();
+    const otherWebhook = await seedWebhook(otherUser);
+    await seedCallback(ago(50 * 86_400_000), otherWebhook, otherUser);
+    const newestOld = await seedCallback(
+      ago(40 * 86_400_000),
+      otherWebhook,
+      otherUser,
+    );
+
+    expect(await repo.applyRetention(now)).toEqual({
+      cleared: 0,
+      deleted: 0,
+      callbacksDeleted: 2,
+    });
+    const rows = await db.query(
+      db.raw.sql`SELECT id FROM webhook_callbacks`
+        .returnsRow({ id: 'pg/uuid@1' })
+        .build(),
+    );
+    expect(rows.map((r) => r.id).sort()).toEqual([recent, newestOld].sort());
   });
   it('lists one head per webhook, oldest first, and a failing head only once due', async () => {
     const u1 = await seedUser();

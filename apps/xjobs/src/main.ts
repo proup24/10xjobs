@@ -14,7 +14,12 @@ import type { EnvironmentVariables } from 'src/config';
 import { EnvironmentType } from 'src/common/enums';
 import { getHostName } from 'src/utils';
 import { CorseConfig } from './cors';
-import { engineKeyMiddleware, traceIdMiddleware } from 'src/common/middleware';
+import {
+  callbackPath,
+  callbackRawBody,
+  engineKeyMiddleware,
+  traceIdMiddleware,
+} from 'src/common/middleware';
 
 const APP_CONFIG = {
   name: 'MAIN FILE',
@@ -62,6 +67,8 @@ function configure(
   app.use(traceIdMiddleware);
   // Next, before any routing: no route answers without the engine key.
   app.use(engineKeyMiddleware(engineKey));
+  // Signed callback bodies are read as raw bytes here, ahead of Nest's JSON parser.
+  app.use(callbackPath(APP_CONFIG.prefix), callbackRawBody);
   app.useGlobalPipes(validatorPipe);
   app.use(cookieParser());
   app.disable('x-powered-by');

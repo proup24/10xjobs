@@ -1,5 +1,5 @@
 {
-  "hash": "bfda5e93e4e7ecad4a8630730b553996ce2a804563293fb68414cf72428dbed1",
+  "hash": "1bd6348e27d674c854f8d18362d721f5379cd5306e2108af21574ad28c31ec6e",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -35,6 +35,7 @@
     "profile-switches-no-bump",
     "blocked-authors-eligibility",
     "match-details-kind",
-    "webhook-listings-only"
+    "webhook-listings-only",
+    "job-decisions-update-source"
   ]
 }
