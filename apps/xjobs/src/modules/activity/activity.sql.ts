@@ -34,6 +34,9 @@ export function pausedUsersCte(raw: Raw, at: Date, hours: number): Cte {
                LEFT JOIN public.job_facts f ON f."jobId" = m."jobId"
               WHERE m."userId" = u.id
                 AND m.outcome = 'qualified'
+                -- Only listings: post role matches have no page yet, so they are not
+                -- waiting on the user. Slice 04a lifts this when the posts sub-page exists.
+                AND j.kind = 'job'
                 AND m."decidedAt" <= w."since"
                 AND j.status = 'active'
                 AND j."lastSeenAt" >= w."at" - interval '7 days'

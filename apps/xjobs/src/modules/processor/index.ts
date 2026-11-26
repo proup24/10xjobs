@@ -26,6 +26,7 @@ export {
 export {
   type Claim,
   ProcessorRepository,
+  hasLinkedInSourceSql,
   linkedInJobIds,
   type ReprocessFilter,
 } from './repositories/processor.repository';

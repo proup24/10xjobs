@@ -1,5 +1,14 @@
 /** Bump when a rule changes, so stored decisions can be told apart. */
-export const MATCHER_VERSION = 12;
+export const MATCHER_VERSION = 13;
+/** The oldest an original post may be, in days, before a role from it fails. */
+export const POST_MAX_AGE_DAYS = 30;
+/**
+ * How long after an original turns POST_MAX_AGE_DAYS old its role rows are re-decided.
+ * The decision reads the engine clock and the row's `updatedAt` is the database's, a
+ * little later: a row decided just before the mark but written just after it must still
+ * be re-decided once, so the mark the sweep compares with is moved by this margin.
+ */
+export const POST_AGE_STALE_MARGIN_MINUTES = 5;
 /** Years above the profile's experience that a job may ask before it fails. */
 export const SENIORITY_YEARS_MARGIN = 2;
 /** The lowest stack score that still qualifies. */

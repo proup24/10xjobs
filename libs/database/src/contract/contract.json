@@ -12,6 +12,10 @@
       "model": "AutoSilenceDismissal",
       "namespace": "public"
     },
+    "blocked_authors": {
+      "model": "BlockedAuthor",
+      "namespace": "public"
+    },
     "cities": {
       "model": "City",
       "namespace": "public"
@@ -538,6 +542,110 @@
               },
               "namespaceId": "public",
               "table": "auto_silence_dismissals"
+            }
+          },
+          "BlockedAuthor": {
+            "fields": {
+              "authorKey": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "profileUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "authorKey": {
+                  "column": "authorKey"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "profileUrl": {
+                  "column": "profileUrl"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "blocked_authors"
             }
           },
           "City": {
@@ -7100,6 +7208,21 @@
                   "space": "supabase"
                 }
               },
+              "blockedAuthors": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "BlockedAuthor",
+                  "namespace": "public"
+                }
+              },
               "factReports": {
                 "cardinality": "1:N",
                 "on": {
@@ -7849,6 +7972,45 @@
       "public": {
         "entries": {
           "policy": {
+            "blocked_authors_owner_delete": {
+              "kind": "policy",
+              "name": "blocked_authors_owner_delete_8d4763aa",
+              "namespaceId": "public",
+              "operation": "delete",
+              "permissive": true,
+              "prefix": "blocked_authors_owner_delete",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "blocked_authors",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "blocked_authors_owner_insert": {
+              "kind": "policy",
+              "name": "blocked_authors_owner_insert_e7171a20",
+              "namespaceId": "public",
+              "operation": "insert",
+              "permissive": true,
+              "prefix": "blocked_authors_owner_insert",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "blocked_authors",
+              "withCheck": "\"userId\" = auth.uid()"
+            },
+            "blocked_authors_owner_read": {
+              "kind": "policy",
+              "name": "blocked_authors_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "blocked_authors_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "blocked_authors",
+              "using": "\"userId\" = auth.uid()"
+            },
             "cities_read_approved": {
               "kind": "policy",
               "name": "cities_read_approved_d2529ebe",
@@ -8362,6 +8524,11 @@
               "namespaceId": "public",
               "tableName": "auto_silence_dismissals"
             },
+            "blocked_authors": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "blocked_authors"
+            },
             "cities": {
               "kind": "rls",
               "namespaceId": "public",
@@ -8684,6 +8851,111 @@
                 ]
               },
               "uniques": []
+            },
+            "blocked_authors": {
+              "checks": [
+                {
+                  "expression": "\"authorKey\" ~ '^(profile|company):.+$'",
+                  "name": "blocked_authors_author_key_ac50d50b",
+                  "prefix": "blocked_authors_author_key"
+                }
+              ],
+              "columns": {
+                "authorKey": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "profileUrl": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "blocked_authors_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "blocked_authors"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "blocked_authors_userId_idx_a489d58a",
+                  "prefix": "blocked_authors_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "authorKey"
+                  ]
+                }
+              ]
             },
             "cities": {
               "checks": [
@@ -15088,12 +15360,38 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558"
+    "storageHash": "bfda5e93e4e7ecad4a8630730b553996ce2a804563293fb68414cf72428dbed1"
   },
   "execution": {
-    "executionHash": "71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862",
+    "executionHash": "cceaa40ea325e2a7bda66c7c86613fba202704d857905768b448e51c2dc54839",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "blocked_authors",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "blocked_authors",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv7",

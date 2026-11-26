@@ -1,0 +1,454 @@
+[
+  {
+    "id": "table.blocked_authors",
+    "label": "Create table \"blocked_authors\"",
+    "summary": "Creates table \"blocked_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"blocked_authors\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"blocked_authors\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"blocked_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"blocked_authors\"",
+        "sql": "CREATE TABLE \"public\".\"blocked_authors\" (\n  \"authorKey\" text NOT NULL,\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"name\" text,\n  \"profileUrl\" text,\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"blocked_authors_author_key_ac50d50b\" CHECK (\"authorKey\" ~ '^(profile|company):.+$')\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"blocked_authors\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": [
+          "\"public\".\"blocked_authors\"",
+          "r",
+          "p"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"blocked_authors\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "unique.blocked_authors.blocked_authors_userId_authorKey_key",
+    "label": "Add unique constraint on \"blocked_authors\" (userId, authorKey)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "blocked_authors_userId_authorKey_key",
+        "table": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"blocked_authors_userId_authorKey_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "blocked_authors_userId_authorKey_key",
+          "public",
+          "\"public\".\"blocked_authors\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"blocked_authors_userId_authorKey_key\" on \"blocked_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"blocked_authors_userId_authorKey_key\"",
+        "sql": "ALTER TABLE \"public\".\"blocked_authors\" ADD CONSTRAINT \"blocked_authors_userId_authorKey_key\" UNIQUE (\"userId\", \"authorKey\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify unique constraint \"blocked_authors_userId_authorKey_key\" exists on (userId, authorKey)",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb)) AS \"result\"",
+        "params": [
+          "blocked_authors_userId_authorKey_key",
+          "public",
+          "\"public\".\"blocked_authors\"",
+          "u",
+          "[\"userId\",\"authorKey\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.blocked_authors.blocked_authors_userId_idx_a489d58a",
+    "label": "Create index \"blocked_authors_userId_idx_a489d58a\" on \"blocked_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "blocked_authors_userId_idx_a489d58a",
+        "table": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"blocked_authors_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"blocked_authors_userId_idx_a489d58a\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"blocked_authors_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"blocked_authors_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"blocked_authors_userId_idx_a489d58a\" ON \"public\".\"blocked_authors\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"blocked_authors_userId_idx_a489d58a\" exists on \"blocked_authors\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"blocked_authors_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"blocked_authors\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.blocked_authors.blocked_authors_userId_fkey",
+    "label": "Add foreign key \"blocked_authors_userId_fkey\" on \"blocked_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "blocked_authors_userId_fkey",
+        "table": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"blocked_authors_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "blocked_authors_userId_fkey",
+          "public",
+          "\"public\".\"blocked_authors\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"blocked_authors_userId_fkey\" on \"blocked_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"blocked_authors_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"blocked_authors\"\nADD CONSTRAINT \"blocked_authors_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"blocked_authors_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "blocked_authors_userId_fkey",
+          "public",
+          "\"public\".\"blocked_authors\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.blocked_authors",
+    "label": "Enable row-level security on \"blocked_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"blocked_authors\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"blocked_authors\"",
+        "sql": "ALTER TABLE \"public\".\"blocked_authors\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"blocked_authors\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.blocked_authors.blocked_authors_owner_delete_8d4763aa",
+    "label": "Create RLS policy \"blocked_authors_owner_delete_8d4763aa\" on \"blocked_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "blocked_authors_owner_delete_8d4763aa",
+        "table": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"blocked_authors_owner_delete_8d4763aa\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors",
+          "blocked_authors_owner_delete_8d4763aa"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"blocked_authors_owner_delete_8d4763aa\" on \"blocked_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"blocked_authors_owner_delete_8d4763aa\"",
+        "sql": "CREATE POLICY \"blocked_authors_owner_delete_8d4763aa\" ON \"public\".\"blocked_authors\" AS PERMISSIVE FOR DELETE TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"blocked_authors_owner_delete_8d4763aa\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors",
+          "blocked_authors_owner_delete_8d4763aa",
+          "DELETE",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.blocked_authors.blocked_authors_owner_insert_e7171a20",
+    "label": "Create RLS policy \"blocked_authors_owner_insert_e7171a20\" on \"blocked_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "blocked_authors_owner_insert_e7171a20",
+        "table": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"blocked_authors_owner_insert_e7171a20\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors",
+          "blocked_authors_owner_insert_e7171a20"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"blocked_authors_owner_insert_e7171a20\" on \"blocked_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"blocked_authors_owner_insert_e7171a20\"",
+        "sql": "CREATE POLICY \"blocked_authors_owner_insert_e7171a20\" ON \"public\".\"blocked_authors\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"blocked_authors_owner_insert_e7171a20\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors",
+          "blocked_authors_owner_insert_e7171a20",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.blocked_authors.blocked_authors_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"blocked_authors_owner_read_ab58a1a7\" on \"blocked_authors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "blocked_authors_owner_read_ab58a1a7",
+        "table": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"blocked_authors_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors",
+          "blocked_authors_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"blocked_authors_owner_read_ab58a1a7\" on \"blocked_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"blocked_authors_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"blocked_authors_owner_read_ab58a1a7\" ON \"public\".\"blocked_authors\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"blocked_authors_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "blocked_authors",
+          "blocked_authors_owner_read_ab58a1a7",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "trigger.blocked_authors_eligibility",
+    "invariantId": "blocked-authors-eligibility",
+    "label": "blocked_authors: any insert or delete bumps eligibilityVersion",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "blocked_authors"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create the bump_eligibility_version trigger on blocked_authors",
+        "sql": "CREATE TRIGGER bump_eligibility_version AFTER INSERT OR DELETE ON public.blocked_authors\n  FOR EACH ROW EXECUTE FUNCTION public.bump_eligibility_version();"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.match_details_kind",
+    "invariantId": "match-details-kind",
+    "label": "match_details: p_kind filter, listings by default",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "job_matches"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace match_details with a p_kind argument",
+        "sql": "DROP FUNCTION public.match_details(uuid, text, timestamptz, uuid, boolean);\nCREATE OR REPLACE FUNCTION public.match_details(p_profile_id uuid DEFAULT NULL::uuid, p_outcome text DEFAULT 'qualified'::text, p_since timestamp with time zone DEFAULT NULL::timestamp with time zone, p_job_id uuid DEFAULT NULL::uuid, p_details boolean DEFAULT true, p_kind text DEFAULT 'job'::text)\n RETURNS TABLE(\"matchId\" uuid, \"profileId\" uuid, \"jobId\" uuid, outcome text, unverified boolean, \"stackScore\" numeric, checks jsonb, \"decidedAt\" timestamp with time zone, kind text, title text, \"companyName\" text, \"companyUrl\" text, location text, \"salaryText\" text, \"salaryMin\" integer, \"salaryMax\" integer, \"salaryCurrency\" text, \"salaryPeriod\" text, \"publishedAt\" text, \"postedAt\" timestamp with time zone, \"firstSeenAt\" timestamp with time zone, \"lastSeenAt\" timestamp with time zone, closed boolean, \"postingUrl\" text, \"applyUrl\" text, \"posterName\" text, \"posterProfileUrl\" text, \"posterType\" text, \"descriptionText\" text, channels text[], \"viewedAt\" timestamp with time zone, facts jsonb, conflicts jsonb, \"reviewRule\" text, \"reviewField\" text, \"reviewChoice\" text, \"extractionId\" uuid, \"decisionStatus\" text)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nWITH l AS MATERIALIZED (\n  SELECT\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.role_kinds t) AS role_kinds,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.seniorities t) AS seniorities,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.arrangements t) AS arrangements,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.contract_types t) AS contract_types,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.engagements t) AS engagements,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.tech_tags t) AS tech_tags,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.regions t) AS regions,\n    (SELECT COALESCE(jsonb_object_agg(t.code, t.label), '{}'::jsonb) FROM public.countries t) AS countries\n)\nSELECT\n  m.id, m.\"profileId\", m.\"jobId\", m.outcome,\n  -- A review row the user moved to Matches rests on an unsure check.\n  m.unverified OR COALESCE(d.choice = 'qualified', false), m.\"stackScore\",\n  CASE WHEN p_details THEN m.checks END, m.\"decidedAt\",\n  j.kind, j.title, j.\"companyName\", j.\"companyUrl\", j.location,\n  j.\"salaryText\", j.\"salaryMin\", j.\"salaryMax\", j.\"salaryCurrency\", j.\"salaryPeriod\",\n  j.\"publishedAt\", j.\"postedAt\", j.\"firstSeenAt\", j.\"lastSeenAt\",\n  -- Closed by its sources, by its combined facts, or by a LinkedIn listing past its expiry.\n  j.closed OR COALESCE(f.closed, false) OR (j.\"expiresAt\" IS NOT NULL AND j.\"expiresAt\" <= now()),\n  j.\"postingUrl\", j.\"applyUrl\", j.\"posterName\", j.\"posterProfileUrl\", j.\"posterType\",\n  CASE WHEN p_details THEN j.\"descriptionText\" END,\n  ARRAY(\n    SELECT DISTINCT r.channel::text\n      FROM public.normalized_job_sources s\n      JOIN public.raw_items r ON r.id = s.\"rawItemId\"\n     WHERE s.\"jobId\" = j.id\n     ORDER BY 1),\n  v.\"viewedAt\",\n  -- The job's combined facts; null when it has none yet.\n  CASE WHEN f.\"jobId\" IS NULL THEN NULL\n       WHEN p_details THEN jsonb_build_object(\n  'position', CASE WHEN jsonb_typeof(x.\"position\"->'value') <> 'null' THEN jsonb_build_object(\n      'roleKind', jsonb_build_object(\n        'code', x.\"position\"->'value'->'roleKind',\n        'label', l.role_kinds ->> (x.\"position\"->'value'->>'roleKind')),\n      'title', x.\"position\"->'value'->'title',\n      'source', x.\"position\"->>'source',\n      'quote', NULLIF(x.\"position\"->>'quote', '')) END,\n  'seniority', CASE WHEN jsonb_typeof(x.\"seniority\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"seniority\"->'value',\n      'label', l.seniorities ->> (x.\"seniority\"->>'value'),\n      'source', x.\"seniority\"->>'source',\n      'quote', NULLIF(x.\"seniority\"->>'quote', '')) END,\n  'yearsRequired', CASE WHEN jsonb_typeof(x.\"yearsRequired\"->'value') <> 'null' THEN jsonb_build_object(\n      'min', x.\"yearsRequired\"->'value'->'min',\n      'max', x.\"yearsRequired\"->'value'->'max',\n      'source', x.\"yearsRequired\"->>'source',\n      'quote', NULLIF(x.\"yearsRequired\"->>'quote', '')) END,\n  'arrangement', CASE WHEN jsonb_typeof(x.\"arrangement\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"arrangement\"->'value',\n      'label', l.arrangements ->> (x.\"arrangement\"->>'value'),\n      'source', x.\"arrangement\"->>'source',\n      'quote', NULLIF(x.\"arrangement\"->>'quote', '')) END,\n  'openings', (\n    SELECT COALESCE(jsonb_agg(jsonb_build_object(\n      'arrangements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'code', a.code,\n          'label', l.arrangements ->> (a.code)\n        ) ORDER BY a.ord), '[]'::jsonb)\n        FROM jsonb_array_elements_text(o.opening->'arrangements') WITH ORDINALITY a(code, ord)),\n      'places', (\n        SELECT COALESCE(jsonb_agg(CASE p.place->>'kind'\n          WHEN 'worldwide' THEN jsonb_build_object('kind', 'worldwide')\n          WHEN 'region' THEN jsonb_build_object(\n            'kind', 'region',\n            'code', p.place->'code',\n            'label', l.regions ->> (p.place->>'code'))\n          WHEN 'country' THEN jsonb_build_object(\n            'kind', 'country',\n            'code', p.place->'code',\n            'label', l.countries ->> (p.place->>'code'))\n          WHEN 'city' THEN jsonb_build_object(\n            'kind', 'city',\n            'name', p.place->'name',\n            'countryCode', p.place->'countryCode',\n            'cityId', p.place->'cityId')\n        END ORDER BY p.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(o.opening->'places') WITH ORDINALITY p(place, ord)),\n      'placeStrictness', o.opening->'placeStrictness',\n      'timezones', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'fromUtc', z.tz->'fromUtc',\n          'toUtc', z.tz->'toUtc',\n          'label', z.tz->'label'\n        ) ORDER BY z.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(o.opening->'timezones') WITH ORDINALITY z(tz, ord)),\n      'arrangementSource', o.opening->'arrangementSource',\n      'placesSource', o.opening->'placesSource',\n      'quote', NULLIF(o.opening->>'quote', '')\n    ) ORDER BY o.ord), '[]'::jsonb)\n    FROM jsonb_array_elements(x.\"openings\") WITH ORDINALITY o(opening, ord)),\n  'contractType', CASE WHEN jsonb_typeof(x.\"contractType\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"contractType\"->'value',\n      'label', l.contract_types ->> (x.\"contractType\"->>'value'),\n      'source', x.\"contractType\"->>'source',\n      'quote', NULLIF(x.\"contractType\"->>'quote', '')) END,\n  'engagement', CASE WHEN jsonb_typeof(x.\"engagement\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"engagement\"->'value',\n      'label', l.engagements ->> (x.\"engagement\"->>'value'),\n      'source', x.\"engagement\"->>'source',\n      'quote', NULLIF(x.\"engagement\"->>'quote', '')) END,\n  'contractMonths', CASE WHEN jsonb_typeof(x.\"contractMonths\"->'value') <> 'null' THEN jsonb_build_object(\n      'months', x.\"contractMonths\"->'value',\n      'source', x.\"contractMonths\"->>'source',\n      'quote', NULLIF(x.\"contractMonths\"->>'quote', '')) END,\n  'salary', CASE WHEN jsonb_typeof(x.\"salary\"->'value') <> 'null' THEN jsonb_build_object(\n      'min', x.\"salary\"->'value'->'min',\n      'max', x.\"salary\"->'value'->'max',\n      'currency', x.\"salary\"->'value'->'currency',\n      'period', x.\"salary\"->'value'->'period',\n      'source', x.\"salary\"->>'source',\n      'quote', NULLIF(x.\"salary\"->>'quote', '')) END,\n  'techStack', CASE WHEN jsonb_typeof(x.\"techStack\"->'value') <> 'null' THEN jsonb_build_object(\n      'requirements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'technology', jsonb_build_object(\n            'code', r.req->'technology'->'code',\n            -- An extracted technology with no (or no known) code shows its text.\n            'label', COALESCE(\n              l.tech_tags ->> (r.req->'technology'->>'code'),\n              r.req->'technology'->>'text'),\n            'text', r.req->'technology'->'text'),\n          'kind', r.req->'kind',\n          'importance', r.req->'importance',\n          'domain', r.req->'domain',\n          'years', CASE WHEN jsonb_typeof(r.req->'years') = 'object' THEN jsonb_build_object(\n              'min', r.req->'years'->'min',\n              'max', r.req->'years'->'max') END,\n          'group', r.req->'group',\n          'quote', NULLIF(r.req->>'quote', '')\n        ) ORDER BY r.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"techStack\"->'value'->'requirements') WITH ORDINALITY r(req, ord)),\n      'groups', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'id', g.grp->'id',\n          'min', g.grp->'min'\n        ) ORDER BY g.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"techStack\"->'value'->'groups') WITH ORDINALITY g(grp, ord)),\n      'source', x.\"techStack\"->>'source',\n      'quote', NULLIF(x.\"techStack\"->>'quote', '')) END,\n  'requiredLanguages', CASE WHEN jsonb_typeof(x.\"requiredLanguages\"->'value') <> 'null' THEN jsonb_build_object(\n      'languages', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'lang', lg.lang->'lang',\n          'level', lg.lang->'level',\n          'quote', NULLIF(lg.lang->>'quote', '')\n        ) ORDER BY lg.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"requiredLanguages\"->'value') WITH ORDINALITY lg(lang, ord)),\n      'source', x.\"requiredLanguages\"->>'source',\n      'quote', NULLIF(x.\"requiredLanguages\"->>'quote', '')) END,\n  'workAuthorization', CASE WHEN jsonb_typeof(x.\"workAuthorization\"->'value') <> 'null' THEN jsonb_build_object(\n      'requirements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'kind', w.req->'kind',\n          'place', w.req->'place'\n        ) ORDER BY w.ord), '[]'::jsonb)\n        FROM jsonb_array_elements(x.\"workAuthorization\"->'value'->'requirements') WITH ORDINALITY w(req, ord)),\n      'sponsorship', x.\"workAuthorization\"->'value'->'sponsorship',\n      'source', x.\"workAuthorization\"->>'source',\n      'quote', NULLIF(x.\"workAuthorization\"->>'quote', '')) END\n)\n       ELSE jsonb_build_object(\n  'arrangement', CASE WHEN jsonb_typeof(x.\"arrangement\"->'value') <> 'null' THEN jsonb_build_object(\n      'code', x.\"arrangement\"->'value',\n      'label', l.arrangements ->> (x.\"arrangement\"->>'value'),\n      'source', x.\"arrangement\"->>'source',\n      'quote', NULLIF(x.\"arrangement\"->>'quote', '')) END,\n  'openings', (\n    SELECT COALESCE(jsonb_agg(jsonb_build_object(\n      'arrangements', (\n        SELECT COALESCE(jsonb_agg(jsonb_build_object(\n          'code', a.code,\n          'label', l.arrangements ->> (a.code)\n        ) ORDER BY a.ord), '[]'::jsonb)\n        FROM jsonb_array_elements_text(o.opening->'arrangements') WITH ORDINALITY a(code, ord))\n    ) ORDER BY o.ord), '[]'::jsonb)\n    FROM jsonb_array_elements(x.\"openings\") WITH ORDINALITY o(opening, ord))\n) END,\n  CASE WHEN p_details THEN (\n    SELECT COALESCE(jsonb_agg(jsonb_build_object(\n      'field', c.field,\n      'listingValue', c.\"listingValue\",\n      'descriptionValue', c.\"descriptionValue\",\n      'winner', c.winner\n    ) ORDER BY c.field, c.id), '[]'::jsonb)\n    FROM public.job_fact_conflicts c\n    WHERE c.\"jobId\" = m.\"jobId\") END,\n  m.\"reviewRule\", m.\"reviewField\", d.choice, f.\"extractionId\", jd.status\nFROM public.job_matches m\nJOIN public.normalized_jobs j ON j.id = m.\"jobId\"\nLEFT JOIN public.job_facts f ON f.\"jobId\" = m.\"jobId\"\nLEFT JOIN public.job_views v ON v.\"jobId\" = m.\"jobId\" AND v.\"userId\" = (SELECT auth.uid())\nLEFT JOIN public.job_decisions jd ON jd.\"jobId\" = m.\"jobId\" AND jd.\"userId\" = (SELECT auth.uid())\nCROSS JOIN LATERAL (\n  SELECT dd.d->'position' AS \"position\", dd.d->'seniority' AS \"seniority\", dd.d->'yearsRequired' AS \"yearsRequired\", dd.d->'arrangement' AS \"arrangement\", dd.d->'openings' AS \"openings\", dd.d->'contractType' AS \"contractType\", dd.d->'engagement' AS \"engagement\", dd.d->'contractMonths' AS \"contractMonths\", dd.d->'salary' AS \"salary\", dd.d->'techStack' AS \"techStack\", dd.d->'requiredLanguages' AS \"requiredLanguages\", dd.d->'workAuthorization' AS \"workAuthorization\"\n  FROM (SELECT f.facts || '{}'::jsonb AS d OFFSET 0) dd\n  OFFSET 0) x\nCROSS JOIN l\n-- The user's decision that applies: the latest for the match, when the match is in review on\n-- the rule and field it names, on the match's profile version, and the decision was made since the engine last changed the\n-- outcome (decidedAt), so an old decision does not revive after another outcome.\nLEFT JOIN LATERAL (\n  SELECT r.choice\n    FROM (SELECT r.choice, r.rule, r.field, r.\"createdAt\", r.\"profileVersion\"\n            FROM public.match_reviews r\n           WHERE r.\"matchId\" = m.id AND r.\"userId\" = m.\"userId\"\n           ORDER BY r.\"createdAt\" DESC, r.id DESC\n           LIMIT 1) r\n   WHERE m.outcome = 'review' AND r.rule = m.\"reviewRule\" AND r.field = m.\"reviewField\"\n     AND r.\"createdAt\" >= m.\"decidedAt\"\n     -- A choice made on an older profile version does not apply to a match decided on a newer one.\n     AND r.\"profileVersion\" = m.\"profileVersion\") d ON true\n-- Every job row is reached only through the caller's own matches; a null uid matches none.\nWHERE m.\"userId\" = (SELECT auth.uid())\n  AND (p_profile_id IS NULL OR m.\"profileId\" = p_profile_id)\n  -- The effective outcome: the applicable decision's choice, else the engine's. The first test\n  -- only narrows the rows on the outcome index: a decision moves a review row elsewhere.\n  AND (p_outcome IS NULL\n       OR m.outcome = p_outcome OR (m.outcome = 'review' AND p_outcome IN ('qualified', 'rejected')))\n  AND (p_outcome IS NULL OR COALESCE(d.choice, m.outcome) = p_outcome)\n  AND j.status = 'active'\n  AND (p_since IS NULL OR j.\"lastSeenAt\" >= p_since)\n  AND (p_job_id IS NULL OR m.\"jobId\" = p_job_id)\n  -- Listings by default; a post role needs p_kind => 'post_role', or null for both.\n  AND (p_kind IS NULL OR j.kind = p_kind)\n$function$;\nREVOKE EXECUTE ON FUNCTION public.match_details(uuid, text, timestamptz, uuid, boolean, text) FROM PUBLIC, anon;\nGRANT EXECUTE ON FUNCTION public.match_details(uuid, text, timestamptz, uuid, boolean, text) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.webhook_enqueue_match_listings",
+    "invariantId": "webhook-listings-only",
+    "label": "webhook_enqueue_match: listings only",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "webhook_deliveries"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace webhook_enqueue_match",
+        "sql": "CREATE OR REPLACE FUNCTION public.webhook_enqueue_match(p_match_id uuid, p_trigger text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_profile uuid;\n  v_root uuid;\n  v_next uuid;\n  v_id uuid;\nBEGIN\n  SELECT m.\"profileId\", m.\"jobId\" INTO v_profile, v_root\n    FROM job_matches m JOIN normalized_jobs j ON j.id = m.\"jobId\"\n   WHERE m.id = p_match_id;\n  IF NOT FOUND THEN\n    RETURN NULL;\n  END IF;\n  -- The root of the job's merge chain: follow mergedIntoId to a job with none, at most 10 steps.\n  FOR i IN 1..10 LOOP\n    SELECT \"mergedIntoId\" INTO v_next FROM normalized_jobs WHERE id = v_root;\n    EXIT WHEN v_next IS NULL;\n    v_root := v_next;\n  END LOOP;\n  -- Serialise calls for the same (profile, root job) until commit; the next statement takes\n  -- a fresh snapshot, so a waiter sees the delivery the holder committed.\n  PERFORM pg_advisory_xact_lock(hashtextextended('webhook:' || v_profile || ':' || v_root, 0));\n  -- One pending delivery when the user's webhook is on, the job was first seen since both the\n  -- profile was published and the webhook was turned on, and the profile has no match delivery\n  -- on a job with the same merge root (this job, a job merged into it, its merge target, a\n  -- merge sibling, or anything further along the same chain).\n  INSERT INTO webhook_deliveries (\"userId\", \"webhookId\", kind, \"profileId\", \"jobId\", \"matchId\", trigger, status, attempts, \"nextAttemptAt\")\n  SELECT m.\"userId\", w.id, 'match', m.\"profileId\", m.\"jobId\", m.id, p_trigger, 'pending', 0, now()\n  FROM job_matches m\n  JOIN webhooks w ON w.\"userId\" = m.\"userId\" AND w.enabled\n  JOIN profiles p ON p.id = m.\"profileId\" AND p.state = 'published'\n  JOIN normalized_jobs j ON j.id = m.\"jobId\"\n  WHERE m.id = p_match_id\n    AND j.kind = 'job'\n    AND j.\"firstSeenAt\" >= p.\"publishedAt\" AND j.\"firstSeenAt\" >= w.\"enabledSince\"\n    AND NOT EXISTS (\n      -- Each delivered job's chain, the same 10 steps; the last step (no next) is its root.\n      WITH RECURSIVE chain (job, next, depth) AS (\n        SELECT dj.id, dj.\"mergedIntoId\", 0\n          FROM webhook_deliveries d JOIN normalized_jobs dj ON dj.id = d.\"jobId\"\n         WHERE d.kind = 'match' AND d.\"profileId\" = v_profile\n        UNION ALL\n        SELECT n.id, n.\"mergedIntoId\", c.depth + 1\n          FROM chain c JOIN normalized_jobs n ON n.id = c.next\n         WHERE c.depth < 10)\n      SELECT 1 FROM chain WHERE chain.next IS NULL AND chain.job = v_root)\n  ON CONFLICT DO NOTHING\n  RETURNING id INTO v_id;\n  RETURN v_id;\nEND $function$;\nREVOKE EXECUTE ON FUNCTION public.webhook_enqueue_match(uuid, text) FROM PUBLIC, anon, authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

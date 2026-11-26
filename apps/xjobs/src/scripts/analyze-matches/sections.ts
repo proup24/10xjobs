@@ -6,9 +6,12 @@ type Tx = Parameters<Parameters<Db['transaction']>[0]>[0];
 type Raw = Tx['raw'];
 
 /**
- * Each query returns its rows as one jsonb array in `rows`. Sections 5 to 8
- * judge listing extractions: they read only listing rows (`docType`) of
- * job-board jobs (`kind = 'job'`), never post rows or post role jobs.
+ * Each query returns its rows as one jsonb array in `rows`. Section 0 counts
+ * every row and section 1 splits jobs by kind. Sections 2 to 4 and 9 judge
+ * listing matches: they read only match rows of job-board jobs
+ * (`kind = 'job'`); post role rows are reported per kind by `db:match-shares`.
+ * Sections 5 to 8 judge listing extractions: they read only listing rows
+ * (`docType`) of job-board jobs, never post rows or post role jobs.
  */
 export const SECTIONS: {
   title: string;
@@ -39,33 +42,38 @@ export const SECTIONS: {
         GROUP BY 1, 2, 3 ORDER BY 4 DESC) t`,
   },
   {
-    title: '2. Match outcomes',
+    title: '2. Match outcomes (listings)',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT outcome, unverified, count(*) FROM job_matches
+        SELECT m.outcome, m.unverified, count(*)
+        FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId"
+        WHERE j.kind = 'job'
         GROUP BY 1, 2 ORDER BY 1, 2) t`,
   },
   {
     title:
-      '3. Qualified matches by check pattern (position / seniority / location / stack)',
+      '3. Qualified listing matches by check pattern (position / seniority / location / stack)',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
         SELECT (SELECT string_agg(c->>'outcome', ' / ' ORDER BY o)
-                  FROM jsonb_array_elements(checks) WITH ORDINALITY x(c, o)) AS pattern,
+                  FROM jsonb_array_elements(m.checks) WITH ORDINALITY x(c, o)) AS pattern,
           count(*)
-        FROM job_matches WHERE outcome = 'qualified'
+        FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId"
+        WHERE m.outcome = 'qualified' AND j.kind = 'job'
         GROUP BY 1 ORDER BY 2 DESC) t`,
   },
   {
-    title: '4. Check reasons by rule and outcome',
+    title: '4. Listing check reasons by rule and outcome',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
         SELECT c->>'rule' AS rule, c->>'outcome' AS outcome,
           left(regexp_replace(c->>'reason', '[:;].*$', ''), 70) AS reason, count(*)
-        FROM job_matches, jsonb_array_elements(checks) c
+        FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId",
+          jsonb_array_elements(m.checks) c
+        WHERE j.kind = 'job'
         GROUP BY 1, 2, 3 ORDER BY 1, 4 DESC) t`,
   },
   {
@@ -135,7 +143,7 @@ export const SECTIONS: {
         GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30) t`,
   },
   {
-    title: '9. Qualified matches with BOTH position and stack unknown',
+    title: '9. Qualified listing matches with BOTH position and stack unknown',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
@@ -146,7 +154,7 @@ export const SECTIONS: {
         FROM job_matches m
         JOIN normalized_jobs j ON j.id = m."jobId"
         JOIN job_extractions e ON e.id = m."extractionId"
-        WHERE m.outcome = 'qualified'
+        WHERE m.outcome = 'qualified' AND j.kind = 'job'
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(m.checks) c
                       WHERE c->>'rule' = 'position' AND c->>'outcome' = 'unknown')
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(m.checks) c

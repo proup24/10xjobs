@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { outcomeShares } from './shares';
+import { outcomeShares, outcomeSharesByKind } from './shares';
 
 describe('outcomeShares', () => {
   it('counts shares per outcome, review rule and field', () => {
@@ -37,5 +37,30 @@ describe('outcomeShares', () => {
     expect(shares.byOutcome).toEqual({ qualified: 0.5, rejected: 0.5 });
     expect(shares.reviewByRule).toEqual({});
     expect(shares.reviewByField).toEqual({});
+  });
+});
+
+describe('outcomeSharesByKind', () => {
+  it('gives each job kind its own shares, both kinds always present', () => {
+    const byKind = outcomeSharesByKind([
+      {
+        kind: 'job',
+        outcome: 'qualified',
+        reviewRule: null,
+        reviewField: null,
+      },
+      { kind: 'job', outcome: 'rejected', reviewRule: null, reviewField: null },
+      {
+        kind: 'post_role',
+        outcome: 'review',
+        reviewRule: 'hiringVerdict',
+        reviewField: 'verdict',
+      },
+    ]);
+    expect(Object.keys(byKind)).toEqual(['job', 'post_role']);
+    expect(byKind.job.total).toBe(2);
+    expect(byKind.job.byOutcome).toEqual({ qualified: 0.5, rejected: 0.5 });
+    expect(byKind.post_role.reviewByRule).toEqual({ hiringVerdict: 1 });
+    expect(outcomeSharesByKind([]).post_role.total).toBe(0);
   });
 });

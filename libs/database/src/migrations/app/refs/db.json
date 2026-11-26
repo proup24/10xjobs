@@ -1,5 +1,5 @@
 {
-  "hash": "b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558",
+  "hash": "bfda5e93e4e7ecad4a8630730b553996ce2a804563293fb68414cf72428dbed1",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -32,6 +32,9 @@
     "set-profile-resume-no-key-lock",
     "profile-match-version-resumes",
     "searches-resumed-backfill",
-    "profile-switches-no-bump"
+    "profile-switches-no-bump",
+    "blocked-authors-eligibility",
+    "match-details-kind",
+    "webhook-listings-only"
   ]
 }
