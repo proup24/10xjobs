@@ -63,7 +63,8 @@ export type HiddenProfileColumns =
   | 'postSearch'
   | 'indeedSearch'
   | 'matchVersion'
-  | 'searchesVersion';
+  | 'searchesVersion'
+  | 'prefilterCheckedVersion';
 
 export type ProfileView = Omit<ProfileRow, HiddenProfileColumns> & {
   locations: PlacesByArrangement;

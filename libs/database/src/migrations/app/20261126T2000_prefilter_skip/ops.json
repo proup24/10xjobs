@@ -1,0 +1,241 @@
+[
+  {
+    "id": "dropCheckConstraint.normalized_jobs.normalized_jobs_processing_status_89abdf7d",
+    "label": "Drop check constraint \"normalized_jobs_processing_status_89abdf7d\" on \"normalized_jobs\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "normalized_jobs_processing_status_89abdf7d",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_jobs_processing_status_89abdf7d\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_89abdf7d",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "constraint \"normalized_jobs_processing_status_89abdf7d\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop check constraint \"normalized_jobs_processing_status_89abdf7d\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" DROP CONSTRAINT \"normalized_jobs_processing_status_89abdf7d\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"normalized_jobs_processing_status_89abdf7d\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_89abdf7d",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_jobs_processing_status_89abdf7d\" on \"normalized_jobs\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "column.public.normalized_jobs.processingSkip",
+    "label": "Add column \"processingSkip\" to \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "processingSkip",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"processingSkip\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "processingSkip"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"processingSkip\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"processingSkip\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD COLUMN \"processingSkip\" jsonb"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"processingSkip\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "processingSkip"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"processingSkip\" on \"normalized_jobs\""
+        }
+      },
+      {
+        "description": "verify column \"processingSkip\" has type \"jsonb\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "normalized_jobs",
+          "processingSkip",
+          "jsonb"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.profiles.prefilterCheckedVersion",
+    "label": "Add column \"prefilterCheckedVersion\" to \"profiles\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "prefilterCheckedVersion",
+        "table": "profiles"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"prefilterCheckedVersion\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "prefilterCheckedVersion"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"prefilterCheckedVersion\" on \"profiles\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"prefilterCheckedVersion\"",
+        "sql": "ALTER TABLE \"public\".\"profiles\" ADD COLUMN \"prefilterCheckedVersion\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"prefilterCheckedVersion\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "prefilterCheckedVersion"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"prefilterCheckedVersion\" on \"profiles\""
+        }
+      },
+      {
+        "description": "verify column \"prefilterCheckedVersion\" has type \"integer\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "profiles",
+          "prefilterCheckedVersion",
+          "integer"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "checkConstraint.normalized_jobs.normalized_jobs_processing_status_0418256a",
+    "label": "Add check constraint \"normalized_jobs_processing_status_0418256a\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "checkConstraint",
+        "name": "normalized_jobs_processing_status_0418256a",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"normalized_jobs_processing_status_0418256a\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_0418256a",
+          "public",
+          "\"public\".\"normalized_jobs\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "constraint \"normalized_jobs_processing_status_0418256a\" on \"normalized_jobs\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add check constraint \"normalized_jobs_processing_status_0418256a\"",
+        "sql": "ALTER TABLE \"public\".\"normalized_jobs\" ADD CONSTRAINT \"normalized_jobs_processing_status_0418256a\" CHECK (\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed', 'archived', 'skipped'))"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify check constraint \"normalized_jobs_processing_status_0418256a\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4)) AS \"result\"",
+        "params": [
+          "normalized_jobs_processing_status_0418256a",
+          "public",
+          "\"public\".\"normalized_jobs\"",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "functions.bump_profile_match_version_prefilter",
+    "invariantId": "profile-prefilter-no-bump",
+    "label": "bump_profile_match_version: prefilterCheckedVersion never bumps",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "profiles"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace bump_profile_match_version()",
+        "sql": "CREATE OR REPLACE FUNCTION public.bump_profile_match_version() RETURNS trigger\n  LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$\nBEGIN\n  IF TG_TABLE_NAME = 'profiles' THEN\n    -- BEFORE UPDATE. Every column bumps unless listed here, so a new column bumps by default.\n    IF (to_jsonb(NEW) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','indeedSearch','prefilterCheckedVersion','createdAt','updatedAt'])\n       IS DISTINCT FROM\n       (to_jsonb(OLD) - ARRAY['resumeKey','resumeFilename','resumeSizeBytes','resumeSha256','resumeUploadedAt','state','publishedAt','matchVersion','searchesVersion','postSearch','indeedSearch','prefilterCheckedVersion','createdAt','updatedAt']) THEN\n      NEW.\"matchVersion\" := OLD.\"matchVersion\" + 1;\n      IF OLD.state = 'published' AND NEW.state = 'published' THEN\n        UPDATE public.users SET \"searchesResumedAt\" = now() WHERE id = NEW.\"userId\";\n      END IF;\n    END IF;\n    RETURN NEW;\n  END IF;\n  -- profile_skills, AFTER each row: OLD is null on insert, NEW on delete.\n  UPDATE public.profiles SET \"matchVersion\" = \"matchVersion\" + 1\n    WHERE id IN (OLD.\"profileId\", NEW.\"profileId\");\n  UPDATE public.users SET \"searchesResumedAt\" = now()\n    WHERE id IN (SELECT p.\"userId\" FROM public.profiles p\n                  WHERE p.id IN (OLD.\"profileId\", NEW.\"profileId\") AND p.state = 'published');\n  RETURN NULL;\nEND $$;"
+      }
+    ],
+    "postcheck": []
+  }
+]

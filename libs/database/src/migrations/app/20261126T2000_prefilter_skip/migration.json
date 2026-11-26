@@ -1,0 +1,9 @@
+{
+  "from": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72",
+  "to": "5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06",
+  "providedInvariants": [
+    "profile-prefilter-no-bump"
+  ],
+  "createdAt": "2026-11-26T20:00:06.829Z",
+  "migrationHash": "359421fc0225e77ff251e042fd4fd280354880a39e9845568df6449820f5471a"
+}

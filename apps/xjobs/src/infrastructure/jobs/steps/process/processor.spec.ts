@@ -30,6 +30,13 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
     queue: { enqueue: vi.fn(async (_id: string, _kind?: 'post') => undefined) },
     matchQueue: { enqueue: vi.fn(async () => undefined) },
     autoSilence: { run: vi.fn(async () => ({ silenced: 0, candidates: 2 })) },
+    prefilter: {
+      skipPending: vi.fn(async (_limit?: number) => ({
+        checked: 0,
+        skipped: 0,
+      })),
+      skipJob: vi.fn(async (_id: string) => false),
+    },
     config,
   };
 }
@@ -144,6 +151,7 @@ describe('processProcessJob', () => {
     try {
       expect(await processProcessJob(job('sweep'), d as never)).toEqual({
         released: 3,
+        skipped: 0,
         enqueued: 2,
       });
     } finally {
@@ -158,6 +166,7 @@ describe('processProcessJob', () => {
     const d = deps('processed', 10);
     expect(await processProcessJob(job('sweep'), d as never)).toEqual({
       released: 3,
+      skipped: 0,
       enqueued: 0,
     });
     expect(d.repo.listPendingInScope).not.toHaveBeenCalled();
@@ -171,6 +180,7 @@ describe('processProcessJob', () => {
     };
     expect(await processProcessJob(job('sweep'), d as never)).toEqual({
       released: 3,
+      skipped: 0,
       enqueued: 2,
     });
     expect(d.queue.enqueue).toHaveBeenCalledTimes(2);
@@ -180,6 +190,7 @@ describe('processProcessJob', () => {
     const d = deps('processed', 0, true);
     expect(await processProcessJob(job('sweep'), d as never)).toEqual({
       released: 3,
+      skipped: 0,
       enqueued: 0,
     });
     expect(d.repo.listPendingInScope).not.toHaveBeenCalled();
@@ -197,6 +208,66 @@ describe('processProcessJob', () => {
       ).toEqual({ outcome });
     },
   );
+
+  it('sweeps: skips unwanted listings before listing the pending ones', async () => {
+    const d = deps();
+    const order: string[] = [];
+    d.prefilter.skipPending.mockImplementation(async () => {
+      order.push('skipPending');
+      return { checked: 5, skipped: 2 };
+    });
+    d.repo.listPendingInScope.mockImplementation(async () => {
+      order.push('listPendingInScope');
+      return ['j1'];
+    });
+    expect(await processProcessJob(job('sweep'), d as never)).toEqual({
+      released: 3,
+      skipped: 2,
+      enqueued: 1,
+    });
+    expect(order).toEqual(['skipPending', 'listPendingInScope']);
+    expect(d.prefilter.skipPending).toHaveBeenCalledWith(200);
+  });
+
+  it('sweeps while paused: still skips, claims nothing', async () => {
+    const d = deps('processed', 0, true);
+    d.prefilter.skipPending.mockResolvedValue({ checked: 1, skipped: 1 });
+    expect(await processProcessJob(job('sweep'), d as never)).toEqual({
+      released: 3,
+      skipped: 1,
+      enqueued: 0,
+    });
+  });
+
+  it('a sweep whose prefilter fails lists nothing', async () => {
+    const d = deps();
+    d.prefilter.skipPending.mockRejectedValue(new Error('demand unreadable'));
+    await expect(processProcessJob(job('sweep'), d as never)).rejects.toThrow(
+      'demand unreadable',
+    );
+    expect(d.repo.listPendingInScope).not.toHaveBeenCalled();
+    expect(d.queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('a nudged job the prefilter skips is never processed', async () => {
+    const d = deps();
+    d.prefilter.skipJob.mockResolvedValue(true);
+    expect(
+      await processProcessJob(job('process-job', { jobId: 'j1' }), d as never),
+    ).toEqual({ outcome: 'skipped' });
+    expect(d.prefilter.skipJob).toHaveBeenCalledWith('j1');
+    expect(d.service.process).not.toHaveBeenCalled();
+    expect(d.matchQueue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('a nudged job whose prefilter check fails is not processed', async () => {
+    const d = deps();
+    d.prefilter.skipJob.mockRejectedValue(new Error('demand unreadable'));
+    await expect(
+      processProcessJob(job('process-job', { jobId: 'j1' }), d as never),
+    ).rejects.toThrow('demand unreadable');
+    expect(d.service.process).not.toHaveBeenCalled();
+  });
 
   it('rejects an unknown job name', async () => {
     await expect(

@@ -288,6 +288,8 @@ model Profile {
   matchVersion       Int                   @default(0)
   // The search recipe version the profile's searches were last built on; only the engine writes it.
   searchesVersion    Int?
+  // The matchVersion the prefilter last rechecked skipped jobs at; only the engine writes it, and it never bumps matchVersion.
+  prefilterCheckedVersion Int?
   jobMatches         JobMatch[]
   webhookDeliveries  WebhookDelivery[]
   +Timestamps
@@ -685,6 +687,8 @@ model NormalizedJob {
   processingAttempts    Int                   @default(0)
   processingError       String?
   processedAt           TimestamptzJsDate(3)?
+  // Why the prefilter skipped the job ({ version, tag, country }); kept for history after a reopen.
+  processingSkip        Jsonb?
   // The extraction qualify reads; set by the processor.
   currentExtractionId   Uuid?
   currentExtraction     JobExtraction?        @relation("CurrentExtraction", fields: [currentExtractionId], references: [id], onDelete: SetNull)
@@ -710,7 +714,7 @@ model NormalizedJob {
   @@index([firstSeenAt], where: sql`kind = 'post' AND "processingStatus" = 'pending'`, name: "normalized_jobs_pending_posts")
   @@check(expression: sql`status IN ('active', 'merged')`, name: "normalized_jobs_status")
   @@check(expression: sql`(status = 'merged') = ("mergedIntoId" IS NOT NULL)`, name: "normalized_jobs_merged_into")
-  @@check(expression: sql`"processingStatus" IS NULL OR "processingStatus" IN ('pending', 'processing', 'processed', 'failed', 'archived')`, name: "normalized_jobs_processing_status")
+  @@check(expression: sql`"processingStatus" IS NULL OR "processingStatus" IN ('pending', 'processing', 'processed', 'failed', 'archived', 'skipped')`, name: "normalized_jobs_processing_status")
   @@check(expression: sql`"processingReason" IS NULL OR "processingReason" IN ('new', 'reopened', 'joined')`, name: "normalized_jobs_processing_reason")
   @@check(expression: sql`"processingAttempts" >= 0`, name: "normalized_jobs_processing_attempts")
   @@check(expression: sql`"firstSeenAt" <= "lastSeenAt"`, name: "normalized_jobs_seen_order")

@@ -16,6 +16,8 @@ import {
 } from './processor.repository';
 import { PrismaPlaceVocabularyRepository } from 'src/modules/facts/places/place-vocabulary.repository';
 import { PrismaVocabRepository } from './vocab.repository';
+import { PrismaPrefilterRepository } from 'src/modules/prefilter/repositories/prefilter.repository';
+import { PREFILTER_VERSION } from 'src/modules/prefilter/config/prefilter.config';
 import type { SeedEnvironmentVariables } from 'src/config';
 import { loadOutcomes } from 'src/scripts/actor-compare/queries';
 import { recentPlaceRows } from 'src/scripts/places-recheck/rows';
@@ -81,6 +83,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
   let db: DatabaseClient;
   let repo: PrismaProcessorRepository;
   let vocab: PrismaVocabRepository;
+  let prefilter: PrismaPrefilterRepository;
 
   async function sql(statement: TemplateStringsArray): Promise<void> {
     await db.execute(db.raw.sql(statement).affectedCount().build());
@@ -169,6 +172,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     /** One LinkedIn posts source per author key (instead of `channels`). */
     authors?: string[];
     postSources?: unknown;
+    workplaceType?: 'remote' | 'hybrid' | 'onsite' | null;
+    countryCode?: string | null;
+    expiresAt?: Date | null;
   }
 
   /** A normalized job with one source per channel (LinkedIn job board by default). */
@@ -196,6 +202,9 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           : spec.descriptionText,
       postingUrl: `https://example.com/${randomUUID()}`,
       closed: spec.closed ?? false,
+      workplaceType: spec.workplaceType ?? null,
+      countryCode: spec.countryCode ?? null,
+      expiresAt: spec.expiresAt ?? null,
       fieldSources: {},
       postSources: (spec.postSources ?? null) as never,
       firstSeenAt: spec.firstSeenAt ?? t0,
@@ -256,6 +265,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     const database = { db } as DatabaseService;
     repo = new PrismaProcessorRepository(database);
     vocab = new PrismaVocabRepository(database);
+    prefilter = new PrismaPrefilterRepository(database);
     await sql`TRUNCATE processing_attempts, job_extractions, cities, region_countries, tech_tags, regions, countries, role_kinds, seniorities, arrangements, contract_types, engagements, junk_flags CASCADE`;
     // About two thousand rows, one statement each: longer than the default hook timeout.
     await db.transaction((tx) =>
@@ -884,19 +894,173 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
     });
   });
 
+  describe('prefilter', () => {
+    const reason = {
+      version: PREFILTER_VERSION,
+      tag: 'onsite',
+      country: 'FR',
+    } as const;
+    const onsiteFR = { workplaceType: 'onsite', countryCode: 'FR' } as const;
+
+    it('lists only never-processed, unjoined, in-scope pending listings in claim order', async () => {
+      const later = await job({
+        ...onsiteFR,
+        requestedAt: new Date(t0.getTime() + minutes(5)),
+      });
+      const earlier = await job({ ...onsiteFR, requestedAt: t0 });
+      await job({ ...onsiteFR, kind: 'post' });
+      await job({ ...onsiteFR, channels: [Channel.ASHBY] });
+      await job({ ...onsiteFR, reason: 'joined' });
+      await job({ ...onsiteFR, processingStatus: 'processed' });
+      const extracted = await job(onsiteFR);
+      const extractionId = await repo.saveExtraction(extraction(extracted));
+      await db.orm.public.NormalizedJob.where({ id: extracted }).updateAll({
+        currentExtractionId: extractionId,
+      });
+
+      const listed = await prefilter.listUncheckedPending(10);
+      expect(listed.map((j) => j.id)).toEqual([earlier, later]);
+      expect(listed[0]).toEqual({
+        id: earlier,
+        workplaceType: 'onsite',
+        countryCode: 'FR',
+        remoteAllowed: null,
+        title: 'Backend Engineer',
+        location: 'Berlin, Germany',
+        descriptionText: 'We build things.',
+      });
+      expect(await prefilter.listUncheckedPending(1)).toHaveLength(1);
+      expect(await prefilter.findUncheckedPending(earlier)).toMatchObject({
+        id: earlier,
+      });
+      expect(await prefilter.findUncheckedPending(extracted)).toBeNull();
+    });
+
+    it('markSkipped records the reason and leaves the claim queue', async () => {
+      const id = await job(onsiteFR);
+      expect(await prefilter.markSkipped(id, reason)).toBe(true);
+      expect(await jobRow(id)).toMatchObject({
+        processingStatus: 'skipped',
+        processingSkip: reason,
+        processingRequestedAt: null,
+      });
+      expect(await repo.listPendingInScope(10)).toEqual([]);
+      expect(await repo.claim(id)).toBeNull();
+    });
+
+    it('markSkipped leaves a job that changed since it was listed', async () => {
+      const extracted = await job(onsiteFR);
+      const extractionId = await repo.saveExtraction(extraction(extracted));
+      await db.orm.public.NormalizedJob.where({ id: extracted }).updateAll({
+        currentExtractionId: extractionId,
+      });
+      const claimed = await job(onsiteFR);
+      await repo.claim(claimed);
+      const joined = await job({ ...onsiteFR, reason: 'joined' });
+      const retagged = await job({ ...onsiteFR, workplaceType: 'remote' });
+
+      for (const id of [extracted, claimed, joined, retagged])
+        expect(await prefilter.markSkipped(id, reason)).toBe(false);
+      expect((await jobRow(extracted)).processingStatus).toBe('pending');
+      expect((await jobRow(claimed)).processingStatus).toBe('processing');
+      expect((await jobRow(joined)).processingStatus).toBe('pending');
+      expect((await jobRow(retagged)).processingSkip).toBeNull();
+    });
+
+    it('loadDemand with no published profile is empty', async () => {
+      await sql`DELETE FROM profiles WHERE state = 'published'`;
+      expect(await prefilter.loadDemand()).toEqual({
+        anywhere: false,
+        countries: new Set(),
+      });
+    });
+
+    it('reopenSkipped reopens recent, open skips and keeps the reason', async () => {
+      const since = new Date(t0.getTime() - minutes(60));
+      const recent = await job(onsiteFR);
+      const old = await job({
+        ...onsiteFR,
+        firstSeenAt: new Date(since.getTime() - minutes(1)),
+      });
+      const closed = await job({ ...onsiteFR, closed: true });
+      const expired = await job({
+        ...onsiteFR,
+        expiresAt: new Date(Date.now() - minutes(1)),
+      });
+      for (const id of [recent, old, closed, expired])
+        expect(await prefilter.markSkipped(id, reason)).toBe(true);
+
+      expect(await prefilter.reopenSkipped({ firstSeenSince: since })).toBe(1);
+      expect(await jobRow(recent)).toMatchObject({
+        processingStatus: 'pending',
+        processingReason: 'reopened',
+        processingSkip: reason,
+      });
+      expect((await jobRow(recent)).processingRequestedAt).toBeInstanceOf(Date);
+      for (const id of [old, closed, expired])
+        expect((await jobRow(id)).processingStatus).toBe('skipped');
+    });
+
+    it('markPending leaves skipped jobs to allInScope, but sends one by id', async () => {
+      const id = await job(onsiteFR);
+      await prefilter.markSkipped(id, reason);
+      expect(await repo.markPending({ allInScope: true })).toEqual({
+        marked: 0,
+        skippedArchived: 0,
+        leftSkipped: 1,
+      });
+      expect(
+        await repo.markPending({ failed: true, nullStatus: true }),
+      ).toEqual({ marked: 0, skippedArchived: 0, leftSkipped: 0 });
+      expect((await jobRow(id)).processingStatus).toBe('skipped');
+      expect(await repo.markPending({ jobIds: [id] })).toEqual({
+        marked: 1,
+        skippedArchived: 0,
+        leftSkipped: 0,
+      });
+      expect((await jobRow(id)).processingStatus).toBe('pending');
+    });
+
+    it('processingCounts counts skipped listings apart', async () => {
+      const id = await job(onsiteFR);
+      await job(onsiteFR);
+      await prefilter.markSkipped(id, reason);
+      const counts = await repo.processingCounts();
+      expect(counts.listings).toMatchObject({ pending: 1, skipped: 1 });
+      expect(counts.posts.skipped).toBe(0);
+    });
+
+    it('a run that finishes after its job was released and skipped leaves it pending with the extraction', async () => {
+      const id = await job(onsiteFR);
+      const claim = (await repo.claim(id))!;
+      await repo.releaseStale(new Date(Date.now() + minutes(1)));
+      expect(await prefilter.markSkipped(id, reason)).toBe(true);
+      const extractionId = await repo.saveExtraction(extraction(id));
+      expect(
+        await repo.finish(claim, { status: 'processed', extractionId }),
+      ).toBe('superseded');
+      const row = await jobRow(id);
+      expect(row.processingStatus).toBe('pending');
+      expect(row.currentExtractionId).toBe(extractionId);
+      expect(row.processingRequestedAt).toBeInstanceOf(Date);
+      expect(await prefilter.findUncheckedPending(id)).toBeNull();
+    });
+  });
+
   describe('archived jobs', () => {
     it('markPending skips archived under every selector', async () => {
       const id = await job({ processingStatus: 'archived' });
       expect(
         await repo.markPending({ allInScope: true, jobIds: [id] }),
-      ).toEqual({ marked: 0, skippedArchived: 1 });
+      ).toEqual({ marked: 0, skippedArchived: 1, leftSkipped: 0 });
       expect(await repo.markPending({ jobIds: [id] })).toEqual({
         marked: 0,
         skippedArchived: 1,
+        leftSkipped: 0,
       });
       expect(
         await repo.markPending({ nullStatus: true, failed: true }),
-      ).toEqual({ marked: 0, skippedArchived: 0 });
+      ).toEqual({ marked: 0, skippedArchived: 0, leftSkipped: 0 });
       expect((await jobRow(id)).processingStatus).toBe('archived');
     });
 
@@ -1003,6 +1167,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           processed: 0,
           failed: 0,
           archived: 0,
+          skipped: 0,
           unset: 1,
         },
         posts: {
@@ -1011,6 +1176,7 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
           processed: 1,
           failed: 0,
           archived: 0,
+          skipped: 0,
           unset: 0,
           outOfWindow: 0,
           silenced: 0,
