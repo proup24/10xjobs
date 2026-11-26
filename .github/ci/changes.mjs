@@ -55,6 +55,14 @@ export function findGaps({ addedOrModified, projectRoots, ignoreGlobs, ownsRootF
   });
 }
 
+// GitHub workflow-command escaping: message text, and property values (file=...).
+export function escapeCommandData(s) {
+  return String(s).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+export function escapeCommandProperty(s) {
+  return escapeCommandData(s).replace(/:/g, '%3A').replace(/,/g, '%2C');
+}
+
 // ---- CLI ----
 
 function run(cmd, args) {
@@ -94,13 +102,13 @@ function main() {
   let pkgOther = false;
   if (!all || checkGaps) {
     if (base && head) {
-      changedFiles = nul(run('git', ['diff', '--name-only', '--no-renames', '-z', base, head]));
-      addedOrModified = nul(run('git', ['diff', '--name-only', '-z', '--diff-filter=d', base, head]));
+      changedFiles = nul(run('git', ['diff', '--name-only', '--no-renames', '-z', `${base}...${head}`]));
+      addedOrModified = nul(run('git', ['diff', '--name-only', '-z', '--diff-filter=d', `${base}...${head}`]));
     }
   }
   if (base && head) {
     affected = JSON.parse(run('npx', ['nx', 'show', 'projects', '--affected', `--base=${base}`, `--head=${head}`, '--json']));
-    if (changedFiles.includes('package.json')) pkgOther = packageJsonOtherFieldsChanged(readPackageJson(base), readPackageJson(head));
+    if (changedFiles.includes('package.json')) pkgOther = packageJsonOtherFieldsChanged(readPackageJson(run('git', ['merge-base', base, head]).trim()), readPackageJson(head));
   }
 
   const { jobs, runAllReason } = decide({ all, changedFiles, affected, packageJsonOtherFieldsChanged: pkgOther });
@@ -115,7 +123,7 @@ function main() {
     const ownsRootFile = (f) => JSON.parse(run('npx', ['nx', 'show', 'projects', '--affected', `--files=${f}`, '--json'])).length > 0;
     gaps = findGaps({ addedOrModified, projectRoots, ignoreGlobs, ownsRootFile });
     for (const f of gaps) {
-      console.log(`::error file=${f}::${f} is not covered: add it to a project's namedInputs in its package.json, or to .github/ci/runs-nothing.json`);
+      console.log(`::error file=${escapeCommandProperty(f)}::${escapeCommandData(f)} is not covered: add it to a project's namedInputs in its package.json, or to .github/ci/runs-nothing.json`);
     }
   }
 

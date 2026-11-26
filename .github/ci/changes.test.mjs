@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { decide, findGaps, packageJsonOtherFieldsChanged } from './changes.mjs';
+import { decide, escapeCommandData, escapeCommandProperty, findGaps, packageJsonOtherFieldsChanged } from './changes.mjs';
 
 const none = { all: false, changedFiles: [], affected: [], packageJsonOtherFieldsChanged: false };
 test('empty diff runs nothing', () => {
@@ -52,4 +52,8 @@ test('gaps: an unowned root file is a gap; an owned one is not', () => {
 });
 test('gaps: a project root prefix needs a slash', () => {
   assert.deepEqual(findGaps({ addedOrModified: ['apps/xjobs-old/a.ts'], projectRoots: roots, ignoreGlobs: ignore, ownsRootFile: () => false }), ['apps/xjobs-old/a.ts']);
+});
+test('workflow command escaping', () => {
+  assert.equal(escapeCommandData('a%b\r\nc:d,e'), 'a%25b%0D%0Ac:d,e');
+  assert.equal(escapeCommandProperty('a%b\nc:d,e'), 'a%25b%0Ac%3Ad%2Ce');
 });
