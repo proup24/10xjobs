@@ -55,7 +55,6 @@ export interface CandidatePost {
 /** A matchable job's current extraction, which the facts are built from. */
 export interface MatchCandidate {
   extractionId: string;
-  needsReview: boolean;
   kind: 'job' | 'post_role';
   /** Set on a `post_role` job, null on a listing. */
   post: CandidatePost | null;
@@ -196,7 +195,7 @@ const ON_CURRENT_AGE = (raw: Raw) =>
 
 /**
  * A published profile `p` that takes part in the job `j` has no row for it decided on
- * its facts `f` and its current extraction (whose `needsReview` the decision reads) by
+ * its facts `f` and its current extraction by
  * this matcher, on the profile, eligibility and post age as they are now.
  */
 const STALE_ROW = (raw: Raw) =>
@@ -224,7 +223,7 @@ export class PrismaMatcherRepository extends MatcherRepository {
   async loadCandidate(jobId: string): Promise<MatchCandidate | null> {
     const { raw } = this.db;
     const [row] = await this.db.query(
-      raw.sql`SELECT e.id AS "extractionId", e."needsReview", j.kind, j."postedAt",
+      raw.sql`SELECT e.id AS "extractionId", j.kind, j."postedAt",
           pe."verdictConfidence", pj."postSources"
         FROM normalized_jobs j JOIN job_extractions e ON e.id = j."currentExtractionId"
         LEFT JOIN normalized_jobs pj ON pj.id = j."parentJobId"
@@ -232,7 +231,6 @@ export class PrismaMatcherRepository extends MatcherRepository {
         WHERE j.id = ${jobId}::uuid AND ${matchable(raw)}`
         .returnsRow({
           extractionId: UUID,
-          needsReview: BOOL,
           kind: TEXT,
           postedAt: TIMESTAMP,
           verdictConfidence: TEXT,
@@ -244,7 +242,6 @@ export class PrismaMatcherRepository extends MatcherRepository {
     const kind = row.kind as MatchCandidate['kind'];
     return {
       extractionId: row.extractionId as string,
-      needsReview: row.needsReview as boolean,
       kind,
       post:
         kind === 'post_role'

@@ -50,11 +50,10 @@ const passingDoc = (edit?: (d: JobFactsDocument) => void) =>
     edit?.(d);
   });
 
-const job = (facts: JobFactsDocument, needsReview = false): MatchJob => ({
+const job = (facts: JobFactsDocument): MatchJob => ({
   jobId: 'j1',
   extractionId: 'e1',
   factsHash: 'h1',
-  needsReview,
   facts,
   post: null,
 });
@@ -216,12 +215,6 @@ describe('decide', () => {
     expect(d.unverified).toBe(true);
   });
 
-  it('qualified on a job with needsReview and no unsure check is not unverified', () => {
-    const d = decide(job(passingDoc(), true), exampleProfile(), ctx);
-    expect(d.outcome).toBe('qualified');
-    expect(d.unverified).toBe(false);
-  });
-
   it('rejects when neither the role nor the stack can be verified', () => {
     const d = decide(
       job(
@@ -229,7 +222,6 @@ describe('decide', () => {
           x.position.value = { roleKind: 'unstated', title: 'x' };
           x.techStack.value = null;
         }),
-        true,
       ),
       exampleProfile(),
       ctx,
