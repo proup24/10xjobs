@@ -1,5 +1,7 @@
 # 03: Collect
 
+Status: Built. Spec: [Indeed collect design](../../superpowers/specs/2026-11-25-indeed-collect-design.md). Plan: [Indeed collect plan](../../superpowers/plans/2026-11-25-indeed-collect.md). Collection runs hourly on weekdays under `COLLECTION_DAILY_BUDGET_USD_INDEED` (default $1). The Indeed switch stays unavailable until slice 04, so for the dev rollout only the owner's profile is turned on, by SQL. Batches wait unprocessed until slice 04.
+
 ## Goal
 
 The hosted engine collects Indeed jobs for every published profile with Indeed on, through the actor slice 01 picked, on a schedule and under a daily cap.
