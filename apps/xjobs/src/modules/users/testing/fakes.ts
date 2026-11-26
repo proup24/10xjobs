@@ -1,7 +1,11 @@
 /** In-memory repositories for unit tests; not part of the application build. */
 import { ProfileState } from 'src/common/enums';
 import type { UserRow } from 'src/database';
-import type { SwitchColumn, SwitchFlags } from 'src/modules/queries';
+import type {
+  IndeedMarket,
+  SwitchColumn,
+  SwitchFlags,
+} from 'src/modules/queries';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { UsersRepository } from '../repositories/users.repository';
 import type {
@@ -190,6 +194,13 @@ export class FakeProfilesRepository extends ProfilesRepository {
     const profile = await this.findById(userId, profileId);
     if (!profile) return null;
     return Object.assign(profile, { [column]: enabled });
+  }
+
+  /** The Indeed markets `indeedMarkets` answers with. */
+  markets: IndeedMarket[] = [];
+
+  async indeedMarkets(): Promise<IndeedMarket[]> {
+    return [...this.markets].sort((a, b) => a.site.localeCompare(b.site));
   }
 
   /** The labels of `labels` the places name, a city's country included; unknown ones are left out. */

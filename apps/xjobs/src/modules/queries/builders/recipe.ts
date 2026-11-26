@@ -3,7 +3,7 @@ import { Channel } from 'src/common/enums';
 import type { QuerySearchCombination, QuerySearchRecipe } from '../types';
 import { CHANNEL_QUERY_BUILDERS } from '../channels';
 import { sortKeys } from '../utils';
-export const QUERY_SEARCH_RECIPE_VERSION = 14;
+export const QUERY_SEARCH_RECIPE_VERSION = 15;
 
 /** Hex SHA-256 of the recipe fields in a fixed key order; `params` keys are sorted recursively. */
 export function recipeHash(
@@ -28,6 +28,8 @@ export function toRecipe(
 ): QuerySearchRecipe {
   if (combination.channel === Channel.LINKEDIN_POSTS)
     throw new Error('Post recipes are built by postRecipes');
+  if (combination.channel === Channel.INDEED)
+    throw new Error('Indeed recipes are built by indeedRecipes');
   const query = CHANNEL_QUERY_BUILDERS[combination.channel].build(combination);
   const recipe = {
     ...combination,

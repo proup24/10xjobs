@@ -489,6 +489,28 @@ export type Database = {
           },
         ];
       };
+      indeed_markets: {
+        Row: {
+          countryCode: string;
+          mainRemote: boolean;
+          remoteLocation: string;
+          site: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          countryCode: string;
+          mainRemote?: boolean;
+          remoteLocation?: string;
+          site: string;
+        };
+        Update: {
+          countryCode?: string;
+          mainRemote?: boolean;
+          remoteLocation?: string;
+          site?: string;
+        };
+        Relationships: [];
+      };
       iso_currencies: {
         Row: {
           code: string;

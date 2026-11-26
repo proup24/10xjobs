@@ -7,7 +7,7 @@ Collection fetches source results and saves a batch for ingestion.
 1. `WorkerService` receives `collect` on the channel queue. Queue names, schedules, windows, and source limits live in `infrastructure/jobs/steps/collect/config.ts`.
 2. `CollectionService.collect(channel)` loads active searches and groups them into segments. A segment is a small group of searches fetched together.
 3. Before fetching a segment, the coordinator claims its searches (`SearchSegmentsRepository.claim`). Only the first run collects a search over an interval. A search that another run holds under a live, overlapping claim is dropped from the segment, and so is one already covered up to the run's end. The window is then recomputed from the cursors the claim read. A segment with nothing claimed is skipped, and Apify is not called.
-4. The coordinator selects the channel collector with a switch. LinkedIn collectors call Apify directly. Ashby and Greenhouse share Google discovery, then fetch postings from their public APIs.
+4. The coordinator selects the channel collector with a switch. LinkedIn collectors call Apify directly. Ashby and Greenhouse share Google discovery, then fetch postings from their public APIs. The Indeed collector calls Apify (the valig actor) like LinkedIn, hourly on weekdays, under its own daily budget. Until Indeed ingest exists (Phase 5 slice 04), its batches are saved and wait unprocessed.
 5. `saveBatch()` writes the result file, then in one database transaction records the run and pending batch, moves the search cursors, and releases the run's claims.
 6. The coordinator enqueues the batch for ingestion.
 

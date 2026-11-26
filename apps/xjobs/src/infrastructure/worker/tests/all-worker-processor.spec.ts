@@ -77,6 +77,7 @@ const everyWorker = [
   'webhook',
   'collect-linkedin-job-board',
   'collect-linkedin-posts',
+  'collect-indeed',
 ];
 
 beforeEach(() => {

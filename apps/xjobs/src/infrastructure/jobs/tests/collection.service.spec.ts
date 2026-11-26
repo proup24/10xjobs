@@ -11,6 +11,7 @@ import {
   ApifyRunError,
   type ApifyActorProvider,
 } from 'src/modules/collectors/providers/apify/apify.provider';
+import { toIndeedInput } from 'src/modules/collectors/providers/mappers/indeed-input';
 import {
   linkedinGeoId,
   mergedLinkedinKeyword,
@@ -24,7 +25,11 @@ import {
   FakeSearchSegmentsRepository,
 } from 'src/modules/segments/testing/fakes';
 import { MemoryStorageService } from 'src/modules/storage/testing';
-import { CollectionService, channelJobsConfig } from '../steps/collect';
+import {
+  CollectionService,
+  channelJobsConfig,
+  collectsNow,
+} from '../steps/collect';
 import type { IngestQueue } from '../steps/ingest/queue.service';
 
 let n = 0;
@@ -118,6 +123,7 @@ function setup(
     collectors[Channel.LINKEDIN_JOB_BOARD_CHEAP] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD_BEBITY] as never,
     collectors[Channel.LINKEDIN_POSTS] as never,
+    collectors[Channel.INDEED] as never,
     queries as unknown as QuerySearchService,
     segments,
     splits,
@@ -258,6 +264,23 @@ describe('CollectionService.collect', () => {
     );
     expect(summary).toMatchObject({ batches: 1, collected: 3 });
     expect(summary).not.toHaveProperty('inserted');
+  });
+
+  it('stores an Indeed batch without enqueueing it', async () => {
+    const rows = builders(1, { channel: Channel.INDEED });
+    const { collection, segments, ingestQueue } = setup(
+      rows,
+      undefined,
+      Channel.INDEED,
+    );
+    const summary = await collection.collect(Channel.INDEED);
+
+    expect(summary).toMatchObject({ batches: 1 });
+    expect(segments.collected).toHaveLength(1);
+    expect(segments.collected[0]!.batch.storageKey.startsWith('INDEED/')).toBe(
+      true,
+    );
+    expect(ingestQueue.enqueue).not.toHaveBeenCalled();
   });
 
   it('records the search totals a run reports with its segment run', async () => {
@@ -1439,6 +1462,190 @@ describe('CollectionService posts budget and incomplete runs', () => {
     const { run } = segments.collected[0]!;
     for (const row of rows)
       expect(segments.cursors.get(row.id)).toEqual(run.windowEnd);
+  });
+});
+
+describe('CollectionService Indeed budget and windows', () => {
+  const INDEED = Channel.INDEED;
+  const indeed = (count = 1, overrides: Partial<QuerySearchBuilderRow> = {}) =>
+    builders(count, {
+      channel: INDEED,
+      params: {
+        site: 'us',
+        location: 'Remote',
+        roleWords: ['backend engineer'],
+        spellings: ['node'],
+      },
+      ...overrides,
+    });
+  const spend = (
+    segments: ReturnType<typeof setup>['segments'],
+    costMicroUsd: number | null,
+  ) =>
+    segments.runs.push({
+      id: `spent-${segments.runs.length}`,
+      channel: INDEED,
+      segmentKey: 'k',
+      segmentHash: 'h',
+      queryIds: [],
+      windowStart: new Date(),
+      windowEnd: new Date(),
+      startedAt: new Date(),
+      finishedAt: new Date(),
+      status: 'succeeded',
+      fetched: 0,
+      costMicroUsd,
+      capped: false,
+      truncatedQueryIds: [],
+      perQuery: {},
+      searchTotals: null,
+      error: null,
+      apifyRunId: null,
+      costFinalAt: null,
+    });
+
+  afterEach(() => vi.useRealTimers());
+
+  it('collects now with no trial channels set', () => {
+    expect(collectsNow(INDEED, [])).toBe(true);
+  });
+
+  it('collects hourly 09-21 Morocco time on weekdays, a day back, up to 72 hours', () => {
+    expect(channelJobsConfig[INDEED]).toMatchObject({
+      queueName: 'collect-indeed',
+      enabled: true,
+      schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+      window: { initialHours: 24, overlapMinutes: 0, maximumHours: 72 },
+      resumeHours: 24,
+      concurrency: 1,
+      attempts: 1,
+      run: { actor: 'valig/indeed-jobs-scraper', maxRunChargeUsd: 0.11 },
+    });
+  });
+
+  it('reads COLLECTION_DAILY_BUDGET_USD_INDEED for Indeed', async () => {
+    const { collection, configGet } = setup(indeed(), undefined, INDEED, 1);
+    await collection.collect(INDEED);
+    expect(configGet).toHaveBeenCalledWith(
+      'COLLECTION_DAILY_BUDGET_USD_INDEED',
+      expect.anything(),
+    );
+  });
+
+  it('charges an Indeed run what is left, at most 0.11', async () => {
+    const low = setup(indeed(), undefined, INDEED, 1);
+    spend(low.segments, 950_000);
+    await low.collection.collect(INDEED);
+    expect(low.collector.collect.mock.calls[0]![0].maxChargeUsd).toBeCloseTo(
+      0.05,
+      9,
+    );
+
+    const high = setup(indeed(), undefined, INDEED, 1);
+    spend(high.segments, 200_000);
+    await high.collection.collect(INDEED);
+    expect(high.collector.collect.mock.calls[0]![0].maxChargeUsd).toBeCloseTo(
+      0.11,
+      9,
+    );
+  });
+
+  it('starts no Indeed run under $0.001 left', async () => {
+    const rows = indeed();
+    const { collection, collector, segments } = setup(
+      rows,
+      undefined,
+      INDEED,
+      1,
+    );
+    spend(segments, 999_500);
+
+    const summary = await collection.collect(INDEED);
+
+    expect(collector.collect).not.toHaveBeenCalled();
+    expect(summary).toMatchObject({
+      segmentsDeferred: 1,
+      batches: 0,
+      segmentsFailed: 0,
+    });
+    expect(segments.cursors.size).toBe(0);
+  });
+
+  it('counts an Indeed run with no cost at its 0.11 ceiling', async () => {
+    const { collection, segments } = setup(indeed(), undefined, INDEED, 1);
+    const spent = vi.spyOn(segments, 'spentMicroUsd');
+    await collection.collect(INDEED);
+    expect(spent).toHaveBeenCalledWith(INDEED, expect.any(Date), 110_000);
+  });
+
+  it('a charge-capped Indeed run stores its items and keeps its cursors', async () => {
+    const rows = indeed();
+    const covered = new Date(Date.now() - 2 * 3_600_000);
+    rows[0]!.coveredUntil = covered;
+    const { collection, segments, storage } = setup(
+      rows,
+      async (s) =>
+        resultFor(s, () => [item(1), item(2)], {
+          unattributed: [],
+          fetched: 2,
+          capped: true,
+          costUsd: 0.05,
+        }),
+      INDEED,
+      1,
+    );
+
+    const summary = await collection.collect(INDEED);
+
+    expect(summary).toMatchObject({ batches: 1, segmentsFailed: 0 });
+    const { batch } = segments.collected[0]!;
+    expect(batch.itemCount).toBe(2);
+    const file = parseBatchFile(
+      await storage.get(ingestConfig.bucket, batch.storageKey),
+    );
+    expect(file.itemsByQuery[rows[0]!.id]).toHaveLength(2);
+    expect(segments.cursors.get(rows[0]!.id)).toEqual(covered);
+  });
+
+  it('a clipped Indeed window asks 3 and logs the clip', async () => {
+    const now = new Date('2026-11-25T12:00:00Z');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(now);
+    const rows = indeed();
+    rows[0]!.coveredUntil = new Date(now.getTime() - 100 * 3_600_000);
+    const { collection, collector, warn } = setup(rows, undefined, INDEED, 1);
+
+    await collection.collect(INDEED);
+
+    const [search] = collector.collect.mock.calls[0]!;
+    expect(search.until.getTime() - search.since.getTime()).toBe(
+      72 * 3_600_000,
+    );
+    expect(toIndeedInput(search, 1000).datePosted).toBe('3');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('was not collected for longer than 72h'),
+    );
+  });
+
+  it('the Monday catch-up asks 3', async () => {
+    // Friday 21:00 Morocco (UTC+1) cursor, Monday 09:00 tick: 60 hours.
+    const tick = new Date('2026-11-23T08:00:00Z');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(tick);
+    const rows = indeed();
+    rows[0]!.coveredUntil = new Date('2026-11-20T20:00:00Z');
+    const { collection, collector, warn } = setup(rows, undefined, INDEED, 1);
+
+    await collection.collect(INDEED);
+
+    const [search] = collector.collect.mock.calls[0]!;
+    expect(search.until.getTime() - search.since.getTime()).toBe(
+      60 * 3_600_000,
+    );
+    expect(toIndeedInput(search, 1000).datePosted).toBe('3');
+    expect(warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('was not collected for longer'),
+    );
   });
 });
 

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { QuerySearchService, switchFlags } from 'src/modules/queries';
 import { describeError } from 'src/utils';
 import { ProfilesRepository } from '../repositories/profiles.repository';
-import { toQuerySearchInput, labelsFor } from './profiles.service';
+import { searchInputFor } from './profiles.service';
 
 /** Profiles whose searches one tick swaps (calls to `replace`). */
 export const SEARCH_SYNC_LIMIT = 20;
@@ -45,13 +45,10 @@ export class ProfileSearchSync {
     for (const profile of behind) {
       if (swaps >= limit) break;
       try {
-        const labels = await labelsFor(this.profiles, profile);
+        const input = await searchInputFor(this.profiles, profile);
         // Every switch whose flag is on, available or not, keeps its searches.
         const switches = switchFlags(profile);
-        const recipes = this.querySearch.recipesFor(
-          toQuerySearchInput(profile, labels),
-          switches,
-        );
+        const recipes = this.querySearch.recipesFor(input, switches);
         // Never swap to nothing: the profile keeps its searches and the next tick retries.
         if (recipes.length === 0) throw new NoSearches();
         swaps += 1;

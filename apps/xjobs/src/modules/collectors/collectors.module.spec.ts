@@ -5,6 +5,7 @@ import { CollectorsModule } from './collectors.module';
 import { GoogleJobsSearchProvider } from './providers/apify/google-search.provider';
 import { AshbyCollector } from './providers/ashby.collector';
 import { GreenhouseCollector } from './providers/greenhouse.collector';
+import { IndeedCollector } from './providers/indeed.collector';
 import { LinkedinJobBoardCollector } from './providers/linkedin-job-board.collector';
 import { LinkedinJobBoardCheapCollector } from './providers/linkedin-job-board-cheap.collector';
 import { LinkedinPostsCollector } from './providers/linkedin-posts.collector';
@@ -30,6 +31,7 @@ it('provides one collector per channel without an Apify token', async () => {
         LinkedinJobBoardCheapCollector,
         LinkedinJobBoardBebityCollector,
         LinkedinPostsCollector,
+        IndeedCollector,
       ]
         .map((collector) => module.get(collector).channel)
         .sort(),
@@ -48,11 +50,12 @@ it('gives every Apify trigger its own Apify client', async () => {
       LinkedinJobBoardCheapCollector,
       LinkedinJobBoardBebityCollector,
       LinkedinPostsCollector,
+      IndeedCollector,
     ].map(
       (trigger) => (module.get(trigger) as unknown as { actor: object }).actor,
     );
     expect(actors.every(Boolean)).toBe(true);
-    expect(new Set(actors).size).toBe(5);
+    expect(new Set(actors).size).toBe(6);
   } finally {
     await module.close();
   }

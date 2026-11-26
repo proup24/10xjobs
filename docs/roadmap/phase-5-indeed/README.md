@@ -19,15 +19,15 @@ Same as Phases 1 to 4: each slice is a short brief covering the goal, what exist
 
 ## Slices
 
-| #   | Slice                                                    | Status                       |
-| --- | -------------------------------------------------------- | ---------------------------- |
-| 01  | [Actor sample](01-actor-sample.md)                       | Done: go, valig (2026-11-25) |
-| 02  | [Indeed switch](02-indeed-switch.md)                     | Built (spec)                 |
-| 03  | [Collect](03-collect.md)                                 | Brief                        |
-| 04  | [Ingest, process and match](04-ingest-process-match.md)  | Brief                        |
-| 05  | [Cross-source duplicates](05-cross-source-duplicates.md) | Brief                        |
-| 06  | [Channel compare report](06-channel-compare.md)          | Brief                        |
-| 07  | [Tech-hub markets](07-tech-hub-markets.md)               | Brief                        |
+| #   | Slice                                                    | Status                                                                                                                                    |
+| --- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 01  | [Actor sample](01-actor-sample.md)                       | Done: go, valig (2026-11-25)                                                                                                              |
+| 02  | [Indeed switch](02-indeed-switch.md)                     | Built (spec)                                                                                                                              |
+| 03  | [Collect](03-collect.md)                                 | Built ([spec](../../superpowers/specs/2026-11-25-indeed-collect-design.md), [plan](../../superpowers/plans/2026-11-25-indeed-collect.md)) |
+| 04  | [Ingest, process and match](04-ingest-process-match.md)  | Brief                                                                                                                                     |
+| 05  | [Cross-source duplicates](05-cross-source-duplicates.md) | Brief                                                                                                                                     |
+| 06  | [Channel compare report](06-channel-compare.md)          | Brief                                                                                                                                     |
+| 07  | [Tech-hub markets](07-tech-hub-markets.md)               | Brief                                                                                                                                     |
 
 **Slice 01 is a go/no-go gate** _(user)_: if no shortlisted actor gives usable data at a sane cost, the phase stops before any channel code. Usable means full descriptions and a stable Indeed job id; sane means start fees that don't make cost per qualified job clearly worse than harvestapi's. A missing employer apply link is not a stop: most Indeed jobs are Easily apply and have none anyway _(user)_.
 

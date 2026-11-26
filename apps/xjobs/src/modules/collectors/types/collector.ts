@@ -78,6 +78,13 @@ export interface LinkedinPostsRunConfig extends ActorRunConfig {
   waitSecs: number;
 }
 
+export interface IndeedRunConfig extends ActorRunConfig {
+  /** Rows every search asks for; a search that returns this many is full. */
+  maxRowsPerSearch: number;
+  /** How long to wait for the run before aborting it, in seconds. */
+  waitSecs: number;
+}
+
 export interface LinkedinJobBoardRunConfig extends ActorRunConfig {
   /**
    * Rows every search asks for, sent as the run's row limit (a run carries

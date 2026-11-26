@@ -82,7 +82,7 @@ import { WorkerModule } from '../worker.module';
 import { WorkerService } from '../worker.service';
 
 // No Claude credential: the processor is off in `all`.
-// The job board and posts collect; the other channels remove their schedules.
+// The job board, posts and Indeed collect; the other channels remove their schedules.
 const allWorkers = [
   'infrastructure',
   'ingest',
@@ -91,6 +91,7 @@ const allWorkers = [
   'webhook',
   'collect-linkedin-job-board',
   'collect-linkedin-posts',
+  'collect-indeed',
 ];
 const inactiveSchedulers = [
   'collect-linkedin-job-board-cheap:collect',
@@ -138,6 +139,7 @@ it('runs infrastructure, ingest and every active channel collection, and the mat
       'webhook:sweep',
       'collect-linkedin-job-board:collect',
       'collect-linkedin-posts:collect',
+      'collect-indeed:collect',
     ]);
     expect(created.removedSchedulers).toEqual(inactiveSchedulers);
     // Schedules on: one rates refresh at startup, under a fixed id.

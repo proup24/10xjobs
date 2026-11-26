@@ -41,7 +41,7 @@ describe('batch file', () => {
   });
 
   it('rejects an unknown channel', () => {
-    const data = Buffer.from(JSON.stringify({ ...file, channel: 'INDEED' }));
+    const data = Buffer.from(JSON.stringify({ ...file, channel: 'MONSTER' }));
     expect(() => parseBatchFile(data)).toThrow(BatchFileError);
   });
 

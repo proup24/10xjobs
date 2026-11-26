@@ -171,6 +171,56 @@ describe('ProfilesService', () => {
     });
   });
 
+  it('toQuerySearchInput maps countries and cities per arrangement', async () => {
+    const profile = await profiles.add(
+      userId,
+      {
+        ...profileInput,
+        locations: {
+          remote: [
+            { kind: 'country', code: 'MA' },
+            { kind: 'region', code: 'EMEA' },
+          ],
+          hybrid: [],
+          onsite: [{ kind: 'city', id: 'c1' }],
+        },
+      },
+      [skill('nodejs', 8)],
+    );
+    const input = toQuerySearchInput(profile, {
+      regions: new Map([['EMEA', 'EMEA']]),
+      countries: new Map([['MA', 'Morocco']]),
+      cities: new Map([['c1', { name: 'Casablanca', countryCode: 'MA' }]]),
+    });
+    expect(input.placeCountries).toEqual({
+      remote: [{ countryCode: 'MA', city: null }],
+      hybrid: [],
+      onsite: [{ countryCode: 'MA', city: 'Casablanca' }],
+    });
+  });
+
+  it('carries the markets given', async () => {
+    const profile = await create();
+    const markets = [
+      {
+        site: 'us',
+        countryCode: 'US',
+        mainRemote: true,
+        remoteLocation: 'Remote',
+      },
+    ];
+    const input = toQuerySearchInput(
+      profile,
+      {
+        regions: new Map([['MENA', 'MENA']]),
+        countries: new Map(),
+        cities: new Map(),
+      },
+      markets,
+    );
+    expect(input.indeedMarkets).toEqual(markets);
+  });
+
   it('sorts the stack by importance then mastery', async () => {
     const view = toProfileView(
       await create([skill('rust', 5, 2), skill('go', 5, 9)]),
@@ -814,12 +864,39 @@ describe('ProfilesService', () => {
         expect(linkedPosts(id)).toHaveLength(4);
       });
 
-      it('skips detach for a switch with no channel', async () => {
-        const indeedOpen = new ProfilesService(
+      const serviceWith = (switches: typeof SEARCH_SWITCHES) =>
+        new ProfilesService(
           new UsersService(userRows),
           profiles,
           new QuerySearchService(querySearches),
           storage,
+          switches,
+        );
+
+      it('skips detach for a switch with no channel', async () => {
+        const noChannel = serviceWith(
+          SEARCH_SWITCHES.map((sw) => ({
+            ...sw,
+            available: true,
+            channel: sw.key === 'indeed' ? null : sw.channel,
+          })),
+        );
+        const { id } = await createOwner();
+        await noChannel.publish(userId, id);
+        const detach = vi.spyOn(QuerySearchService.prototype, 'detachChannel');
+        try {
+          await noChannel.setSearchSwitch(userId, id, 'indeed', true);
+          await expect(
+            noChannel.setSearchSwitch(userId, id, 'indeed', false),
+          ).resolves.toEqual({ key: 'indeed', enabled: false, searches: 0 });
+          expect(detach).not.toHaveBeenCalled();
+        } finally {
+          detach.mockRestore();
+        }
+      });
+
+      it('detaches the Indeed builders when the Indeed switch goes off', async () => {
+        const indeedOpen = serviceWith(
           SEARCH_SWITCHES.map((sw) => ({ ...sw, available: true })),
         );
         const { id } = await createOwner();
@@ -827,10 +904,9 @@ describe('ProfilesService', () => {
         const detach = vi.spyOn(QuerySearchService.prototype, 'detachChannel');
         try {
           await indeedOpen.setSearchSwitch(userId, id, 'indeed', true);
-          await expect(
-            indeedOpen.setSearchSwitch(userId, id, 'indeed', false),
-          ).resolves.toEqual({ key: 'indeed', enabled: false, searches: 0 });
-          expect(detach).not.toHaveBeenCalled();
+          await indeedOpen.setSearchSwitch(userId, id, 'indeed', false);
+          expect(detach).toHaveBeenCalledTimes(1);
+          expect(detach).toHaveBeenCalledWith(id, Channel.INDEED);
         } finally {
           detach.mockRestore();
         }

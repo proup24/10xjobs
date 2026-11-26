@@ -9,7 +9,7 @@ export { GreenhouseQueryBuilder } from './greenhouse.builder';
 export { LinkedinJobBoardBuilder } from './linkedin_board.builder';
 
 export const CHANNEL_QUERY_BUILDERS: Record<
-  Exclude<Channel, Channel.LINKEDIN_POSTS>,
+  Exclude<Channel, Channel.LINKEDIN_POSTS | Channel.INDEED>,
   ChannelQueryBuilder
 > = {
   [Channel.LINKEDIN_JOB_BOARD]: new LinkedinJobBoardBuilder(),

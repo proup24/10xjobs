@@ -1,4 +1,8 @@
-export { channelIngestConfig, type ChannelIngestConfig } from './channels';
+export {
+  channelIngestConfig,
+  type ChannelIngestConfig,
+  INGEST_WAITING_CHANNELS,
+} from './channels';
 
 export const ingestConfig = {
   /** Bucket holding one file per collection batch. */
