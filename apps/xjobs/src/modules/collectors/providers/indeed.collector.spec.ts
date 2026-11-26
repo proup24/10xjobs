@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Channel } from 'src/common/enums';
 import { SearchNotStartedError } from '../utils/search-not-started';
-import type { SegmentSearch } from '../types/collector';
+import type { RawCollectedItem, SegmentSearch } from '../types/collector';
 import type { ApifyActorProvider } from './apify/apify.provider';
 import { IndeedCollector } from './indeed.collector';
 
@@ -101,9 +101,9 @@ describe('IndeedCollector', () => {
     expect(result.fetched).toBe(3);
     expect(result.unattributed).toEqual([]);
     for (const id of ['a', 'b'])
-      expect(result.itemsByQuery.get(id)!.map((i) => i.rank)).toEqual([
-        1, 2, 3,
-      ]);
+      expect(
+        result.itemsByQuery.get(id)!.map((i: RawCollectedItem) => i.rank),
+      ).toEqual([1, 2, 3]);
     expect(result.source).toEqual({
       actor: 'valig/indeed-jobs-scraper',
       apifyRunId: 'run-1',

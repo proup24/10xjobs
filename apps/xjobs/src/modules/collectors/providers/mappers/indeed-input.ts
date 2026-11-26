@@ -2,13 +2,13 @@ import type { SegmentSearch } from '../../types/collector';
 import { mergedLinkedinKeyword } from './linkedin-job-board.mapper';
 
 /** What `valig/indeed-jobs-scraper` takes for one search; no other field is sent. */
-export interface IndeedInput {
+export type IndeedInput = {
   country: string;
   title: string;
   location: string;
   limit: number;
   datePosted: '1' | '3' | '7';
-}
+};
 
 /** The smallest of Indeed's day filters (1, 3, 7) that covers the window. */
 export function indeedDatePosted(since: Date, until: Date): '1' | '3' | '7' {
