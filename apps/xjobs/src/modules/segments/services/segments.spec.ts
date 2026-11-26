@@ -748,16 +748,12 @@ describe('Indeed segments', () => {
     location: string,
     spellings: string[],
   ): QuerySearchBuilderRow =>
-    ({
-      id: `qs-${++n}`,
-      hash: `h-${String(n).padStart(3, '0')}`,
+    builder({
       channel: Channel.INDEED,
-      domain: SkillDomain.backend,
       type: Arrangement.remote,
       location: `${site}:${location || '*'}`.toLowerCase(),
-      keyword: 'backend',
       params: { site, location, roleWords: ['backend'], spellings },
-    }) as QuerySearchBuilderRow;
+    });
 
   it("merges two profiles' Indeed builders on one site and location into one segment", () => {
     const a = indeed('us', 'Remote', ['nestjs']);
@@ -776,7 +772,18 @@ describe('Indeed segments', () => {
     );
     const segments = buildSegments(members);
     expect(segments.length).toBeGreaterThan(1);
-    expect(segments.flatMap((s) => s.members)).toHaveLength(30);
+    const ids = segments.flatMap((s) => s.members.map((m) => m.id));
+    expect(new Set(ids).size).toBe(ids.length);
+    expect([...ids].sort()).toEqual(members.map((m) => m.id).sort());
+    for (const s of segments)
+      expect(
+        linkedinKeywordFits(
+          ['backend'],
+          s.members.flatMap(
+            (m) => (m.params as { spellings: string[] }).spellings,
+          ),
+        ),
+      ).toBe(true);
   });
 
   it('keeps different locations on one site apart', () => {
