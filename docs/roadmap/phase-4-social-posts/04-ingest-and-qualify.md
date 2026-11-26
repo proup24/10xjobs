@@ -1,6 +1,6 @@
 # 04: Ingest and qualify
 
-Status: built; the deploy waits on the credits and capacity brainstorm. Spec: [posts qualify design](../../superpowers/specs/2026-11-25-posts-qualify-design.md). Built in PRs #139, #147 and PR C (lead-level roles count for `tech_lead` profiles; number to fill in when opened).
+Status: built; the deploy waits on the credits and capacity brainstorm. Spec: [posts qualify design](../../superpowers/specs/2026-11-25-posts-qualify-design.md). Built in PRs #139, #147 and #149 (lead-level roles count for `tech_lead` profiles).
 
 ## Goal
 
@@ -28,7 +28,7 @@ An extracted post becomes a job and is decided against each published profile as
 
 - An `unsure` hiring verdict is never a match; at most it goes to review.
 - Resolved: an archived role job keeps its `job_matches` rows; archiving should delete them, and the matcher must skip `processingStatus = 'archived'`.
-- Resolved (PR C): a `tech_lead` profile fails the position check on a role like "Tech Lead Fullstack", which Extract reads as `fullstack_engineer` (the kind follows the duties, as for listings). A lead-level seniority now satisfies a `tech_lead` profile that includes `lead`.
+- Resolved (#149): a `tech_lead` profile fails the position check on a role like "Tech Lead Fullstack", which Extract reads as `fullstack_engineer` (the kind follows the duties, as for listings). A lead-level seniority now satisfies a `tech_lead` profile that includes `lead`.
 - Still open: post processing shares the Claude subscription with listings, which always go first; on 2026-11-24 a listing backlog left posts unprocessed for over a day. Posts need a guaranteed share of the processor (or more capacity) before this slice ships.
 
 ## Open questions
