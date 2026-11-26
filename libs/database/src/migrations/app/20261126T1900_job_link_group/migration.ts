@@ -56,7 +56,10 @@ REVOKE EXECUTE ON FUNCTION public.job_link_keys(uuid) FROM PUBLIC, anon, authent
 // Breadth first from p_job: each step looks up only the keys the previous step added, adds only
 // jobs not yet in the group, and the recursion ends when a step adds none or at depth 4. Only
 // active jobs join; p_job itself is always in its group. OFFSET 0 keeps each step's lookup a
-// single evaluation: inlined, its ARRAY() would run once per reference.
+// single evaluation: inlined, its ARRAY() would run once per reference. An archived job
+// (processingStatus 'archived') whose status is still active stays in its group: the user's
+// decisions on it keep counting for the group, and an archived role's last links are the last
+// known truth about which job it advertised.
 const jobLinkGroup = String.raw`CREATE OR REPLACE FUNCTION public.job_link_group(p_job uuid)
  RETURNS SETOF uuid
  LANGUAGE plpgsql
@@ -103,8 +106,10 @@ END
 $function$;
 REVOKE EXECUTE ON FUNCTION public.job_link_group(uuid) FROM PUBLIC, anon, authenticated;`;
 
-// The user's latest decision (applied, dismissed, expired) on any job of p_job's group, else
-// null. A user with no decision at all skips the group lookup.
+// The user's decision on p_job's group, else null: an application on any job of the group wins,
+// then an expiry, then a dismissal, each the most recent of its kind. So a newer dismissal of a
+// linked role never hides an application already sent for the same job. A user with no decision
+// at all skips the group lookup.
 const groupDecisionStatus = String.raw`CREATE OR REPLACE FUNCTION public.group_decision_status(p_user uuid, p_job uuid)
  RETURNS text
  LANGUAGE plpgsql
@@ -119,7 +124,8 @@ BEGIN
             FROM public.job_decisions d
            WHERE d."userId" = p_user
              AND d."jobId" IN (SELECT public.job_link_group(p_job))
-           ORDER BY d."decidedAt" DESC, d.id DESC
+           ORDER BY CASE d.status WHEN 'applied' THEN 0 WHEN 'expired' THEN 1 ELSE 2 END,
+                    d."decidedAt" DESC, d.id DESC
            LIMIT 1);
 END
 $function$;

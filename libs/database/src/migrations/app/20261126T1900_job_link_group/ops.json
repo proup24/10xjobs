@@ -24,7 +24,7 @@
       },
       {
         "description": "create group_decision_status",
-        "sql": "CREATE OR REPLACE FUNCTION public.group_decision_status(p_user uuid, p_job uuid)\n RETURNS text\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF NOT EXISTS (SELECT 1 FROM public.job_decisions d WHERE d.\"userId\" = p_user) THEN\n    RETURN NULL;\n  END IF;\n  RETURN (SELECT d.status\n            FROM public.job_decisions d\n           WHERE d.\"userId\" = p_user\n             AND d.\"jobId\" IN (SELECT public.job_link_group(p_job))\n           ORDER BY d.\"decidedAt\" DESC, d.id DESC\n           LIMIT 1);\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.group_decision_status(uuid, uuid) FROM PUBLIC, anon, authenticated;"
+        "sql": "CREATE OR REPLACE FUNCTION public.group_decision_status(p_user uuid, p_job uuid)\n RETURNS text\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF NOT EXISTS (SELECT 1 FROM public.job_decisions d WHERE d.\"userId\" = p_user) THEN\n    RETURN NULL;\n  END IF;\n  RETURN (SELECT d.status\n            FROM public.job_decisions d\n           WHERE d.\"userId\" = p_user\n             AND d.\"jobId\" IN (SELECT public.job_link_group(p_job))\n           ORDER BY CASE d.status WHEN 'applied' THEN 0 WHEN 'expired' THEN 1 ELSE 2 END,\n                    d.\"decidedAt\" DESC, d.id DESC\n           LIMIT 1);\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.group_decision_status(uuid, uuid) FROM PUBLIC, anon, authenticated;"
       },
       {
         "description": "replace match_details: decisionStatus reads the linked group",
