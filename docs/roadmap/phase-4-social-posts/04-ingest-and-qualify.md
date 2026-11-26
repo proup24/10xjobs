@@ -1,5 +1,7 @@
 # 04: Ingest and qualify
 
+Status: built; the deploy waits on the credits and capacity brainstorm. Spec: [posts qualify design](../../superpowers/specs/2026-11-25-posts-qualify-design.md). Built in PRs #139, #147 and #149 (lead-level roles count for `tech_lead` profiles).
+
 ## Goal
 
 An extracted post becomes a job and is decided against each published profile as qualified, review or rejected, with a reason. The web app shows them on the social posts page (slice 04a).
@@ -25,9 +27,9 @@ An extracted post becomes a job and is decided against each published profile as
 ## From slice 03
 
 - An `unsure` hiring verdict is never a match; at most it goes to review.
-- An archived role job keeps its `job_matches` rows; archiving should delete them, and the matcher must skip `processingStatus = 'archived'`.
-- A `tech_lead` profile fails the position check on a role like "Tech Lead Fullstack", which Extract reads as `fullstack_engineer` (the kind follows the duties, as for listings). The matcher could let a lead title or seniority satisfy a `tech_lead` profile.
-- Post processing shares the Claude subscription with listings, which always go first; on 2026-11-24 a listing backlog left posts unprocessed for over a day. Posts need a guaranteed share of the processor (or more capacity) before this slice ships.
+- Resolved: an archived role job keeps its `job_matches` rows; archiving should delete them, and the matcher must skip `processingStatus = 'archived'`.
+- Resolved (#149): a `tech_lead` profile fails the position check on a role like "Tech Lead Fullstack", which Extract reads as `fullstack_engineer` (the kind follows the duties, as for listings). A lead-level seniority now satisfies a `tech_lead` profile that includes `lead`.
+- Still open: post processing shares the Claude subscription with listings, which always go first; on 2026-11-24 a listing backlog left posts unprocessed for over a day. Posts need a guaranteed share of the processor (or more capacity) before this slice ships.
 
 ## Open questions
 

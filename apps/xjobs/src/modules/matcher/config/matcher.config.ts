@@ -1,5 +1,5 @@
 /** Bump when a rule changes, so stored decisions can be told apart. */
-export const MATCHER_VERSION = 13;
+export const MATCHER_VERSION = 14;
 /** The oldest an original post may be, in days, before a role from it fails. */
 export const POST_MAX_AGE_DAYS = 30;
 /**

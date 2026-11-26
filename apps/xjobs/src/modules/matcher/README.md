@@ -36,14 +36,15 @@ The decision for one (profile, job): `rejected` when at least one check fails on
 
 **Position** (first row that applies decides):
 
-| Job                                 | Outcome   |
-| ----------------------------------- | --------- |
-| `isSoftwareEngineeringRole = false` | `fail`    |
-| same role kind as the profile       | `pass`    |
-| `null` or `unstated`                | `unknown` |
-| any other code                      | `fail`    |
+| Job                                                                                                      | Outcome                                               |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `isSoftwareEngineeringRole = false`                                                                      | `fail`                                                |
+| same role kind as the profile                                                                            | `pass`                                                |
+| `tech_lead` profile with `lead`, engineering kind (not `other`, `engineering_manager`), seniority `lead` | `pass` (`lead-level <roleKind> counts for tech_lead`) |
+| `null` or `unstated`                                                                                     | `unknown`                                             |
+| any other code                                                                                           | `fail`                                                |
 
-Only an exact code counts: a backend profile does not see `fullstack_engineer` jobs.
+Otherwise only an exact code counts: a backend profile does not see `fullstack_engineer` jobs. A `tech_lead` profile whose seniorities include `lead` also passes any software engineering role kind except `other` and `engineering_manager` whose seniority is `lead` (`staff` and `principal` are individual-contributor levels); the pass rests on `position`, else `seniority`, else `isSoftwareEngineeringRole`, whichever is unsure first. Seniority is not touched: a `tech_lead` profile without `lead` in its seniorities still fails seniority on a lead role.
 
 **Seniority**:
 

@@ -1,5 +1,16 @@
 import type { JobFactsDocument } from 'src/modules/facts/schema/facts';
+import { POSITION_TITLES } from 'src/modules/queries/builders/keywords';
 import { restsOn, type Check, type MatchProfile } from './types';
+
+/**
+ * Role kinds a lead-level seniority lets a `tech_lead` profile pass: the software
+ * engineering kinds the profile positions name. `other` (not engineering work) and
+ * `engineering_manager` (people management, not leading engineers by building) are left
+ * out, and `unstated` is not a kind. `tech_lead` itself passes by the exact-kind rule.
+ */
+const LEAD_PASS_KINDS: ReadonlySet<string> = new Set(
+  Object.keys(POSITION_TITLES).filter((k) => k !== 'engineering_manager'),
+);
 
 /**
  * A not-software-engineering failure on an unsure flag is unsure only when it might not
@@ -54,6 +65,25 @@ export function checkPosition(
       `job role ${roleKind} matches your position`,
       positionUnsure ??
         (doc.isSoftwareEngineeringRole.confidence === 'unsure'
+          ? 'isSoftwareEngineeringRole'
+          : null),
+    );
+  }
+  if (
+    profile.position === 'tech_lead' &&
+    profile.seniorities.includes('lead') &&
+    roleKind !== null &&
+    LEAD_PASS_KINDS.has(roleKind) &&
+    doc.seniority.value === 'lead'
+  ) {
+    return check(
+      'pass',
+      roleKind,
+      `lead-level ${roleKind} counts for tech_lead`,
+      positionUnsure ??
+        (doc.seniority.confidence === 'unsure' ? 'seniority' : null) ??
+        (doc.isSoftwareEngineeringRole.value === null ||
+        doc.isSoftwareEngineeringRole.confidence === 'unsure'
           ? 'isSoftwareEngineeringRole'
           : null),
     );
