@@ -43,6 +43,23 @@ export abstract class PrefilterRepository {
    * them again; `processingSkip` stays for history. Returns how many.
    */
   abstract reopenSkipped(filter: { firstSeenSince: Date }): Promise<number>;
+  /** How many jobs `reopenSkipped` would reopen, for a dry run. */
+  abstract countReopenable(filter: { firstSeenSince: Date }): Promise<number>;
+  /**
+   * Published profiles whose `matchVersion` the prefilter has not rechecked
+   * at yet (a new publish, or an edit such as the places).
+   */
+  abstract listUnrecheckedProfiles(): Promise<
+    { id: string; matchVersion: number }[]
+  >;
+  /**
+   * Records the version a profile was rechecked at. Writing it never bumps
+   * `matchVersion` (the profile trigger leaves the column out).
+   */
+  abstract setRecheckedVersion(
+    profileId: string,
+    matchVersion: number,
+  ): Promise<void>;
 }
 
 type Raw = DatabaseTransaction['raw'];
@@ -159,6 +176,21 @@ export class PrismaPrefilterRepository extends PrefilterRepository {
     return rows.length > 0;
   }
 
+  async countReopenable(filter: { firstSeenSince: Date }): Promise<number> {
+    const { raw } = this.db;
+    const [row] = await this.db.query(
+      raw.sql`SELECT count(*)::int AS n FROM normalized_jobs j
+        WHERE j."processingStatus" = 'skipped' AND j.status = 'active'
+          AND j.kind = 'job'
+          AND j."firstSeenAt" >= ${filter.firstSeenSince.toISOString()}::timestamptz
+          AND NOT j.closed
+          AND (j."expiresAt" IS NULL OR j."expiresAt" > now())`
+        .returnsRow({ n: 'pg/int4@1' })
+        .build(),
+    );
+    return row ? Number(row.n) : 0;
+  }
+
   async reopenSkipped(filter: { firstSeenSince: Date }): Promise<number> {
     const { raw } = this.db;
     const rows = await this.db.query(
@@ -171,6 +203,7 @@ export class PrismaPrefilterRepository extends PrefilterRepository {
           "processingStartedAt" = NULL,
           "updatedAt" = now()
         WHERE j."processingStatus" = 'skipped' AND j.status = 'active'
+          AND j.kind = 'job'
           AND j."firstSeenAt" >= ${filter.firstSeenSince.toISOString()}::timestamptz
           AND NOT j.closed
           AND (j."expiresAt" IS NULL OR j."expiresAt" > now())
@@ -179,5 +212,25 @@ export class PrismaPrefilterRepository extends PrefilterRepository {
         .build(),
     );
     return rows.length;
+  }
+
+  async listUnrecheckedProfiles(): Promise<
+    { id: string; matchVersion: number }[]
+  > {
+    const profiles = await this.db.orm.public.Profile.where({
+      state: 'published',
+    }).all();
+    return profiles
+      .filter((p) => p.prefilterCheckedVersion !== p.matchVersion)
+      .map((p) => ({ id: p.id, matchVersion: p.matchVersion }));
+  }
+
+  async setRecheckedVersion(
+    profileId: string,
+    matchVersion: number,
+  ): Promise<void> {
+    await this.db.orm.public.Profile.where({ id: profileId }).updateAll({
+      prefilterCheckedVersion: matchVersion,
+    });
   }
 }

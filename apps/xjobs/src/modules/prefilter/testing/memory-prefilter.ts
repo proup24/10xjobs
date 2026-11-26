@@ -41,7 +41,12 @@ export interface MemoryPrefilterJob extends PrefilterJob {
 export class MemoryPrefilterRepository extends PrefilterRepository {
   readonly jobs = new Map<string, MemoryPrefilterJob>();
   /** Published profiles' places. */
-  readonly profiles: { locations: PlacesByArrangement }[] = [];
+  readonly profiles: {
+    locations: PlacesByArrangement;
+    id?: string;
+    matchVersion?: number;
+    prefilterCheckedVersion?: number | null;
+  }[] = [];
   places: PlaceIndex = {
     countriesOfRegion: new Map([['EU', new Set(['FR', 'DE'])]]),
     countryOfCity: new Map(),
@@ -157,22 +162,53 @@ export class MemoryPrefilterRepository extends PrefilterRepository {
     return true;
   }
 
+  private reopenable(filter: { firstSeenSince: Date }): MemoryPrefilterJob[] {
+    return [...this.jobs.values()].filter(
+      (job) =>
+        job.processingStatus === 'skipped' &&
+        job.status === 'active' &&
+        job.kind === 'job' &&
+        job.firstSeenAt >= filter.firstSeenSince &&
+        !job.closed &&
+        (job.expiresAt === null || job.expiresAt > this.now()),
+    );
+  }
+
+  async countReopenable(filter: { firstSeenSince: Date }): Promise<number> {
+    return this.reopenable(filter).length;
+  }
+
   async reopenSkipped(filter: { firstSeenSince: Date }): Promise<number> {
     let n = 0;
-    for (const job of this.jobs.values()) {
-      if (
-        job.processingStatus !== 'skipped' ||
-        job.status !== 'active' ||
-        job.firstSeenAt < filter.firstSeenSince ||
-        job.closed ||
-        (job.expiresAt !== null && job.expiresAt <= this.now())
-      )
-        continue;
+    for (const job of this.reopenable(filter)) {
       job.processingStatus = 'pending';
       job.processingReason = 'reopened';
       job.processingRequestedAt = this.now();
       n++;
     }
     return n;
+  }
+
+  async listUnrecheckedProfiles(): Promise<
+    { id: string; matchVersion: number }[]
+  > {
+    return this.profiles
+      .map((p, i) => ({
+        id: p.id ?? `p${i}`,
+        matchVersion: p.matchVersion ?? 0,
+        checked: p.prefilterCheckedVersion ?? null,
+      }))
+      .filter((p) => p.checked !== p.matchVersion)
+      .map(({ id, matchVersion }) => ({ id, matchVersion }));
+  }
+
+  async setRecheckedVersion(
+    profileId: string,
+    matchVersion: number,
+  ): Promise<void> {
+    const i = this.profiles.findIndex(
+      (p, idx) => (p.id ?? `p${idx}`) === profileId,
+    );
+    if (i >= 0) this.profiles[i].prefilterCheckedVersion = matchVersion;
   }
 }

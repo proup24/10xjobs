@@ -175,4 +175,168 @@ describe('PrefilterService', () => {
       expect(repo.demandLoads).toBe(0);
     });
   });
+
+  describe('recheckProfiles', () => {
+    const NOW = new Date('2026-11-26T12:00:00Z');
+    const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3_600_000);
+    // The profile of `setup` has never been rechecked (null !== 0).
+
+    it('a newly published profile reopens skipped jobs from the last 24 hours only', async () => {
+      const { repo, service } = setup();
+      repo.addJob({
+        id: 'new',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(2),
+        processingStatus: 'skipped',
+        processingSkip: {
+          version: PREFILTER_VERSION,
+          tag: 'onsite',
+          country: 'FR',
+        },
+      });
+      repo.addJob({
+        id: 'pend',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(2),
+      });
+      repo.addJob({
+        id: 'done',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(2),
+        processingStatus: 'processed',
+      });
+
+      expect(await service.recheckProfiles(NOW)).toBe(1);
+      expect(repo.job('new')).toMatchObject({
+        processingStatus: 'pending',
+        processingReason: 'reopened',
+      });
+      expect(repo.job('new').processingSkip).not.toBeNull();
+      expect(repo.job('done').processingStatus).toBe('processed');
+    });
+
+    it('a job first seen 25 hours ago stays skipped', async () => {
+      const { repo, service } = setup();
+      repo.addJob({
+        id: 'old',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(25),
+        processingStatus: 'skipped',
+      });
+      repo.addJob({
+        id: 'edge',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(24),
+        processingStatus: 'skipped',
+      });
+
+      expect(await service.recheckProfiles(NOW)).toBe(1);
+      expect(repo.job('old').processingStatus).toBe('skipped');
+      expect(repo.job('edge').processingStatus).toBe('pending');
+    });
+
+    it('a closed or expired skipped job stays skipped', async () => {
+      const { repo, service } = setup();
+      repo.addJob({
+        id: 'closed',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(1),
+        closed: true,
+        processingStatus: 'skipped',
+      });
+      repo.addJob({
+        id: 'expired',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(1),
+        expiresAt: new Date(Date.now() - 60_000),
+        processingStatus: 'skipped',
+      });
+      repo.addJob({
+        id: 'post',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(1),
+        kind: 'post',
+        processingStatus: 'skipped',
+      });
+
+      expect(await service.recheckProfiles(NOW)).toBe(0);
+      for (const id of ['closed', 'expired', 'post'])
+        expect(repo.job(id).processingStatus).toBe('skipped');
+    });
+
+    it('a second tick with no profile change reopens nothing', async () => {
+      const { repo, service } = setup();
+      repo.addJob({
+        id: 'a',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(1),
+        processingStatus: 'skipped',
+      });
+
+      expect(await service.recheckProfiles(NOW)).toBe(1);
+      repo.job('a').processingStatus = 'skipped';
+      expect(await service.recheckProfiles(NOW)).toBe(0);
+      expect(repo.job('a').processingStatus).toBe('skipped');
+
+      // A places edit bumps matchVersion: the next tick reopens again.
+      repo.profiles[0].matchVersion = 1;
+      expect(await service.recheckProfiles(NOW)).toBe(1);
+      expect(repo.job('a').processingStatus).toBe('pending');
+    });
+
+    it('a reopened job that still fails the check is skipped again by skipPending', async () => {
+      const { repo, service } = setup();
+      repo.addJob({
+        id: 'fr',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(1),
+        processingStatus: 'skipped',
+      });
+      repo.addJob({
+        id: 'ma',
+        workplaceType: 'hybrid',
+        countryCode: 'MA',
+        firstSeenAt: hoursAgo(1),
+        processingStatus: 'skipped',
+      });
+
+      await service.recheckProfiles(NOW);
+      expect(await service.skipPending()).toEqual({ checked: 2, skipped: 1 });
+      expect(repo.job('fr').processingStatus).toBe('skipped');
+      expect(repo.job('ma').processingStatus).toBe('pending');
+    });
+
+    it('unpublishing a profile changes no processed job or match', async () => {
+      const { repo, service } = setup();
+      repo.addJob({
+        id: 'done',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(1),
+        processingStatus: 'processed',
+        currentExtractionId: 'e1',
+      });
+      repo.addJob({
+        id: 'skip',
+        ...onsiteFR,
+        firstSeenAt: hoursAgo(1),
+        processingStatus: 'skipped',
+      });
+      await service.recheckProfiles(NOW);
+      repo.job('skip').processingStatus = 'skipped';
+      const before = structuredClone([...repo.jobs.values()]);
+
+      repo.profiles.length = 0; // unpublished: no published profile is left
+      expect(await service.recheckProfiles(NOW)).toBe(0);
+      expect(await service.skipPending()).toEqual({ checked: 0, skipped: 0 });
+      expect([...repo.jobs.values()]).toEqual(before);
+    });
+
+    it('a failed recheck throws', async () => {
+      const { repo, service } = setup();
+      repo.listUnrecheckedProfiles = async () => {
+        throw new Error('db down');
+      };
+      await expect(service.recheckProfiles(NOW)).rejects.toThrow('db down');
+    });
+  });
 });

@@ -36,6 +36,7 @@ function deps(outcome = 'processed', spent = 0, paused = false) {
         skipped: 0,
       })),
       skipJob: vi.fn(async (_id: string) => false),
+      recheckProfiles: vi.fn(async (_now: Date) => 0),
     },
     config,
   };
@@ -226,6 +227,7 @@ describe('processProcessJob', () => {
       enqueued: 1,
     });
     expect(order).toEqual(['skipPending', 'listPendingInScope']);
+    expect(d.prefilter.recheckProfiles).toHaveBeenCalledWith(expect.any(Date));
     expect(d.prefilter.skipPending).toHaveBeenCalledWith(200);
   });
 
@@ -237,6 +239,30 @@ describe('processProcessJob', () => {
       skipped: 1,
       enqueued: 0,
     });
+  });
+
+  it('a sweep rechecks the profiles before skipping, and fails when the recheck fails', async () => {
+    const d = deps();
+    const order: string[] = [];
+    d.prefilter.recheckProfiles.mockImplementation(async () => {
+      order.push('recheck');
+      return 0;
+    });
+    d.prefilter.skipPending.mockImplementation(async () => {
+      order.push('skipPending');
+      return { checked: 0, skipped: 0 };
+    });
+    await processProcessJob(job('sweep'), d as never);
+    expect(order).toEqual(['recheck', 'skipPending']);
+
+    d.prefilter.recheckProfiles.mockRejectedValue(new Error('db down'));
+    d.prefilter.skipPending.mockClear();
+    d.repo.listPendingInScope.mockClear();
+    await expect(processProcessJob(job('sweep'), d as never)).rejects.toThrow(
+      'db down',
+    );
+    expect(d.prefilter.skipPending).not.toHaveBeenCalled();
+    expect(d.repo.listPendingInScope).not.toHaveBeenCalled();
   });
 
   it('a sweep whose prefilter fails lists nothing', async () => {

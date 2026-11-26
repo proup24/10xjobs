@@ -975,6 +975,23 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       });
     });
 
+    it('reopenSkipped leaves a skipped post alone, and countReopenable counts what it would reopen', async () => {
+      const since = new Date(t0.getTime() - minutes(60));
+      const listing = await job(onsiteFR);
+      const post = await job({ ...onsiteFR, kind: 'post' });
+      expect(await prefilter.markSkipped(listing, reason)).toBe(true);
+      await db.orm.public.NormalizedJob.where({ id: post }).updateAll({
+        processingStatus: 'skipped',
+      });
+
+      expect(await prefilter.countReopenable({ firstSeenSince: since })).toBe(
+        1,
+      );
+      expect((await jobRow(listing)).processingStatus).toBe('skipped');
+      expect(await prefilter.reopenSkipped({ firstSeenSince: since })).toBe(1);
+      expect((await jobRow(post)).processingStatus).toBe('skipped');
+    });
+
     it('reopenSkipped reopens recent, open skips and keeps the reason', async () => {
       const since = new Date(t0.getTime() - minutes(60));
       const recent = await job(onsiteFR);

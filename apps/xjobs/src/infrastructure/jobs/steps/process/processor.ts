@@ -35,7 +35,10 @@ export interface ProcessJobDeps {
   matchQueue: Pick<MatchQueue, 'enqueue'>;
   autoSilence: Pick<AutoSilenceService, 'run'>;
   /** Skips the listings no published profile could take, before any claim. */
-  prefilter: Pick<PrefilterService, 'skipPending' | 'skipJob'>;
+  prefilter: Pick<
+    PrefilterService,
+    'skipPending' | 'skipJob' | 'recheckProfiles'
+  >;
   config: ProcessorConfig;
 }
 
@@ -97,6 +100,8 @@ export async function processProcessJob(
     // Skipping costs no model call, so it runs while paused or over budget too;
     // the same limit and order as `listPendingInScope`, so each listing it
     // lists was checked first. A failure fails the sweep before any claim.
+    // First, jobs skipped in the last 24 hours go back when a profile changed.
+    await deps.prefilter.recheckProfiles(now);
     const prefilter = await deps.prefilter.skipPending(
       processSweepConfig.limit,
     );
