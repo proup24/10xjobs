@@ -1,7 +1,7 @@
 # Phase 4: Social posts
 
 Date: 2026-11-19
-Status: slices 01–04 built
+Status: slices 01–04 built (04's deploy waits on the credits and capacity brainstorm)
 
 ## Intent
 
