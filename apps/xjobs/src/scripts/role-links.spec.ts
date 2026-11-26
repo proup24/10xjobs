@@ -22,23 +22,35 @@ const role = (over: Partial<RoleRow> = {}): RoleRow => ({
       { postedAt: shared.toISOString(), original: { postedAt: original } },
     ],
   },
+  extractionId: 'e1',
   postDocument: doc,
   ...over,
 });
 
 describe('roleLinks', () => {
   it("fills a role's linkKeys and the original's postedAt", async () => {
-    const update = vi.fn(async () => undefined);
+    const update = vi.fn(async () => true);
     const result = await roleLinks({ listRoles: async () => [role()], update });
-    expect(result).toEqual({ total: 1, changed: 1 });
-    expect(update).toHaveBeenCalledWith('r1', {
-      linkKeys: ['linkedin-job:4490421090'],
-      postedAt: new Date(original),
+    expect(result).toEqual({ total: 1, changed: 1, skipped: 0 });
+    expect(update).toHaveBeenCalledWith(
+      'r1',
+      { linkKeys: ['linkedin-job:4490421090'], postedAt: new Date(original) },
+      'e1',
+    );
+  });
+
+  it('counts a role whose post was re-extracted meanwhile as skipped, not changed', async () => {
+    const update = vi.fn(async (id: string) => id !== 'r2');
+    const result = await roleLinks({
+      listRoles: async () => [role(), role({ id: 'r2', extractionId: 'e2' })],
+      update,
     });
+    expect(result).toEqual({ total: 2, changed: 1, skipped: 1 });
+    expect(update).toHaveBeenCalledWith('r2', expect.anything(), 'e2');
   });
 
   it('leaves a role that is already right, and one whose post no longer holds it', async () => {
-    const update = vi.fn(async () => undefined);
+    const update = vi.fn(async () => true);
     const result = await roleLinks({
       listRoles: async () => [
         role({
@@ -50,12 +62,12 @@ describe('roleLinks', () => {
       ],
       update,
     });
-    expect(result).toEqual({ total: 3, changed: 0 });
+    expect(result).toEqual({ total: 3, changed: 0, skipped: 0 });
     expect(update).not.toHaveBeenCalled();
   });
 
   it('--dry-run counts but writes nothing', async () => {
-    const update = vi.fn(async () => undefined);
+    const update = vi.fn(async () => true);
     const result = await roleLinks(
       { listRoles: async () => [role()], update },
       { dryRun: true },

@@ -7,8 +7,10 @@
  *   pnpm --filter @xjobs/xjobs db:role-links -- [--dry-run]
  *
  * Prints the count changed. A role whose post row no longer reads, or no
- * longer holds the role, keeps its link keys. Refuses a remote database
- * unless `XJOBS_ALLOW_REMOTE_DB=1`.
+ * longer holds the role, keeps its link keys. A role whose post was
+ * re-extracted between the read and the write is left to the processor,
+ * which already wrote it from the newer extraction, and counted as skipped.
+ * Refuses a remote database unless `XJOBS_ALLOW_REMOTE_DB=1`.
  */
 import { Logger } from '@nestjs/common';
 import { assertLocalDatabase, captureRemoteOptIn } from '@xjobs/database/env';
@@ -25,16 +27,23 @@ export interface RoleRow {
   postedAt: Date | null;
   parentPostedAt: Date | null;
   postSources: unknown;
+  /** The post's `currentExtractionId` when it was read; null when it has none. */
+  extractionId: string | null;
   /** The post's current post extraction `data`; null when it has none. */
   postDocument: unknown;
 }
 
 export interface RoleLinksDeps {
   listRoles: () => Promise<RoleRow[]>;
+  /**
+   * Writes the role only while its post's `currentExtractionId` is still
+   * `extractionId`; false when it changed meanwhile and nothing was written.
+   */
   update: (
     id: string,
     values: { linkKeys: string[]; postedAt: Date | null },
-  ) => Promise<void>;
+    extractionId: string | null,
+  ) => Promise<boolean>;
 }
 
 const sameKeys = (a: string[], b: string[]) =>
@@ -47,9 +56,10 @@ const sameDate = (a: Date | null, b: Date | null) =>
 export async function roleLinks(
   deps: RoleLinksDeps,
   options: { dryRun?: boolean } = {},
-): Promise<{ total: number; changed: number }> {
+): Promise<{ total: number; changed: number; skipped: number }> {
   const roles = await deps.listRoles();
   let changed = 0;
+  let skipped = 0;
   for (const role of roles) {
     const parsed = postDocumentSchema.safeParse(role.postDocument);
     const found = parsed.success
@@ -59,10 +69,16 @@ export async function roleLinks(
     const postedAt = roleJobPostedAt(role.postSources, role.parentPostedAt);
     if (sameKeys(linkKeys, role.linkKeys) && sameDate(postedAt, role.postedAt))
       continue;
+    if (
+      !options.dryRun &&
+      !(await deps.update(role.id, { linkKeys, postedAt }, role.extractionId))
+    ) {
+      skipped += 1;
+      continue;
+    }
     changed += 1;
-    if (!options.dryRun) await deps.update(role.id, { linkKeys, postedAt });
   }
-  return { total: roles.length, changed };
+  return { total: roles.length, changed, skipped };
 }
 
 export function parseRoleLinksArgs(rawArgv: readonly string[]): {
@@ -96,7 +112,7 @@ async function main(): Promise<void> {
   const db = createDatabaseClient(toDatabaseConfig(databaseEnv), logger);
   try {
     const jobs = db.orm.public.NormalizedJob;
-    const { total, changed } = await roleLinks(
+    const { total, changed, skipped } = await roleLinks(
       {
         listRoles: async () => {
           const rows: RoleRow[] = [];
@@ -140,6 +156,7 @@ async function main(): Promise<void> {
                 postedAt: role.postedAt,
                 parentPostedAt: parent?.postedAt ?? null,
                 postSources: parent?.postSources ?? null,
+                extractionId: parent?.currentExtractionId ?? null,
                 postDocument: parent?.currentExtractionId
                   ? (extractions.get(parent.currentExtractionId) ?? null)
                   : null,
@@ -148,8 +165,25 @@ async function main(): Promise<void> {
           }
           return rows;
         },
-        update: async (id, values) => {
-          await jobs.where({ id }).updateAll(values);
+        // Compare-and-set on the post's extraction: the processor writes a
+        // role's linkKeys from each new extraction, so a role re-extracted
+        // since the read already holds newer keys.
+        update: async (id, values, extractionId) => {
+          const { affectedRows } = await db.execute(
+            db.raw.sql`UPDATE normalized_jobs j
+                SET "linkKeys" = ARRAY(
+                      SELECT k.key FROM jsonb_array_elements_text(${JSON.stringify(values.linkKeys)}::jsonb)
+                        WITH ORDINALITY k(key, ord) ORDER BY k.ord),
+                    "postedAt" = NULLIF(${values.postedAt?.toISOString() ?? ''}, '')::timestamptz
+              WHERE j.id = ${id}::uuid
+                AND EXISTS (
+                  SELECT 1 FROM normalized_jobs p
+                   WHERE p.id = j."parentJobId"
+                     AND p."currentExtractionId" IS NOT DISTINCT FROM NULLIF(${extractionId ?? ''}, '')::uuid)`
+              .affectedCount()
+              .build(),
+          );
+          return affectedRows > 0;
         },
       },
       { dryRun },
@@ -157,7 +191,7 @@ async function main(): Promise<void> {
     logger.log(
       dryRun
         ? `Dry run: would change ${changed} of ${total} role jobs`
-        : `Changed ${changed} of ${total} role jobs`,
+        : `Changed ${changed} of ${total} role jobs; skipped ${skipped} re-extracted meanwhile`,
     );
   } finally {
     await db.close();
