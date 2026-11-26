@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'721699fd795710dba11a1302672071c38fe5530517ed1022dee1bfbcfa2c9dea'>;
+  StorageHashBase<'e895fa0426d33acc98a4ca64cd48bed7a9b21d8e3e52eee9f083ed68c0b324b1'>;
 export type ExecutionHash =
-  ExecutionHashBase<'71a03ba0225916055a5855c4c4deaf607551051c05f9a67ec0aecfdefc43a862'>;
+  ExecutionHashBase<'cceaa40ea325e2a7bda66c7c86613fba202704d857905768b448e51c2dc54839'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -653,6 +653,17 @@ export namespace Models {
     dismissedAt: FieldOutputTypes['public']['AutoSilenceDismissal']['dismissedAt'];
     dismissedBy: FieldOutputTypes['public']['AutoSilenceDismissal']['dismissedBy'];
     readonly [RelationKeys]?: never;
+  };
+  export type public_BlockedAuthor = {
+    authorKey: FieldOutputTypes['public']['BlockedAuthor']['authorKey'];
+    createdAt: FieldOutputTypes['public']['BlockedAuthor']['createdAt'];
+    id: FieldOutputTypes['public']['BlockedAuthor']['id'];
+    name: FieldOutputTypes['public']['BlockedAuthor']['name'];
+    profileUrl: FieldOutputTypes['public']['BlockedAuthor']['profileUrl'];
+    updatedAt: FieldOutputTypes['public']['BlockedAuthor']['updatedAt'];
+    userId: FieldOutputTypes['public']['BlockedAuthor']['userId'];
+    user: public_User;
+    readonly [RelationKeys]?: 'user';
   };
   export type public_City = {
     aliases: FieldOutputTypes['public']['City']['aliases'];
@@ -1331,6 +1342,7 @@ export namespace Models {
     residenceCountry: FieldOutputTypes['public']['User']['residenceCountry'];
     searchesResumedAt: FieldOutputTypes['public']['User']['searchesResumedAt'];
     updatedAt: FieldOutputTypes['public']['User']['updatedAt'];
+    blockedAuthors: public_BlockedAuthor[];
     factReports: public_FactReport[];
     jobDecisions: public_JobDecision[];
     jobMatches: public_JobMatch[];
@@ -1339,6 +1351,7 @@ export namespace Models {
     webhookDeliveries: public_WebhookDelivery[];
     webhooks: public_Webhook[];
     readonly [RelationKeys]?:
+      | 'blockedAuthors'
       | 'factReports'
       | 'jobDecisions'
       | 'jobMatches'
@@ -1405,6 +1418,7 @@ export declare const models: {
   public: {
     ArrangementTerm: Models.public_ArrangementTerm;
     AutoSilenceDismissal: Models.public_AutoSilenceDismissal;
+    BlockedAuthor: Models.public_BlockedAuthor;
     City: Models.public_City;
     CollectionBatch: Models.public_CollectionBatch;
     Company: Models.public_Company;
@@ -1553,6 +1567,80 @@ type ContractBase = Omit<
               uniques: readonly [];
               indexes: readonly [];
               foreignKeys: readonly [];
+            };
+            readonly blocked_authors: {
+              columns: {
+                readonly authorKey: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly name: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly profileUrl: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId', 'authorKey'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'blocked_authors_userId_idx_a489d58a';
+                  readonly prefix: 'blocked_authors_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'blocked_authors';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
             };
             readonly cities: {
               columns: {
@@ -6446,6 +6534,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'AutoSilenceDismissal';
     };
+    readonly blocked_authors: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'BlockedAuthor';
+    };
     readonly cities: { readonly namespace: 'public' & NamespaceId; readonly model: 'City' };
     readonly collection_batches: {
       readonly namespace: 'public' & NamespaceId;
@@ -6679,6 +6771,70 @@ type ContractBase = Omit<
                 readonly authorKey: { readonly column: 'authorKey' };
                 readonly dismissedAt: { readonly column: 'dismissedAt' };
                 readonly dismissedBy: { readonly column: 'dismissedBy' };
+              };
+            };
+          };
+          readonly BlockedAuthor: {
+            readonly fields: {
+              readonly authorKey: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly name: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly profileUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'blocked_authors';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly authorKey: { readonly column: 'authorKey' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly name: { readonly column: 'name' };
+                readonly profileUrl: { readonly column: 'profileUrl' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
               };
             };
           };
@@ -10669,6 +10825,17 @@ type ContractBase = Omit<
             };
             readonly relations: {
               readonly authUser: never;
+              readonly blockedAuthors: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'BlockedAuthor';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly factReports: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -11327,6 +11494,23 @@ type ContractBase = Omit<
     readonly executionHash: ExecutionHash;
     readonly mutations: {
       readonly defaults: readonly [
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'blocked_authors';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'blocked_authors';
+            readonly field: 'updatedAt';
+            readonly namespace: 'public';
+          };
+        },
         {
           readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
           readonly ref: {

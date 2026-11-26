@@ -24,6 +24,9 @@ const RULE_LABELS = {
   languages: 'Languages',
   postingLanguage: 'Posting language',
   workAuthorization: 'Work authorization',
+  hiringVerdict: 'Hiring post',
+  blockedAuthor: 'Blocked author',
+  postAge: 'Post age',
 } as const;
 
 export type CheckLine = {
@@ -58,6 +61,7 @@ const FIELD_LABELS: Record<string, string> = {
   contractType: 'Contract type',
   requiredLanguages: 'Required languages',
   workAuthorization: 'Work authorization',
+  verdict: 'Whether the post is hiring',
 };
 
 export function fieldLabel(field: string): string {

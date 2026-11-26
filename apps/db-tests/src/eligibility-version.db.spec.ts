@@ -58,6 +58,23 @@ describe('eligibility version', () => {
     expect(await version()).toBe(start + 3);
   });
 
+  it('inserting or deleting a blocked author bumps eligibilityVersion', async () => {
+    const start = await version();
+    const key = `profile:${randomUUID()}`;
+    const insert = await a.client
+      .from('blocked_authors')
+      .insert({ id: randomUUID(), userId: a.id, authorKey: key });
+    expect(insert.error).toBeNull();
+    expect(await version()).toBe(start + 1);
+
+    const remove = await a.client
+      .from('blocked_authors')
+      .delete()
+      .eq('authorKey', key);
+    expect(remove.error).toBeNull();
+    expect(await version()).toBe(start + 2);
+  });
+
   it('a user updates name, residenceCountry and acceptsSponsorship, never eligibilityVersion', async () => {
     await updateUser({
       name: 'Grant Test',

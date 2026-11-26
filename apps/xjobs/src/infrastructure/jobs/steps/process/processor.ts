@@ -24,7 +24,11 @@ export interface ProcessJobDeps {
   service: Pick<ProcessorService, 'process' | 'isPaused' | 'isPostCapReached'>;
   repo: Pick<
     ProcessorRepository,
-    'listPendingInScope' | 'listPendingPosts' | 'releaseStale' | 'spendSince'
+    | 'listPendingInScope'
+    | 'listPendingPosts'
+    | 'releaseStale'
+    | 'spendSince'
+    | 'listRoleJobIds'
   >;
   queue: Pick<ProcessQueue, 'enqueue'>;
   matchQueue: Pick<MatchQueue, 'enqueue'>;
@@ -56,6 +60,24 @@ export async function processProcessJob(
         logger.warn(
           `Could not enqueue match for job ${payload.data.jobId}: ${err instanceof Error ? err.message : String(err)}`,
         );
+      }
+      // A post's roles are matched like jobs; a listing has none.
+      let roleIds: string[] = [];
+      try {
+        roleIds = await deps.repo.listRoleJobIds(payload.data.jobId);
+      } catch (err) {
+        logger.warn(
+          `Could not list role jobs of ${payload.data.jobId}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      for (const roleId of roleIds) {
+        try {
+          await deps.matchQueue.enqueue(roleId);
+        } catch (err) {
+          logger.warn(
+            `Could not enqueue match for role job ${roleId}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
       }
     }
     return { outcome };

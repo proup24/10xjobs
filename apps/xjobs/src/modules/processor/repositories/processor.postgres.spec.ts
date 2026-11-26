@@ -1127,6 +1127,61 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
         });
       });
 
+      it("upsertRoleJob sets postedAt to the original's date", async () => {
+        const { postId, extractionId } = await roleSetup();
+        const sources = (extra: object) => ({
+          sources: [{ postedAt: '2026-11-20T10:00:00.000Z', ...extra }],
+        });
+        const postedAt = async (roleKey: string) =>
+          (
+            await jobRow(
+              await repo.upsertRoleJob({
+                postJobId: postId,
+                roleKey,
+                title: 'T',
+                companyName: null,
+                extractionId,
+              }),
+            )
+          ).postedAt;
+        await db.orm.public.NormalizedJob.where({ id: postId }).updateAll({
+          postSources: sources({
+            original: { postedAt: '2026-10-01T09:00:00.000Z' },
+          }) as never,
+        });
+        expect(await postedAt('a')).toEqual(
+          new Date('2026-10-01T09:00:00.000Z'),
+        );
+        await db.orm.public.NormalizedJob.where({ id: postId }).updateAll({
+          postSources: sources({ original: null }) as never,
+        });
+        expect(await postedAt('b')).toEqual(
+          new Date('2026-11-20T10:00:00.000Z'),
+        );
+      });
+
+      it('listRoleJobIds lists processed active roles only', async () => {
+        const { postId, extractionId } = await roleSetup();
+        const role = (roleKey: string) =>
+          repo.upsertRoleJob({
+            postJobId: postId,
+            roleKey,
+            title: `Role ${roleKey}`,
+            companyName: 'Acme',
+            extractionId,
+          });
+        const a = await role('a');
+        const b = await role('b');
+        const c = await role('c');
+        await repo.archiveRoleJobs(postId, ['a', 'c']);
+        await db.orm.public.NormalizedJob.where({ id: b }).updateAll({
+          processingStatus: 'archived',
+        });
+        expect((await repo.listRoleJobIds(postId)).sort()).toEqual(
+          [a, c].sort(),
+        );
+      });
+
       it('archives a role job with no role key', async () => {
         const { postId, extractionId } = await roleSetup();
         const postRow = await jobRow(postId);

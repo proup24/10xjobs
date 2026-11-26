@@ -1,8 +1,8 @@
 #!/usr/bin/env -S node
-import type { Contract as End } from '../../snapshots/721699fd795710dba11a1302672071c38fe5530517ed1022dee1bfbcfa2c9dea/contract';
-import endContract from '../../snapshots/721699fd795710dba11a1302672071c38fe5530517ed1022dee1bfbcfa2c9dea/contract.json' with { type: 'json' };
-import type { Contract as Start } from '../../snapshots/b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558/contract';
-import startContract from '../../snapshots/b5852fb88a982712de75cf95bee57f920a90aeb4f4c941188c17824f2f6ca558/contract.json' with { type: 'json' };
+import type { Contract as End } from '../../snapshots/e895fa0426d33acc98a4ca64cd48bed7a9b21d8e3e52eee9f083ed68c0b324b1/contract';
+import endContract from '../../snapshots/e895fa0426d33acc98a4ca64cd48bed7a9b21d8e3e52eee9f083ed68c0b324b1/contract.json' with { type: 'json' };
+import type { Contract as Start } from '../../snapshots/bfda5e93e4e7ecad4a8630730b553996ce2a804563293fb68414cf72428dbed1/contract';
+import startContract from '../../snapshots/bfda5e93e4e7ecad4a8630730b553996ce2a804563293fb68414cf72428dbed1/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
@@ -59,7 +59,10 @@ export default class M extends Migration<Start, End> {
         schema: 'public',
         table: 'indeed_markets',
         columns: [
-          col('countryCode', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('countryCode', 'text', {
+            notNull: true,
+            codecRef: { codecId: 'pg/text@1' },
+          }),
           col('mainRemote', 'bool', {
             notNull: true,
             default: lit(false),
@@ -70,7 +73,10 @@ export default class M extends Migration<Start, End> {
             default: lit('Remote'),
             codecRef: { codecId: 'pg/text@1' },
           }),
-          col('site', 'text', { notNull: true, codecRef: { codecId: 'pg/text@1' } }),
+          col('site', 'text', {
+            notNull: true,
+            codecRef: { codecId: 'pg/text@1' },
+          }),
         ],
         constraints: [primaryKey(['site'])],
       }),
@@ -104,7 +110,10 @@ export default class M extends Migration<Start, End> {
         constraint: 'search_segment_runs_channel_check_b2699671',
         expression: sql`"channel" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY', 'INDEED')`,
       }),
-      this.enableRowLevelSecurity({ schema: 'public', table: 'indeed_markets' }),
+      this.enableRowLevelSecurity({
+        schema: 'public',
+        table: 'indeed_markets',
+      }),
       rawSql({
         id: 'data.indeed_markets_seed',
         invariantId: 'indeed-markets-seed',

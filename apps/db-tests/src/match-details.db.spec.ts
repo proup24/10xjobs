@@ -869,3 +869,48 @@ describe('match_details', () => {
     });
   });
 });
+
+describe('match_details kind filter', () => {
+  let c: TestUser;
+  let listing: string;
+  let role: string;
+
+  const call = async (params: Record<string, unknown>) => {
+    const { data, error } = await c.client.rpc('match_details', params);
+    if (error) throw new Error(error.message);
+    return (data as Array<{ jobId: string; kind: string }>)
+      .map((r) => `${r.kind}:${r.jobId}`)
+      .sort();
+  };
+
+  beforeAll(async () => {
+    c = await createTestUser();
+    const profile = await seedProfile(c.id);
+    await publishProfile(profile);
+    const parent = await seedDetailedJob();
+    const listingJob = await seedDetailedJob();
+    // The role is created after its parent, so cleanup deletes it first.
+    const roleJob = await seedDetailedJob();
+    const { error } = await admin()
+      .from('normalized_jobs')
+      .update({ kind: 'post_role', parentJobId: parent.jobId })
+      .eq('id', roleJob.jobId);
+    if (error) throw new Error(`Could not make a post role: ${error.message}`);
+    await seedMatchOn(c.id, profile, listingJob);
+    await seedMatchOn(c.id, profile, roleJob);
+    listing = `job:${listingJob.jobId}`;
+    role = `post_role:${roleJob.jobId}`;
+  });
+
+  it('returns only listings by default', async () => {
+    expect(await call({})).toEqual([listing]);
+  });
+
+  it("returns only post roles with p_kind 'post_role'", async () => {
+    expect(await call({ p_kind: 'post_role' })).toEqual([role]);
+  });
+
+  it('returns both with a null p_kind', async () => {
+    expect(await call({ p_kind: null })).toEqual([listing, role].sort());
+  });
+});
