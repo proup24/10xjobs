@@ -38,8 +38,9 @@ function main(argv) {
   if (!repo) throw new Error('GITHUB_REPOSITORY is not set');
   const workflow = arg(argv, '--workflow');
   const job = arg(argv, '--job');
+  // No branch filter: a rollback dispatched from another ref still counts as handled.
   const { workflow_runs: runs } = gh(
-    `repos/${repo}/actions/workflows/${workflow}/runs?branch=main&status=success&per_page=30`,
+    `repos/${repo}/actions/workflows/${workflow}/runs?status=success&per_page=30`,
   );
   const conclusion = (id) =>
     gh(`repos/${repo}/actions/runs/${id}/jobs?per_page=100`).jobs.find(

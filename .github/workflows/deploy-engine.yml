@@ -9,8 +9,8 @@ run-name: Deploy engine ${{ github.event_name == 'workflow_run' && github.event.
 # Chain depth: CI -> Dev database -> Deploy engine is three workflow_run
 # levels, which is GitHub's maximum. Do not chain another workflow after this.
 #
-# Three jobs keep the credentials apart: `check` only reads, `build` is the
-# only job that can push to GHCR, and `deploy` holds the SSH key and a
+# Four jobs keep the credentials apart: `check` and `changes` only read,
+# `build` alone can push to GHCR, and `deploy` alone holds the SSH key and a
 # read-only registry token.
 on:
   workflow_run:
