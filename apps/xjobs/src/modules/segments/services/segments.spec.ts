@@ -741,3 +741,53 @@ describe('keyword units', () => {
     ]);
   });
 });
+
+describe('Indeed segments', () => {
+  const indeed = (
+    site: string,
+    location: string,
+    spellings: string[],
+  ): QuerySearchBuilderRow =>
+    ({
+      id: `qs-${++n}`,
+      hash: `h-${String(n).padStart(3, '0')}`,
+      channel: Channel.INDEED,
+      domain: SkillDomain.backend,
+      type: Arrangement.remote,
+      location: `${site}:${location || '*'}`.toLowerCase(),
+      keyword: 'backend',
+      params: { site, location, roleWords: ['backend'], spellings },
+    }) as QuerySearchBuilderRow;
+
+  it("merges two profiles' Indeed builders on one site and location into one segment", () => {
+    const a = indeed('us', 'Remote', ['nestjs']);
+    const b = indeed('us', 'Remote', ['postgres']);
+    expect(segmentKey(a)).toBe('INDEED|us|Remote');
+    const segments = buildSegments([a, b]);
+    expect(segments).toHaveLength(1);
+    expect(segments[0].members.map((m) => m.id).sort()).toEqual(
+      [a.id, b.id].sort(),
+    );
+  });
+
+  it('splits a group whose merged keyword is too long into two segments', () => {
+    const members = Array.from({ length: 30 }, (_, i) =>
+      indeed('us', 'Remote', [`technology-number-${i}`]),
+    );
+    const segments = buildSegments(members);
+    expect(segments.length).toBeGreaterThan(1);
+    expect(segments.flatMap((s) => s.members)).toHaveLength(30);
+  });
+
+  it('keeps different locations on one site apart', () => {
+    const segments = buildSegments([
+      indeed('us', 'Remote', ['nestjs']),
+      indeed('us', '', ['nestjs']),
+    ]);
+    expect(segments).toHaveLength(2);
+    expect(segments.map((s) => s.key).sort()).toEqual([
+      'INDEED|us|',
+      'INDEED|us|Remote',
+    ]);
+  });
+});
