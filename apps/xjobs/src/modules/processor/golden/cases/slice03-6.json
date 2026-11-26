@@ -1,0 +1,132 @@
+{
+  "id": "01a1f043-49ec-707e-b9e5-b7d625f08563",
+  "input": {
+    "title": "Senior AI Product Engineer",
+    "description": "About Sluicebox\n\nSluicebox builds AI systems that help manufacturers understand, report and improve the environmental impact of complex products, starting with electronics and carbon. Manufacturers use us to scale work that is manual, expert-heavy and hard to trust: carbon/LCA analysis, supplier data collection, compliance responses and product sustainability decisions.\n\nThe role\n\nA product-minded, backend-strong software engineer who builds reliable AI-powered product systems. This is not an ML research role.\n\nIn practice: LLM pipelines that map messy bills of materials to emission factors, agents that collect and check supplier data, and the evals that tell us when either one is wrong. Discovery and delivery are both part of the job, including real time with customers and their data.\n\nWhat you'll do\n\n * Own ambiguous product and technical problems end to end, from customer need to shipped and iterated solution.\n * Build backend-heavy systems for complex product, component, supplier and sustainability data.\n * Design AI workflows with LLMs, agents, structured context, tool use and evaluation loops.\n * Improve the accuracy, explainability and reliability of AI outputs.\n * Work across the stack when needed, including React product surfaces.\n\nWhat we're looking for\n\n * A strong backend engineer with excellent product judgment: systems, data models, APIs, relational databases.\n * You have shipped an LLM or agent system that real users depend on, not a demo, and can show how you knew it was working.\n * You reason about evaluation, quality, reliability, latency and cost.\n * You own problems without a fully specified roadmap or PM-written tickets.\n * TypeScript/React, Python/Postgres, Kubernetes/AWS, or able to ramp up quickly.\n\nHow we work\n\nRemote-first. Based in Austin, Texas or anywhere else in the United States. We work US Central time. The team meets in person roughly once a quarter.\n\nPay\n\nUSD 130,000 - 170,000 base, plus equity.\n\nHiring process\n\nCV screen, motivation and fit, live technical interview, take-home with a live review, then the founders.\n\nHow to apply\n\nApply at https://sluicebox.ai/careers/senior-ai-product-engineer#apply with your CV and one example of an LLM or agent system you shipped to production, and what it changed for users."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "US"
+          }
+        ],
+        "placeStrictness": "limit"
+      }
+    ],
+    "roleKind": "ai_engineer",
+    "seniority": "senior",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "LLM",
+        "code": "llm",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "agent system",
+        "code": "agents",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "evaluation",
+        "code": "evals",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Postgres",
+        "code": "postgresql",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 130000,
+      "max": 170000,
+      "currency": "USD",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

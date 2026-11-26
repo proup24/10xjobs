@@ -1,0 +1,61 @@
+{
+  "id": "01a209cf-6b8a-700e-8279-7ae8e24f360b",
+  "input": {
+    "title": "Software Engineer",
+    "description": "Company Description Stealth biotech using large amounts of biological data for drug discovery. More information to be given post-NDA.\n\n\nRole Description The Software Engineer role at Wilson Labs is a remote part-time internship, based around your schedule. You will support data processing, AIML engineering, bioinformatics and technical pipeline creation. Important: this role is unpaid and therefore has no required time dedication, we flex to your schedule. We offer CV-boosting and portfolio-widening experience to boost your career, alongside premium networking opportunities. This is a rolling application, successful candidates may start immediately if desired.\n\n\nQualifications\n\n * Strong foundation in Computer Science, including algorithms, data structures, and software architecture.\n * Proficiency in Software Development and Programming using modern languages and frameworks.\n * Experience with Back-End Web Development, including APIs, databases, and server-side frameworks.\n * Experience with version control (e.g., Git) and collaborative development workflows.\n * Familiarity with cloud platforms, containerization, or microservices architectures is beneficial.\n * Ability to work effectively in cross-functional teams and communicate technical concepts clearly.\n * Interest and experience in biotechnology, natural science, or sustainability-related projects is a plus.\n\n\nContact here or direct at [email] to find out more."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "data_engineer",
+    "seniority": "junior",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "microservices",
+        "code": "microservices",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "internship",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

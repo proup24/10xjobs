@@ -1,0 +1,59 @@
+{
+  "id": "01a1f379-9606-755f-bb4f-cf9a90146d87",
+  "input": {
+    "title": "Software Developer — Get Paid to Build Your Own Project with an AI Coding Assistant",
+    "description": "Software Developer — Build Your Own Project with an AI Coding Assistant\n\n\n\nAbout The Role\n\n\n\nWhat if you could get paid to work on the project you've been meaning to build — with a state-of-the-art AI coding assistant at your side, completely free of charge?\n\n\n\nWe're looking for software developers in Hamburg to bring their own projects and build them using an AI-powered coding assistant. You write real code on real projects you care about. We learn from your expert judgment on how the assistant performed. You keep full ownership of everything you build.\n\n\n\nThis is a fully remote, flexible contract role designed for developers who want to ship their own work — and get compensated for it.\n\n\n\n\n * Organization: Alignerr\n * Type: Hourly Contract\n * Location: Fully Remote\n * Commitment: Flexible\n   \n   \n   \n   \n\nWhat You'll Do\n\n\n\n\n * Bring a software project you personally own — a side project, a tool, an open-source library, or something you've been meaning to finish\n * Build features, fix bugs, refactor code, write docs, or do whatever your project needs — using an AI coding assistant\n * At each step, compare two versions of the assistant's response, choose the better one, and write a brief explanation of your reasoning\n * Work in your own environment, on your own schedule, with your own tools\n   \n   \n   \n   \n\nWho You Are\n\n\n\n\n * A developer with a software project you personally own, stored in a git repository\n * Comfortable working in the terminal and with git-based workflows\n * Running macOS, Linux, or Windows with WSL2\n * Able to write clear, honest evaluations — you'll explain your choices in a few sentences\n * Self-motivated and reliable when working independently\n * Open-source maintainers are especially welcome\n   \n   \n   \n   \n\nWhat's Eligible\n\n\n\n\n * Software projects that you personally and solely own\n * Open-source projects with an approved license\n * If your project has other maintainers, mention it in your application — we'll confirm eligibility\n   \n   \n   \n   \n\nWhat's Not Eligible\n\n\n\n\n * Work owned by an employer, client, university, company, or startup\n * Projects under NDA\n * AI model training or evaluation projects; ML infrastructure\n * Security exploit tooling\n * Projects that process other people's personal data\n   \n   \n   \n   \n\nGood to Know\n\n\n\n\n * Before starting, you'll sign short contributor terms and we'll approve your project\n * Transcripts of your coding sessions are used to improve AI models and cannot be withdrawn after submission — this covers sessions only, not the rest of your codebase\n * Your ratings and written feedback become part of the project's deliverables\n * During sessions: no passwords, API keys, or other people's personal data — and you write your ratings yourself, without AI help\n   \n   \n   \n   \n\nWhy You'll Love This\n\n\n\n\n * Your project, your code — you keep full ownership of everything, including code the assistant writes for you\n * Free AI tokens — your AI usage during sessions is fully covered, no subscription or API bill needed\n * Paid to build what you'd build anyway — real compensation for real development work on your own project\n * Fully remote and flexible — work from your own computer, on your own schedule\n * Shape the future of AI-assisted coding — your expert judgment directly improves the next generation of developer tools\n * Spots are limited — the first cohort is small and starting soon"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "Hamburg",
+            "countryCode": "DE"
+          }
+        ],
+        "placeStrictness": "limit"
+      }
+    ],
+    "roleKind": "ai_training",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "contract",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

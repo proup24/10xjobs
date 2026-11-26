@@ -1,0 +1,111 @@
+{
+  "id": "01a1e998-8c5e-7100-bfd4-92c126a82300",
+  "input": {
+    "title": "Software Engineer | $70/hr Remote",
+    "description": "Position: Software Engineer\n\nType: Contract\n\nCompensation: $50 - $70/hour\n\nLocation: Remote\n\nCommitment: 10-40 hrs/week\n\n\nRole Responsibilities\n\n * Execute structured evaluation assignments simulating developer activities using AI-powered tools.\n * Assess and grade technical correctness of outputs within development environments.\n * Design and maintain reproducible test environments with real commit histories and CI workflows.\n * Configure and troubleshoot integrations across multiple software services for seamless connectivity.\n * Investigate and document undocumented product behaviors through systematic testing.\n * Participate in calibration sessions to ensure consistent evaluation methods.\n\n\nRequirements\n\n * Have strong relevant experience in software engineering with Git/GitHub workflows.\n * Proficient with CI/CD systems, ideally GitHub Actions, and authoring custom workflows.\n * Advanced scripting abilities in Python or Bash, with understanding of REST APIs and OAuth.\n * Fluency with major enterprise SaaS platforms; administrative experience in cloud workspaces is advantageous.\n * Experience leveraging AI assistants or agent tools in developer tasks is a plus.\n * Background in technical QA, evaluation, or data annotation with consistency in applying rubrics.\n\n\nApplication Process\n\n * Easy Apply on LinkedIn\n * Check email for next steps\n * Participate in resume evaluation & interview stage"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "ai_training",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "Git/GitHub",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CI/CD",
+        "code": "ci_cd",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Bash",
+        "code": "bash",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "REST APIs",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "OAuth",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "GitHub Actions",
+        "code": "github_actions",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 50,
+      "max": 70,
+      "currency": "USD",
+      "period": "hour"
+    },
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "contract",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

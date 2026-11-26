@@ -1,0 +1,86 @@
+{
+  "id": "01a207dc-f37c-7255-bd6a-54ffcfc1f04d",
+  "input": {
+    "title": "Desarrollador/a Full Stack",
+    "description": "Dendron es una empresa B Corp de innovación forestal especializada en soluciones basadas en la naturaleza, servicios ecosistémicos y gestión sostenible del territorio. Conectamos empresas, propietarios, gestores forestales y territorio para desarrollar proyectos de biodiversidad, carbono, agua y bioeconomía con impacto ambiental, social y económico medible.\n\n\nBuscamos un/a Desarrollador/a Full Stack para participar en el desarrollo de una plataforma software tipo SaaS orientada a la gestión forestal inteligente. Una vez finalizada la fase de desarrollo, se incorporará de forma estable al equipo como responsable del mantenimiento, evolución y soporte de la aplicación. La persona incorporada tendrá las siguientes responsabilidades:\n\n\n * Participar en el diseño y desarrollo del backend y frontend de la aplicación, bajo tutorización directa.\n * Colaborar en la integración de datos procedentes de diferentes fuentes de información en la plataforma.\n * Aprender y aplicar buenas prácticas de desarrollo, testing y despliegue.\n * Tras el lanzamiento, asumir el mantenimiento, la resolución de incidencias y la implementación de mejoras.\n * Documentar el sistema para asegurar su correcto mantenimiento a largo plazo.\n\n\nBuscamos una persona que reúna los siguientes requisitos:\n\n\n * Formación en Ingeniería Informática, Desarrollo de Software o similar (también se valoran bootcamps o formación autodidacta sólida).\n * 1-2 años de experiencia en desarrollo fullstack.\n * Conocimientos en React, Node.js, PostgreSQL y Python.\n * Capacidad de aprendizaje y disposición para trabajar bajo mentoría, con autonomía creciente.\n\n\n¿Qué ofrecemos?\n\n\n * Mentoría técnica directa y continua durante el desarrollo, con el apoyo de ITECAM.\n * Incorporación a un proyecto desde su fase inicial, con visión completa del producto.\n * Continuidad estable en la empresa tras el desarrollo, como responsable de la aplicación.\n * Trabajo en Cuenca con un 20 % de teletrabajo inicial, ampliable de forma progresiva hasta el 80 % según autonomía demostrada."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["hybrid"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "Cuenca",
+            "countryCode": "ES"
+          }
+        ],
+        "placeStrictness": "label"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "junior",
+    "yearsRequired": {
+      "min": 1,
+      "max": 2
+    },
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

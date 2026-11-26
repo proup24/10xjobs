@@ -1,0 +1,94 @@
+{
+  "id": "01a213af-3807-7594-ac56-f335273d22e8",
+  "input": {
+    "title": "Software Benchmark Engineer (Remote)",
+    "description": "* Role Title: Software Benchmark Engineer (Remote)\n * Role Type: Contractor\n * Location: Remote\n\n\nWe build coding tasks used to train and evaluate frontier AI coding agents. We're looking for experienced software engineers to design them.\n\n\nWhat the work involves\n\n1. Writing realistic engineering tasks on full-stack web apps: the kind of problem a real team has in its backlog, on codebases that grow as each task builds on the last.\n\n2. Writing the tests that decide whether a solution is correct.\n\n3. Going beyond the UI: new services and APIs, a backend in another language (Go, Rust, Java), gRPC, rate limiting — drawing on systems you've actually built.\n\n4. Sharing what you've seen work in other projects and flagging what should change in ours.\n\n\nThe apps are TypeScript (React, Node, SQLite, Playwright). Use AI tools as much as you like to write code and tests.\n\n\nWhat we're looking for\n\n1. Solid professional software engineering experience, backend and frontend.\n\n2. You've built and debugged real systems, and you care about testing them well.\n\n3. Clear written communication, and comfort working independently from written docs.\n\n4. 10–20+ hours a week, starting soon.\n\n\nHow it works\n\nA short screener, a brief AI interview, and a paid work trial on the codebase you'd keep working on. US and Canada preferred for timezone overlap; exceptional candidates elsewhere are welcome. LinkedIn and GitHub required.\n\n\nWhat You’ll Do\n\n1. Writing realistic engineering tasks on full-stack web apps: the kind of problem a real team has in its backlog, on codebases that grow as each task builds on the last.\n\n2. Writing the tests that decide whether a solution is correct.\n\n3. Going beyond the UI: new services and APIs, a backend in another language (Go, Rust, Java), gRPC, rate limiting — drawing on systems you've actually built.\n\n4. Sharing what you've seen work in other projects and flagging what should change in ours.\n\n\nApply Now!"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["remote"],
+        "places": [
+          {
+            "kind": "country",
+            "code": "US"
+          },
+          {
+            "kind": "country",
+            "code": "CA"
+          }
+        ],
+        "placeStrictness": "mention"
+      }
+    ],
+    "roleKind": "ai_training",
+    "seniority": "unstated",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Node",
+        "code": "nodejs",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "SQLite",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Playwright",
+        "code": "playwright",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "contract",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

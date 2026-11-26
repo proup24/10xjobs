@@ -1,0 +1,61 @@
+{
+  "id": "01a20965-f9ba-776f-9da2-2925cfb593b4",
+  "input": {
+    "title": "Software Engineer",
+    "description": "We're hiring on behalf of a Haystack partner!\n\n\nThe Role\n\n\n• Build virtualized, hardware-accelerated solutions for disk instances within a large-scale compute cloud infrastructure.\n\n• Work across the full technology stack, from low-level hardware optimization to high-level frameworks supporting diverse workloads.\n\n• Solve complex performance optimization and virtualization challenges while directly influencing product strategy and architecture.\n\n• Collaborate within an engineering team dedicated to mentorship, knowledge sharing, and career development.\n\n\nWhat You'll Need\n\n\n• 5+ years of non-internship professional software development and programming experience in a Linux environment.\n\n• 5+ years of experience leading the design, architecture, reliability, and scaling of new and existing systems.\n\n• Demonstrated leadership experience as a mentor, tech lead, or engineering team leader.\n\n\nWhat's On Offer\n\n\n• Annual salary of $193,300 - $261,500 per year, plus sign-on payments, stock units, and comprehensive benefits.\n\n• Flexible working hours and a culture that prioritizes work-life balance and personal fulfillment.\n\n• Opportunities for continuous learning, career growth, and technical mentorship.\n\n\nApply via Haystack today!"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["unstated"],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "platform_engineer",
+    "seniority": "senior",
+    "yearsRequired": {
+      "min": 5,
+      "max": null
+    },
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "Linux",
+        "code": "linux",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": 193300,
+      "max": 261500,
+      "currency": "USD",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}

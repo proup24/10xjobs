@@ -1,0 +1,117 @@
+{
+  "id": "01a20995-a796-762e-8370-052f94613065",
+  "input": {
+    "title": "Mobile Developer (React)",
+    "description": "La tua nuova azienda:\n\n\nPer conto di un nostro top client, realtà multinazionale leader che offre servizi in ambito Real Estate siamo alla ricerca di un Mobile Developer.\n\n\nResponsabilità principali:\n\n\n * Ti occuperai sviluppo e del miglioramento continuo dell’app in React Native (codebase unica iOS/Android), implementando nuove funzionalità da roadmap e migliorando quelle esistenti, con focus su UI e UX.\n * Collaborerai con il team web (React.js) per condividere logiche applicative tra app e sito, e con PM e Designer per definire e realizzare le soluzioni migliori per gli utenti.\n * Contribuirai all’adozione degli strumenti AI messi a disposizione per accelerare produttività e qualità del codice.\n\n\n\nRequisiti chiave:\n\n\n * Almeno 2 anni di esperienza nello sviluppo di app mobile rilasciate su App Store e Google Play.\n * Ottima conoscenza di TypeScript e JavaScript ES6/ES7,\n * Esperienza con React Native (codebase unica iOS/Android) e React.js (Plus),\n * Conoscenze di base di sviluppo nativo iOS e/o Android.\n * Laurea in Informatica, Ingegneria Informatica o titolo equivalente.\n * Buona conoscenza dell’inglese.\n * Familiarità con strumenti AI a supporto dello sviluppo software.\n\n\nCosa offriamo:\n\n\n * Contratto a tempo indeterminato - CCNL Commercio\n * RAL: fino a 55.000€\n * Smart Working: (90% da remoto - 10% in presenza)\n\n\nSede di lavoro: Milano, Italia\n\n\nSocietà di ricerca e selezione del personale accreditata presso Min.Lav. Aut. Min. N. 0000045 del 26 Aprile 2022\n\nKeyPartners Italy S.r.l. tratta i dati dei soggetti interessati nel rispetto della normativa sulla privacy. Si invitano gli interessati – prima di fornire propri dati personali – a consultare l’Informativa sulla privacy ex art. 13 e 14 GDPR https://www.key-partners.it/privacy-policy-candidates/"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": ["hybrid"],
+        "places": [
+          {
+            "kind": "city",
+            "name": "Milan",
+            "countryCode": "IT"
+          }
+        ],
+        "placeStrictness": "label"
+      }
+    ],
+    "roleKind": "mobile_engineer",
+    "seniority": "unstated",
+    "yearsRequired": {
+      "min": 2,
+      "max": null
+    },
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "React Native",
+        "code": "react_native",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "iOS",
+        "code": "ios",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Android",
+        "code": "android",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "React.js",
+        "code": "react",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
+    "requiredLanguages": [
+      {
+        "lang": "en",
+        "level": "working"
+      }
+    ],
+    "sponsorship": "unstated",
+    "salary": {
+      "min": null,
+      "max": 55000,
+      "currency": "EUR",
+      "period": "year"
+    },
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": false
+    }
+  }
+}
