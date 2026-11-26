@@ -5,13 +5,70 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      all: ${{ steps.detect.outputs.all }}
+      base: ${{ steps.detect.outputs.base }}
+      head: ${{ steps.detect.outputs.head }}
+      main: ${{ steps.detect.outputs.main }}
+      database: ${{ steps.detect.outputs.database }}
+      e2e: ${{ steps.detect.outputs.e2e }}
+      hooks: ${{ steps.detect.outputs.hooks }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          filter: tree:0
+          fetch-depth: 0
+
+      # Installs the pnpm version pinned in package.json's packageManager field
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Test the change detection
+        run: node --test ".github/ci/*.test.mjs"
+
+      - uses: nrwl/nx-set-shas@v5
+        id: shas
+        if: github.event_name != 'workflow_dispatch'
+
+      - name: Decide which jobs run
+        id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          NO_PREVIOUS_BUILD: ${{ steps.shas.outputs.noPreviousBuild }}
+          BASE: ${{ steps.shas.outputs.base }}
+          HEAD: ${{ steps.shas.outputs.head }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$NO_PREVIOUS_BUILD" = "true" ]; then
+            if [ "$EVENT" != "workflow_dispatch" ]; then
+              echo "::notice::No previous successful CI run found, running everything"
+            fi
+            node .github/ci/changes.mjs --all
+          else
+            node .github/ci/changes.mjs --base "$BASE" --head "$HEAD" --check-gaps
+          fi
+
   main:
+    needs: changes
+    if: needs.changes.outputs.main == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -42,11 +99,19 @@ jobs:
       # Prepend any command with "nx record --" to record its logs to Nx Cloud
       # - run: pnpm exec nx record -- echo Hello World
       - run: pnpm exec nx run-many -t lint test build typecheck
+        if: needs.changes.outputs.all == 'true'
+      - run: pnpm exec nx affected -t lint test build typecheck --base="$NX_BASE" --head="$NX_HEAD"
+        if: needs.changes.outputs.all != 'true'
+        env:
+          NX_BASE: ${{ needs.changes.outputs.base }}
+          NX_HEAD: ${{ needs.changes.outputs.head }}
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: pnpm exec nx fix-ci
         if: always()
 
   database:
+    needs: changes
+    if: needs.changes.outputs.database == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -103,6 +168,8 @@ jobs:
           done
 
   e2e:
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -192,3 +259,34 @@ jobs:
             docker logs --tail 100 "$c" || true
             echo "::endgroup::"
           done
+
+  hooks:
+    needs: changes
+    if: needs.changes.outputs.hooks == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - run: npm run test:hooks
+
+  ci-passed:
+    name: CI passed
+    needs: [changes, main, database, e2e, hooks]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail when a job failed or was cancelled
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq .
+          if echo "$NEEDS" | jq -e 'to_entries | map(select(.value.result == "failure" or .value.result == "cancelled")) | length > 0' > /dev/null; then
+            echo "::error::A required job failed or was cancelled"
+            exit 1
+          fi

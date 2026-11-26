@@ -28,7 +28,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - `npx nx worker-match xjobs`: run the match worker alone.
 - `npx nx worker-webhook xjobs`: run the webhook worker alone (sends the users' match webhooks; registers its sweep only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine).
 - `npx nx worker-<channel> xjobs` (`linkedin-job-board`, `linkedin-job-board-cheap`, `linkedin-job-board-bebity`, `linkedin-posts`, `greenhouse`, `ashby`): run one channel's scheduled collection worker (registers schedules only with `XJOBS_RUN_SCHEDULES=1`, set on the hosted engine; `linkedin-job-board-cheap` and `linkedin-job-board-bebity` are trials that also need their channel in `COLLECTION_TRIAL_CHANNELS`; `linkedin-posts` runs hourly, every day, and needs a published profile with post search on).
-- `npx nx run-many -t lint test build typecheck`: what CI runs.
+- `npx nx affected -t lint test build typecheck`: what CI runs for a change (CI's `changes` job decides which jobs run; `.github/ci/runs-nothing.json` lists the files that run nothing; a manual CI dispatch runs everything).
 - `npx nx test xjobs`: unit tests for the engine.
 - `npx nx e2e xjobs-e2e`: e2e tests.
 - `pnpm db:migrate`: apply migrations (local only unless `XJOBS_ALLOW_REMOTE_DB=1`).
