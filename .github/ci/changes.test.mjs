@@ -20,6 +20,7 @@ test('web only', () => {
   assert.deepEqual(jobs, { main: true, database: false, e2e: false, hooks: false, migrate: false, deploy: false });
 });
 test('hooks', () => assert.equal(decide({ ...none, changedFiles: ['.claude/hooks/guard.mjs'] }).jobs.hooks, true));
+test('hooks dotfile', () => assert.equal(decide({ ...none, changedFiles: ['.claude/hooks/.eslintrc'] }).jobs.hooks, true));
 test('--all', () => assert.equal(Object.values(decide({ ...none, all: true }).jobs).every(Boolean), true));
 test('packageManager plus a web file runs everything', () => {
   const r = decide({ ...none, changedFiles: ['package.json', 'apps/web/a.tsx'], affected: ['web'], packageJsonOtherFieldsChanged: true });

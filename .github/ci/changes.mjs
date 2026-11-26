@@ -9,7 +9,7 @@ import { isDeepStrictEqual } from 'node:util';
 
 export const DEPENDENCY_FILES = ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'];
 const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies'];
-const HOOKS_GLOB = '.claude/hooks/**';
+const HOOKS_PREFIX = '.claude/hooks/';
 
 export function isIgnored(file, globs) {
   return globs.some((g) => path.posix.matchesGlob(file, g));
@@ -28,7 +28,7 @@ export function decide({ all, changedFiles, affected, packageJsonOtherFieldsChan
   else if (changedFiles.includes('package.json') && pkgOther) runAllReason = 'package.json changed outside its dependency fields';
   else if (changedFiles.includes('pnpm-lock.yaml') && affected.length === 0) runAllReason = 'pnpm-lock.yaml changed and Nx reports no affected project';
 
-  const hooks = changedFiles.some((f) => path.posix.matchesGlob(f, HOOKS_GLOB));
+  const hooks = changedFiles.some((f) => f.startsWith(HOOKS_PREFIX));
   if (runAllReason) {
     return { jobs: { main: true, database: true, e2e: true, hooks: true, migrate: true, deploy: true }, runAllReason };
   }
@@ -49,7 +49,7 @@ export function findGaps({ addedOrModified, projectRoots, ignoreGlobs, ownsRootF
   return addedOrModified.filter((f) => {
     if (projectRoots.some((r) => f.startsWith(r + '/'))) return false;
     if (DEPENDENCY_FILES.includes(f)) return false;
-    if (path.posix.matchesGlob(f, HOOKS_GLOB)) return false;
+    if (f.startsWith(HOOKS_PREFIX)) return false;
     if (isIgnored(f, ignoreGlobs)) return false;
     return !ownsRootFile(f);
   });
@@ -94,7 +94,7 @@ function main() {
   let pkgOther = false;
   if (!all || checkGaps) {
     if (base && head) {
-      changedFiles = nul(run('git', ['diff', '--name-only', '-z', base, head]));
+      changedFiles = nul(run('git', ['diff', '--name-only', '--no-renames', '-z', base, head]));
       addedOrModified = nul(run('git', ['diff', '--name-only', '-z', '--diff-filter=d', base, head]));
     }
   }
