@@ -1,6 +1,6 @@
 # 02: Deploy keeps a stopped worker stopped
 
-Status: Built, PR <n>. Owner check after merge in the PR body.
+Status: Built, PR #143. Owner check after merge in the PR body.
 
 ## Goal
 
