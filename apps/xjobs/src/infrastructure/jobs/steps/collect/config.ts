@@ -66,6 +66,18 @@ const linkedinPosts = {
 } as const;
 
 /**
+ * Indeed hourly 09-21 Morocco time on weekdays, one hour a tick; a gap widens
+ * the window up to 72 hours (Indeed's 3-day filter), no further. Each run's
+ * charge limit is what is left of the day's Indeed budget.
+ */
+const indeed = {
+  ...hourly,
+  schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+  window: { initialHours: 24, overlapMinutes: 0, maximumHours: 72 },
+  resumeHours: 24,
+} as const;
+
+/**
  * Google indexes ATS pages hours to days after they are posted, so board
  * discovery runs daily over at least three days; ingest drops the overlap.
  */
@@ -120,11 +132,11 @@ export const channelJobsConfig = {
     enabled: ACTIVE_CHANNELS.includes(Channel.ASHBY),
     run: AshbyCollector.config,
   },
-  // Placeholder until Task 8 gives Indeed its schedule, budget and actor limits.
   [Channel.INDEED]: {
     queueName: 'collect-indeed',
-    ...daily,
-    enabled: false,
+    ...indeed,
+    // Switch-only, like posts: on by itself, under COLLECTION_DAILY_BUDGET_USD_INDEED.
+    enabled: true,
     run: IndeedCollector.config,
   },
 } satisfies {

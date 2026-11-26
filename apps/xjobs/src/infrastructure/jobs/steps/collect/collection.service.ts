@@ -62,6 +62,8 @@ const LINKEDIN_JOB_BOARD_TICK_LIMIT_MS = 60 * 60_000;
 const POSTS_NULL_COST_MICRO_USD = 250_000;
 /** A posts run is not started with less than this left of the day's budget. */
 const POSTS_MIN_LEFT_USD = 0.01;
+/** An Indeed run is not started with less than this left of the day's budget. */
+const INDEED_MIN_LEFT_USD = 0.001;
 
 /** How one LinkedIn job board group fared in a tick, for its remembered split. */
 interface GroupTally {
@@ -320,8 +322,8 @@ export class CollectionService {
     if (
       budget &&
       (budget.reached ||
-        (channel === Channel.LINKEDIN_POSTS &&
-          budget.leftUsd < POSTS_MIN_LEFT_USD))
+        (chargesFromBudget(channel) &&
+          budget.leftUsd < minLeftUsd(channel)))
     ) {
       // Not a failure: no run started and no cursor moved, so the next tick re-covers the window.
       this.logBudgetReached(channel, budget);
@@ -571,7 +573,7 @@ export class CollectionService {
     let started = false;
     /** Started, and no cost reported yet. */
     let charged = false;
-    /** The charge limit a posts run was given. */
+    /** The charge limit a posts or Indeed run was given. */
     let maxChargeUsd: number | undefined;
 
     try {
@@ -586,9 +588,12 @@ export class CollectionService {
         channel,
         owned,
         window,
-        // A posts run may charge only what is left of the day's budget.
-        channel === Channel.LINKEDIN_POSTS
-          ? options.budget?.leftUsd
+        // A posts or Indeed run may charge only what is left of the day's budget.
+        chargesFromBudget(channel) && options.budget
+          ? Math.min(
+              options.budget.leftUsd,
+              channelJobsConfig[channel].run.maxRunChargeUsd,
+            )
           : undefined,
       );
       maxChargeUsd = search.maxChargeUsd;
@@ -803,7 +808,9 @@ function budgetSetting(
   | 'COLLECTION_DAILY_BUDGET_USD'
   | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_CHEAP'
   | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_JOB_BOARD_BEBITY'
-  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS' {
+  | 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS'
+  | 'COLLECTION_DAILY_BUDGET_USD_INDEED' {
+  if (channel === Channel.INDEED) return 'COLLECTION_DAILY_BUDGET_USD_INDEED';
   if (channel === Channel.LINKEDIN_POSTS)
     return 'COLLECTION_DAILY_BUDGET_USD_LINKEDIN_POSTS';
   if (channel === Channel.LINKEDIN_JOB_BOARD_CHEAP)
@@ -813,13 +820,29 @@ function budgetSetting(
   return 'COLLECTION_DAILY_BUDGET_USD';
 }
 
-/** Channels collected under a daily budget: the LinkedIn job boards and posts. */
+/** Channels collected under a daily budget: the LinkedIn job boards, posts and Indeed. */
 function hasDailyBudget(channel: Channel): boolean {
-  return isLinkedinJobBoard(channel) || channel === Channel.LINKEDIN_POSTS;
+  return isLinkedinJobBoard(channel) || chargesFromBudget(channel);
+}
+
+/** Channels whose every run is charged what is left of the day's budget, at most its run ceiling. */
+function chargesFromBudget(
+  channel: Channel,
+): channel is Channel.LINKEDIN_POSTS | Channel.INDEED {
+  return channel === Channel.LINKEDIN_POSTS || channel === Channel.INDEED;
+}
+
+/** The least left of the day's budget with which a budget-charged channel starts a run. */
+function minLeftUsd(channel: Channel): number {
+  return channel === Channel.INDEED ? INDEED_MIN_LEFT_USD : POSTS_MIN_LEFT_USD;
 }
 
 /** What a capped channel's run with no recorded cost counts as toward the day. */
 function nullCostMicroUsd(channel: Channel): number {
+  if (channel === Channel.INDEED)
+    return Math.round(
+      channelJobsConfig[Channel.INDEED].run.maxRunChargeUsd * 1_000_000,
+    );
   return channel === Channel.LINKEDIN_POSTS
     ? POSTS_NULL_COST_MICRO_USD
     : chargeCapMicroUsd(channel);
@@ -827,17 +850,17 @@ function nullCostMicroUsd(channel: Channel): number {
 
 /**
  * What a run that reported no cost adds to the tick's spend: a posts run its
- * charge limit, a job board run its charge cap.
+ * charge limit (posts, Indeed), a job board run its charge cap.
  */
 function runCapMicroUsd(
   channel: Channel,
   maxChargeUsd: number | undefined,
 ): number {
-  if (channel === Channel.LINKEDIN_POSTS)
+  if (chargesFromBudget(channel))
     return Math.round(
       Math.min(
         maxChargeUsd ?? 0,
-        channelJobsConfig[Channel.LINKEDIN_POSTS].run.maxRunChargeUsd,
+        channelJobsConfig[channel].run.maxRunChargeUsd,
       ) * 1_000_000,
     );
   return chargeCapMicroUsd(channel);

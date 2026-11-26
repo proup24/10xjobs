@@ -114,7 +114,6 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'collect-linkedin-posts:collect',
       'collect-greenhouse:collect',
       'collect-ashby:collect',
-      // Disabled until Task 8: its worker removes its schedule and exits.
       'collect-indeed:collect',
     ]);
     expect(created.workers).toEqual([
@@ -125,6 +124,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'webhook',
       'collect-linkedin-job-board',
       'collect-linkedin-posts',
+      'collect-indeed',
     ]);
   } finally {
     await module.close();
