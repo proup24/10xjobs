@@ -1,5 +1,7 @@
 # 04: Ingest and qualify
 
+Status: built. Spec: [posts qualify design](../../superpowers/specs/2026-11-25-posts-qualify-design.md). Built in PRs #139, #147 and PR C (lead-level roles count for `tech_lead` profiles; number to fill in when opened).
+
 ## Goal
 
 An extracted post becomes a job and is decided against each published profile as qualified, review or rejected, with a reason. The web app shows them on the social posts page (slice 04a).
