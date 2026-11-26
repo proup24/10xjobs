@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { admin, anon } from './support/admin.js';
+import { withCatalog } from './support/pg.js';
 import {
   addExtraction,
   cleanupDetailedJobs,
@@ -973,5 +974,38 @@ describe('match_details linked decisions', () => {
     await decide(pair.role, 'applied');
     expect(await statusOf(pair.listing, 'job')).toBe('applied');
     expect(await statusOf(pair.role, 'post_role')).toBe('applied');
+  });
+
+  it('an older application on the listing wins over a newer dismissal of a linked role', async () => {
+    const id = linkedinJobId();
+    const listing = await seedKeyedListing({
+      jobKey: `url:https://careers.acme.example/jobs/${id}`,
+      linkedinId: id,
+    });
+    const dismissedRole = await seedLinkedRole([`linkedin-job:${id}`]);
+    const undecidedRole = await seedLinkedRole([`linkedin-job:${id}`]);
+    for (const job of [listing, dismissedRole, undecidedRole])
+      await seedMatchOn(d.id, profile, job);
+    await decide(listing.jobId, 'applied');
+    const { error } = await admin()
+      .from('job_decisions')
+      .update({ decidedAt: new Date(Date.now() - 3_600_000).toISOString() })
+      .eq('userId', d.id)
+      .eq('jobId', listing.jobId);
+    expect(error).toBeNull();
+    await decide(dismissedRole.jobId, 'dismissed');
+
+    const groupStatus = await withCatalog(async (client) => {
+      const { rows } = await client.query<{ status: string | null }>(
+        'SELECT public.group_decision_status($1, $2) AS status',
+        [d.id, undecidedRole.jobId],
+      );
+      return rows[0].status;
+    });
+    expect(groupStatus).toBe('applied');
+    expect(await statusOf(undecidedRole.jobId, 'post_role')).toBe('applied');
+    expect(await statusOf(listing.jobId, 'job')).toBe('applied');
+    // A row's own decision still wins for its own row.
+    expect(await statusOf(dismissedRole.jobId, 'post_role')).toBe('dismissed');
   });
 });

@@ -101,6 +101,32 @@ describe('job_link_group', () => {
 describe('job link helpers', () => {
   let user: TestUser;
 
+  it.each([
+    'public.job_link_keys(uuid)',
+    'public.job_link_group(uuid)',
+    'public.group_decision_status(uuid, uuid)',
+  ])(
+    '%s exists and neither anon nor authenticated may execute it',
+    async (sig) => {
+      const row = await withCatalog(async (client) => {
+        const { rows } = await client.query<{
+          fn: string | null;
+          authenticated: boolean;
+          anon: boolean;
+        }>(
+          `SELECT to_regprocedure($1)::text AS fn,
+                has_function_privilege('authenticated', $1, 'EXECUTE') AS authenticated,
+                has_function_privilege('anon', $1, 'EXECUTE') AS anon`,
+          [sig],
+        );
+        return rows[0];
+      });
+      expect(row.fn).not.toBeNull();
+      expect(row.authenticated).toBe(false);
+      expect(row.anon).toBe(false);
+    },
+  );
+
   beforeAll(async () => {
     user = await createTestUser();
   });
