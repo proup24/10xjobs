@@ -1,6 +1,6 @@
 # 03: CI runs only what a change affects
 
-Status: Built, pending merge (PR #146). Checks after merge in the PR body.
+Status: Built, merged 2026-11-26 (PR #146). First merge verified: Dev database migrated, Deploy engine deployed everything with the "no last deployed commit" notice. Docs-only skip checks pending.
 
 ## Goal
 
