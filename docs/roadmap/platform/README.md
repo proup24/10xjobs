@@ -17,4 +17,4 @@ Same as the phases: each slice is a short brief covering the goal, what exists, 
 | --- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | 01  | [Migration squash](01-migration-squash.md)                                 | Built as a stepped migrate, not a squash ([spec](../../superpowers/specs/2026-11-24-stepped-migrate-design.md), #131) |
 | 02  | [Deploy keeps a stopped worker stopped](02-deploy-keeps-stopped-worker.md) | Not started                                                                                                           |
-| 03  | [CI runs only what a change affects](03-ci-runs-only-what-changed.md)      | Not started                                                                                                           |
+| 03  | [CI runs only what a change affects](03-ci-runs-only-what-changed.md)      | Built, pending merge (PR #146)                                                                                        |
