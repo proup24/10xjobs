@@ -44,6 +44,76 @@ describe('checkPosition', () => {
     ).toBe('fullstack_engineer');
   });
 
+  describe('tech_lead', () => {
+    const lead = {
+      ...profile,
+      position: 'tech_lead',
+      seniorities: ['lead'],
+    };
+    const leadRole = (roleKind: string, seniority: string) => {
+      const d = withRole(roleKind);
+      d.seniority.value = seniority;
+      return d;
+    };
+    it('tech_lead passes on lead fullstack_engineer', () => {
+      const c = checkPosition(leadRole('fullstack_engineer', 'lead'), lead);
+      expect(c).toMatchObject({
+        outcome: 'pass',
+        reason: 'lead-level fullstack_engineer counts for tech_lead',
+        unsure: false,
+      });
+    });
+    it('tech_lead still fails on senior fullstack_engineer', () => {
+      expect(
+        checkPosition(leadRole('fullstack_engineer', 'senior'), lead).outcome,
+      ).toBe('fail');
+    });
+    it('backend_engineer still fails on lead fullstack_engineer', () => {
+      expect(
+        checkPosition(leadRole('fullstack_engineer', 'lead'), profile).outcome,
+      ).toBe('fail');
+    });
+    it.each(['other', 'engineering_manager'])(
+      'tech_lead fails on lead %s',
+      (k) => {
+        expect(checkPosition(leadRole(k, 'lead'), lead).outcome).toBe('fail');
+      },
+    );
+    it('a tech_lead profile without lead in its seniorities still fails position', () => {
+      const p = { ...lead, seniorities: ['senior'] };
+      expect(
+        checkPosition(leadRole('fullstack_engineer', 'lead'), p).outcome,
+      ).toBe('fail');
+    });
+    it('a null isSoftwareEngineeringRole passes unsure on that flag', () => {
+      const d = leadRole('fullstack_engineer', 'lead');
+      d.isSoftwareEngineeringRole.value = null;
+      expect(checkPosition(d, lead)).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'isSoftwareEngineeringRole',
+      });
+    });
+    it('an unsure position on a lead role passes unsure on position', () => {
+      const d = leadRole('fullstack_engineer', 'lead');
+      d.position.confidence = 'unsure';
+      expect(checkPosition(d, lead)).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'position',
+      });
+    });
+    it('an unsure lead seniority makes the pass unsure on seniority', () => {
+      const d = leadRole('fullstack_engineer', 'lead');
+      d.seniority.confidence = 'unsure';
+      expect(checkPosition(d, lead)).toMatchObject({
+        outcome: 'pass',
+        unsure: true,
+        unsureField: 'seniority',
+      });
+    });
+  });
+
   describe('unsure', () => {
     it('a failing role resting on an unsure position is unsure, on that field', () => {
       const d = withRole('fullstack_engineer');
