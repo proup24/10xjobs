@@ -52,6 +52,7 @@ Precision over volume: prefer a tailored application over a fast one.
 - `pnpm --filter @xjobs/xjobs db:post-sample -- --size <n> [--days <n>] --out <path>`: read-only export of a random sample of LinkedIn post items (`--days` keeps those last seen within n days) as `{ rawItemId, payload, label: null }[]` JSON, for labelling the post drop rules; refuses a remote database without `XJOBS_ALLOW_REMOTE_DB=1`.
 - `pnpm --filter @xjobs/xjobs processor:eval -- [--posts [--case <n> ...]] [--generator <model>]`: run the processor against the golden set (`--posts`: the LinkedIn post set and its sending bars, about $3; `--case` runs only those posts, with no bars).
 - `npm run test:hooks`: tests for the `.claude/hooks` scripts.
+- `pnpm test:deploy`: tests for the deploy scripts in `deploy/engine` (run in CI).
 
 ## Conventions
 

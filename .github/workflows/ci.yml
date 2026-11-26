@@ -37,6 +37,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - run: pnpm test:deploy
+
       # Prepend any command with "nx record --" to record its logs to Nx Cloud
       # - run: pnpm exec nx record -- echo Hello World
       - run: pnpm exec nx run-many -t lint test build typecheck

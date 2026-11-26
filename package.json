@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "test:hooks": "node --test \".claude/hooks/*.test.mjs\"",
+    "test:deploy": "node --test \"deploy/engine/*.test.mjs\"",
     "users": "pnpm --filter @xjobs/xjobs users",
     "db:start": "scripts/ensure-signing-key.sh && supabase start",
     "db:stop": "supabase stop",

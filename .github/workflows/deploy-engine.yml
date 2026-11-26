@@ -198,6 +198,16 @@ jobs:
           ref: ${{ needs.check.outputs.sha }}
           persist-credentials: false
 
+      # The deployed SHA may predate worker-hold.sh, and a rollback must still
+      # hold a stopped worker, so the script comes from the workflow's own commit.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .deploy-tooling
+          sparse-checkout: deploy/engine/worker-hold.sh
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
       - name: Set up SSH
         id: ssh
         env:
@@ -252,6 +262,20 @@ jobs:
             echo "stale=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Runs before anything on the server changes: a worker that was stopped
+      # before this deploy stays stopped.
+      - name: Decide whether to start the worker
+        id: worker
+        if: steps.newer.outputs.stale != 'true'
+        run: |
+          decision="$(ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" 'bash -s' < .deploy-tooling/deploy/engine/worker-hold.sh)"
+          if [ "$decision" != start ] && [ "$decision" != hold ]; then
+            echo "::error::Unexpected worker decision '$decision'"
+            exit 1
+          fi
+          echo "Worker decision: $decision"
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+
       # Staged in .incoming/ so a failed pull leaves the live files untouched.
       - name: Copy the deploy files
         if: steps.newer.outputs.stale != 'true'
@@ -276,9 +300,11 @@ jobs:
       # resolving in ~/engine rather than in .incoming/.
       - name: Roll out the image
         if: steps.newer.outputs.stale != 'true'
+        env:
+          DECISION: ${{ steps.worker.outputs.decision }}
         run: |
-          # shellcheck disable=SC2029  # the validated SHA is quoted on purpose, client side
-          ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -s $(printf '%q' "$SHA")" <<'REMOTE'
+          # shellcheck disable=SC2029  # the validated SHA and decision are quoted on purpose, client side
+          ssh "$ENGINE_SSH_USER@$ENGINE_SSH_HOST" "bash -s $(printf '%q' "$SHA") $(printf '%q' "$DECISION")" <<'REMOTE'
           set -euo pipefail
           cd ~/engine
           ENGINE_IMAGE=ghcr.io/proup24/10xjobs-engine
@@ -307,7 +333,21 @@ jobs:
           rm .incoming/Caddyfile
           printf 'ENGINE_IMAGE_TAG=%s\n' "$1" > image.env
           C="docker compose -p xjobs-engine --env-file image.env --env-file .env"
-          $C up -d --remove-orphans
+          case "$2" in
+            start)
+              $C up -d --remove-orphans
+              ;;
+            hold)
+              # Never a bare `up -d`: it would start the stopped worker.
+              $C up -d --remove-orphans api redis redis-cache caddy
+              $C up --no-start worker
+              echo "::notice::Worker was stopped before this deploy; left stopped on $1. Start it with \$C start worker"
+              ;;
+            *)
+              echo "::error::unknown worker decision '$2'"
+              exit 1
+              ;;
+          esac
           # `up` does not recreate caddy for a Caddyfile change; reload it.
           $C exec -T caddy caddy reload --config /etc/caddy/Caddyfile
           # Keep the new image and the one it replaced, for a quick rollback;
@@ -365,6 +405,8 @@ jobs:
             exit 1
           fi
           echo "Healthy with the key; 401 without it"
+          worker="$($C ps -a --format '{{.State}}' worker | head -n 1 || true)"
+          echo "Worker: ${worker:-none}"
           REMOTE
 
       # Also covers a failed `up -d`, which never reaches the health check.
