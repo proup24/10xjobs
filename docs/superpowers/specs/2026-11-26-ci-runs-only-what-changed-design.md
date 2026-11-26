@@ -1,7 +1,7 @@
 # Platform slice 03: CI runs only what a change affects
 
 Date: 2026-11-26
-Status: draft, awaiting approval
+Status: approved, built on ci/platform-03-affected
 Slice: [03 CI runs only what changed](../../roadmap/platform/03-ci-runs-only-what-changed.md)
 
 ## Intent
