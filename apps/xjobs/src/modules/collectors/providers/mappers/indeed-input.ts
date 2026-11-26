@@ -1,4 +1,5 @@
 import type { SegmentSearch } from '../../types/collector';
+import { SearchNotStartedError } from '../../utils/search-not-started';
 import { mergedLinkedinKeyword } from './linkedin-job-board.mapper';
 
 /** What `valig/indeed-jobs-scraper` takes for one search; no other field is sent. */
@@ -28,8 +29,12 @@ export function toIndeedInput(
   rows: number,
 ): IndeedInput {
   const params = segment.queries[0]?.params ?? {};
+  const site = typeof params.site === 'string' ? params.site : '';
+  // A blank country would start a paid run on an unknown site.
+  if (site === '')
+    throw new SearchNotStartedError('Indeed segment has no site');
   return {
-    country: typeof params.site === 'string' ? params.site : '',
+    country: site,
     title: mergedLinkedinKeyword(segment.queries),
     location: typeof params.location === 'string' ? params.location : '',
     limit: rows,

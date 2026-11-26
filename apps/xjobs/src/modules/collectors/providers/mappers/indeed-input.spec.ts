@@ -1,5 +1,6 @@
 import { Channel } from 'src/common/enums';
 import type { SegmentSearch } from '../../types/collector';
+import { SearchNotStartedError } from '../../utils/search-not-started';
 import { indeedDatePosted, toIndeedInput } from './indeed-input';
 
 const hours = (n: number) => {
@@ -11,6 +12,14 @@ describe('indeedDatePosted', () => {
   it('asks one day for an hourly window', () => {
     const { since, until } = hours(1);
     expect(indeedDatePosted(since, until)).toBe('1');
+  });
+  it('asks one day at the 24-hour maximum', () => {
+    const { since, until } = hours(24);
+    expect(indeedDatePosted(since, until)).toBe('1');
+  });
+  it('asks three days past 24 hours', () => {
+    const { since, until } = hours(25);
+    expect(indeedDatePosted(since, until)).toBe('3');
   });
   it('asks three days for a 60-hour window', () => {
     const { since, until } = hours(60);
@@ -62,5 +71,19 @@ describe('toIndeedInput', () => {
       'title',
     ]);
     expect(input.title).toContain('backend engineer');
+  });
+
+  it('refuses a segment with no site', () => {
+    const { since, until } = hours(1);
+    const segment: SegmentSearch = {
+      channel: Channel.INDEED,
+      since,
+      until,
+      queries: [{ id: 'a', keyword: 'kw', params: { location: 'Remote' } }],
+    };
+    expect(() => toIndeedInput(segment, 1000)).toThrow(SearchNotStartedError);
+    expect(() => toIndeedInput(segment, 1000)).toThrow(
+      'Indeed segment has no site',
+    );
   });
 });
