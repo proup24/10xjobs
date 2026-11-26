@@ -1,6 +1,6 @@
 # 03: CI runs only what a change affects
 
-Status: Not started. Raised 2026-11-26, when a docs-only PR (#140) still waited on every CI job.
+Status: Built, pending merge (PR #146). Checks after merge in the PR body.
 
 ## Goal
 

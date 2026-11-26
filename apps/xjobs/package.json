@@ -265,6 +265,13 @@
           }
         }
       }
+    },
+    "namedInputs": {
+      "default": [
+        "{projectRoot}/**/*",
+        "sharedGlobals",
+        "{workspaceRoot}/deploy/engine/**/*"
+      ]
     }
   },
   "dependencies": {

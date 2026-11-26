@@ -1,13 +1,16 @@
 name: Deploy engine
 
+# The SHA in the run name lets the next run find the commit of the last deploy.
+run-name: Deploy engine ${{ github.event_name == 'workflow_run' && github.event.workflow_run.display_title || inputs.image_tag || github.sha }}
+
 # Builds the engine image, pushes it to GHCR and rolls it out to the Hetzner
 # server once the Dev database workflow has migrated the dev database.
 #
 # Chain depth: CI -> Dev database -> Deploy engine is three workflow_run
 # levels, which is GitHub's maximum. Do not chain another workflow after this.
 #
-# Three jobs keep the credentials apart: `check` only reads, `build` is the
-# only job that can push to GHCR, and `deploy` holds the SSH key and a
+# Four jobs keep the credentials apart: `check` and `changes` only read,
+# `build` alone can push to GHCR, and `deploy` alone holds the SSH key and a
 # read-only registry token.
 on:
   workflow_run:
@@ -117,9 +120,73 @@ jobs:
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "build=$build" >> "$GITHUB_OUTPUT"
 
-  build:
+  # Automatic runs build and deploy only when the engine project changed since
+  # the last run whose `deploy` job succeeded. A manual dispatch always deploys.
+  changes:
     needs: check
-    if: needs.check.result == 'success' && needs.check.outputs.skip != 'true' && needs.check.outputs.build == 'true'
+    if: needs.check.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      deploy: ${{ steps.dispatch.outputs.deploy || steps.detect.outputs.deploy }}
+    steps:
+      - name: Deploy on every manual dispatch
+        id: dispatch
+        if: github.event_name != 'workflow_run'
+        run: echo "deploy=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        if: github.event_name == 'workflow_run'
+        with:
+          ref: ${{ needs.check.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Installs the pnpm version pinned in package.json's packageManager field
+      - uses: pnpm/action-setup@v6
+        if: github.event_name == 'workflow_run'
+
+      - uses: actions/setup-node@v6
+        if: github.event_name == 'workflow_run'
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+        if: github.event_name == 'workflow_run'
+
+      - name: Decide whether the engine changed
+        id: detect
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.check.outputs.sha }}
+        run: |
+          if [ ! -f .github/ci/changes.mjs ]; then
+            echo "::notice::Commit predates change detection; running everything"
+            echo "deploy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          base=$(node .github/ci/last-handled.mjs --workflow deploy-engine.yml --job deploy)
+          if [ -n "$base" ] && git cat-file -e "$base^{commit}"; then
+            node .github/ci/changes.mjs --base "$base" --head "$SHA"
+          else
+            echo "::notice::No last deployed commit found; deploying anyway"
+            node .github/ci/changes.mjs --all
+          fi
+
+      - name: Report the skipped deploy
+        if: github.event_name == 'workflow_run' && steps.detect.outputs.deploy != 'true'
+        env:
+          BASE: ${{ steps.detect.outputs.base }}
+        run: echo "::notice::No engine change since $BASE; skipping build and deploy"
+
+  build:
+    needs: [check, changes]
+    if: needs.check.result == 'success' && needs.check.outputs.skip != 'true' && needs.check.outputs.build == 'true' && needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -176,9 +243,10 @@ jobs:
             ${{ env.IMAGE }}:dev
 
   deploy:
-    needs: [check, build]
+    needs: [check, changes, build]
     if: >-
       !cancelled() && needs.check.result == 'success' && needs.check.outputs.skip != 'true' &&
+      needs.changes.result == 'success' && needs.changes.outputs.deploy == 'true' &&
       (needs.build.result == 'success' || needs.build.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 20

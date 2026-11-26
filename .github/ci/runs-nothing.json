@@ -1,0 +1,1 @@
+["docs/**", "*.md", ".claude/**", ".vscode/**", ".editorconfig", ".env.example", ".gitignore", ".prettierrc", ".prettierignore", ".nx/ci-config.yaml", "docker-compose.worker.yaml", "tsconfig.tsbuildinfo", ".pnpm-store/**"]
