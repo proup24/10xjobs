@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { or } from '@prisma/orm-postgres/orm-client';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction, JobExtractionRow } from '@xjobs/database';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
@@ -559,21 +558,26 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     // The extraction is still the freshest one unless a newer run already
     // finished the job; until then qualify reads this one. A job the
     // prefilter skipped meanwhile (released as stale, then checked) goes back
-    // to `pending`: a job with an extraction is never `skipped`.
+    // to `pending`: a job with an extraction is never `skipped`. One UPDATE,
+    // so it cannot interleave with `markSkipped`: whichever commits first, the
+    // other re-checks the row (READ COMMITTED) and either flips the skip back
+    // or refuses a row that now holds an extraction.
     if (outcome.status === 'processed' && outcome.extractionId !== null) {
-      await jobs
-        .where({ id: claim.jobId, processingStatus: 'skipped' })
-        .updateAll({
-          processingStatus: 'pending',
-          processingRequestedAt: new Date(),
-          currentExtractionId: outcome.extractionId,
-        });
-      await jobs
-        .where({ id: claim.jobId })
-        .where((j) =>
-          or(j.processingStatus.isNull(), j.processingStatus.neq('processed')),
-        )
-        .updateAll({ currentExtractionId: outcome.extractionId });
+      const { raw } = this.db;
+      await this.db.query(
+        raw.sql`UPDATE normalized_jobs SET
+            "currentExtractionId" = ${outcome.extractionId}::uuid,
+            "processingRequestedAt" = CASE WHEN "processingStatus" = 'skipped'
+              THEN now() ELSE "processingRequestedAt" END,
+            "processingStatus" = CASE WHEN "processingStatus" = 'skipped'
+              THEN 'pending' ELSE "processingStatus" END,
+            "updatedAt" = now()
+          WHERE id = ${claim.jobId}::uuid
+            AND "processingStatus" IS DISTINCT FROM 'processed'
+          RETURNING id`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
     }
     return 'superseded';
   }

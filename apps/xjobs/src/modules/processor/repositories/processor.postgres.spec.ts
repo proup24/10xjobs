@@ -1030,6 +1030,25 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(counts.posts.skipped).toBe(0);
     });
 
+    it('a run that finishes after its job was released, before any skip, leaves nothing to skip', async () => {
+      const id = await job(onsiteFR);
+      const claim = (await repo.claim(id))!;
+      await repo.releaseStale(new Date(Date.now() + minutes(1)));
+      const extractionId = await repo.saveExtraction(extraction(id));
+      expect(
+        await repo.finish(claim, { status: 'processed', extractionId }),
+      ).toBe('superseded');
+      expect(await jobRow(id)).toMatchObject({
+        processingStatus: 'pending',
+        currentExtractionId: extractionId,
+      });
+      // The extraction and the status land in one statement: the skip that
+      // would have followed is refused, so no skipped row holds an extraction.
+      expect(await prefilter.markSkipped(id, reason)).toBe(false);
+      expect(await prefilter.listUncheckedPending(10)).toEqual([]);
+      expect((await jobRow(id)).processingStatus).toBe('pending');
+    });
+
     it('a run that finishes after its job was released and skipped leaves it pending with the extraction', async () => {
       const id = await job(onsiteFR);
       const claim = (await repo.claim(id))!;
