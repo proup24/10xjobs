@@ -149,7 +149,9 @@ A stopped worker stays stopped across deploys (automatic and manual, rollbacks t
 
 Start: `$C start worker`. Check: `$C ps -a worker`.
 
-Warning: every `$C up -d` and `$C up -d worker` in this runbook (sections 5, 5a, 8, 8a, 8b, 13 to 17) starts a stopped worker. For `.env` changes that only `api` needs, use `$C up -d api caddy`.
+Warning: every `$C up -d` and `$C up -d worker` in this runbook (sections 5, 5a, 8, 8a, 8b, 13 to 18) starts a stopped worker. For `.env` changes that only `api` needs, use `$C up -d api caddy`.
+
+Removing the worker container (`$C down`, `$C rm worker`) counts as no container, so the next deploy starts it.
 
 ## 9. Roll back
 

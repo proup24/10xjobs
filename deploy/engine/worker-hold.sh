@@ -4,7 +4,7 @@ set -euo pipefail
 # See docs/superpowers/specs/2026-11-26-deploy-keeps-stopped-worker-design.md.
 # Prints "start" or "hold". Exits 1 on a docker failure or an unknown state.
 
-if ! out="$(docker ps -a --filter label=com.docker.compose.project=xjobs-engine --filter label=com.docker.compose.service=worker --format '{{.State}}')"; then
+if ! out="$(docker ps -a --filter label=com.docker.compose.project=xjobs-engine --filter label=com.docker.compose.service=worker --filter label=com.docker.compose.oneoff=False --format '{{.State}}')"; then
   echo "worker-hold: docker ps failed" >&2
   exit 1
 fi

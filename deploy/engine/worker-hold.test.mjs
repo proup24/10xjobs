@@ -87,4 +87,5 @@ test('queries the worker of xjobs-engine', () => {
   const { args } = run('running\n');
   assert.ok(args.includes('label=com.docker.compose.project=xjobs-engine'));
   assert.ok(args.includes('label=com.docker.compose.service=worker'));
+  assert.ok(args.includes('label=com.docker.compose.oneoff=False'));
 });
