@@ -147,5 +147,7 @@ export function sourceKey(channel: Channel, payload: unknown): SourceKeyResult {
     case Channel.ASHBY:
     case Channel.GREEN_HOUSE:
       return postingKey(channel, payload);
+    case Channel.INDEED:
+      return { invalid: 'Indeed ingest lands in Phase 5 slice 04' };
   }
 }

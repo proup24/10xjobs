@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { ProfileState } from 'src/common/enums';
 import { DatabaseService, type ProfileRow } from 'src/database';
-import type { SwitchColumn, SwitchFlags } from 'src/modules/queries';
+import type {
+  IndeedMarket,
+  SwitchColumn,
+  SwitchFlags,
+} from 'src/modules/queries';
 import type { Place, PlaceLabels, ProfileWithSkills } from '../types';
 
 /**
@@ -40,6 +44,8 @@ export abstract class ProfilesRepository {
   ): Promise<ProfileWithSkills | null>;
   /** The labels of the regions, countries and cities given, a city's country included. */
   abstract placeLabels(places: Place[]): Promise<PlaceLabels>;
+  /** Every Indeed market, ordered by site. */
+  abstract indeedMarkets(): Promise<IndeedMarket[]>;
 }
 
 /**
@@ -191,5 +197,15 @@ export class PrismaProfilesRepository extends ProfilesRepository {
         ]),
       ),
     };
+  }
+
+  async indeedMarkets(): Promise<IndeedMarket[]> {
+    const rows = await this.orm.IndeedMarket.orderBy((m) => m.site.asc()).all();
+    return rows.map(({ site, countryCode, mainRemote, remoteLocation }) => ({
+      site,
+      countryCode,
+      mainRemote,
+      remoteLocation,
+    }));
   }
 }

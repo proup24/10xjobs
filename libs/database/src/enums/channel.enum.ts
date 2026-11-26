@@ -6,6 +6,7 @@ export enum Channel {
   LINKEDIN_POSTS = 'LINKEDIN_POSTS',
   GREEN_HOUSE = 'GREEN_HOUSE',
   ASHBY = 'ASHBY',
+  INDEED = 'INDEED',
 }
 
 /**

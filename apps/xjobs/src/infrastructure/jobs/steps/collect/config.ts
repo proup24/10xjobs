@@ -10,6 +10,7 @@ import {
   LinkedinJobBoardCollector,
   type LinkedinPostsRunConfig,
   LinkedinPostsCollector,
+  IndeedCollector,
 } from 'src/modules/collectors';
 import type { WindowConfig } from 'src/modules/segments';
 
@@ -62,6 +63,18 @@ const linkedinPosts = {
   ...hourly,
   schedule: { pattern: '0 * * * *', timezone: 'Africa/Casablanca' },
   window: { initialHours: 24, overlapMinutes: 5, maximumHours: 24 },
+} as const;
+
+/**
+ * Indeed hourly 09-21 Morocco time on weekdays, one hour a tick; a gap widens
+ * the window up to 72 hours (Indeed's 3-day filter), no further. Each run's
+ * charge limit is what is left of the day's Indeed budget.
+ */
+const indeed = {
+  ...hourly,
+  schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+  window: { initialHours: 24, overlapMinutes: 0, maximumHours: 72 },
+  resumeHours: 24,
 } as const;
 
 /**
@@ -119,6 +132,13 @@ export const channelJobsConfig = {
     enabled: ACTIVE_CHANNELS.includes(Channel.ASHBY),
     run: AshbyCollector.config,
   },
+  [Channel.INDEED]: {
+    queueName: 'collect-indeed',
+    ...indeed,
+    // Switch-only, like posts: on by itself, under COLLECTION_DAILY_BUDGET_USD_INDEED.
+    enabled: true,
+    run: IndeedCollector.config,
+  },
 } satisfies {
   [Channel.LINKEDIN_JOB_BOARD]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
   [Channel.LINKEDIN_JOB_BOARD_CHEAP]: ChannelJobConfig<LinkedinJobBoardRunConfig>;
@@ -126,6 +146,7 @@ export const channelJobsConfig = {
   [Channel.LINKEDIN_POSTS]: ChannelJobConfig<LinkedinPostsRunConfig>;
   [Channel.GREEN_HOUSE]: ChannelJobConfig<BoardSearchRunConfig>;
   [Channel.ASHBY]: ChannelJobConfig<BoardSearchRunConfig>;
+  [Channel.INDEED]: ChannelJobConfig;
 };
 
 /**

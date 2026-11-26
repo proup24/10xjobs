@@ -1,5 +1,6 @@
 import { Arrangement, type Channel, type SkillDomain } from 'src/common/enums';
 import type { SwitchFlags } from '../switches';
+import type { IndeedMarket } from '../indeed/markets';
 
 /** The arrangements a profile lists locations for, in expansion order. */
 export const LOCATION_ARRANGEMENTS = [
@@ -26,6 +27,9 @@ export type TechnologySet = {
   domain: SkillDomain;
 };
 
+/** The country a place sits in; the city name when the place is a city. */
+export type PlaceCountry = { countryCode: string; city: string | null };
+
 export type QuerySearchProfileInput = {
   position: string;
   locations: LocationsByArrangement;
@@ -33,6 +37,10 @@ export type QuerySearchProfileInput = {
   skills: RankedSkill[];
   /** ISO codes from `profiles.languages[].lang`, lowercased and deduped. */
   languages: string[];
+  /** Per arrangement, the countries its places sit in (regions and worldwide have none). Absent means none. */
+  placeCountries?: Record<LocationArrangement, PlaceCountry[]>;
+  /** The Indeed markets. Absent means none. */
+  indeedMarkets?: readonly IndeedMarket[];
 };
 
 export type QuerySearchCombination = {

@@ -114,6 +114,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'collect-linkedin-posts:collect',
       'collect-greenhouse:collect',
       'collect-ashby:collect',
+      'collect-indeed:collect',
     ]);
     expect(created.workers).toEqual([
       'infrastructure',
@@ -123,6 +124,7 @@ it('registers no schedule and removes the old ones when schedules are off', asyn
       'webhook',
       'collect-linkedin-job-board',
       'collect-linkedin-posts',
+      'collect-indeed',
     ]);
   } finally {
     await module.close();

@@ -13,6 +13,9 @@ import {
   SEARCH_SWITCHES_TOKEN,
   switchFlags,
   switchesInEffect,
+  type IndeedMarket,
+  type LocationArrangement,
+  type PlaceCountry,
   type QuerySearchProfileInput,
   type SearchSwitch,
   type SearchSwitchKey,
@@ -23,6 +26,7 @@ import { describeError } from 'src/utils';
 import { UsersService } from './users.service';
 import { allPlaces, placeTexts } from './place-labels';
 import type {
+  Place,
   PlaceLabels,
   PlacesByArrangement,
   PostSearchView,
@@ -99,10 +103,14 @@ export function toProfileView(profile: ProfileWithSkills): ProfileView {
 export function toQuerySearchInput(
   profile: ProfileWithSkills,
   labels: PlaceLabels,
+  markets: readonly IndeedMarket[] = [],
 ): QuerySearchProfileInput {
+  const places = profilePlaces(profile);
   return {
     position: profile.position,
-    locations: placeTexts(profilePlaces(profile), labels),
+    locations: placeTexts(places, labels),
+    placeCountries: placeCountries(places, labels),
+    indeedMarkets: markets,
     seniorities: [...profile.seniorities],
     languages: [
       ...new Set(
@@ -122,6 +130,29 @@ export function toQuerySearchInput(
   };
 }
 
+/** Per arrangement, the countries the places sit in; regions and worldwide have none. */
+function placeCountries(
+  places: PlacesByArrangement,
+  labels: PlaceLabels,
+): Record<LocationArrangement, PlaceCountry[]> {
+  const of = (list: Place[]): PlaceCountry[] =>
+    list.flatMap((place): PlaceCountry[] => {
+      if (place.kind === 'country')
+        return [{ countryCode: place.code, city: null }];
+      if (place.kind === 'city') {
+        const city = labels.cities.get(place.id.toLowerCase());
+        if (!city) throw new Error(`No label for city '${place.id}'`);
+        return [{ countryCode: city.countryCode, city: city.name }];
+      }
+      return [];
+    });
+  return {
+    remote: of(places.remote),
+    hybrid: of(places.hybrid),
+    onsite: of(places.onsite),
+  };
+}
+
 /** The jsonb `locations` column, which the database checks into this shape (assert_places). */
 function profilePlaces(profile: ProfileWithSkills): PlacesByArrangement {
   return profile.locations as PlacesByArrangement;
@@ -133,6 +164,18 @@ export function labelsFor(
   profile: ProfileWithSkills,
 ): Promise<PlaceLabels> {
   return profiles.placeLabels(allPlaces(profilePlaces(profile)));
+}
+
+/** The search input of a profile: its place labels and the Indeed markets, read together. */
+export async function searchInputFor(
+  profiles: Pick<ProfilesRepository, 'placeLabels' | 'indeedMarkets'>,
+  profile: ProfileWithSkills,
+): Promise<QuerySearchProfileInput> {
+  const [labels, markets] = await Promise.all([
+    labelsFor(profiles, profile),
+    profiles.indeedMarkets(),
+  ]);
+  return toQuerySearchInput(profile, labels, markets);
 }
 
 export const ELIGIBILITY_REQUIRED =
@@ -178,7 +221,10 @@ export const profileFolder = (userId: string, profileId: string): string =>
 
 /** What regenerating published profiles needs. */
 export interface RegenerateDeps {
-  profiles: Pick<ProfilesRepository, 'listPublished' | 'placeLabels'>;
+  profiles: Pick<
+    ProfilesRepository,
+    'listPublished' | 'placeLabels' | 'indeedMarkets'
+  >;
   querySearch: Pick<
     QuerySearchService,
     'recipesFor' | 'replace' | 'retireOutdated'
@@ -207,6 +253,7 @@ export async function regeneratePublished(
   toInput: (
     profile: ProfileWithSkills,
     labels: PlaceLabels,
+    markets: readonly IndeedMarket[],
   ) => QuerySearchProfileInput = toQuerySearchInput,
 ): Promise<RegenerateResult> {
   const published = await deps.profiles.listPublished();
@@ -218,10 +265,13 @@ export async function regeneratePublished(
   for (const profile of published) {
     try {
       // Labels first: a missing one throws before the profile's builders change.
-      const labels = await labelsFor(deps.profiles, profile);
+      const [labels, markets] = await Promise.all([
+        labelsFor(deps.profiles, profile),
+        deps.profiles.indeedMarkets(),
+      ]);
       const switches = switchFlags(profile);
       const recipes = deps.querySearch.recipesFor(
-        toInput(profile, labels),
+        toInput(profile, labels, markets),
         switches,
       );
       const result = await deps.querySearch.replace(profile.id, recipes, {
@@ -322,7 +372,7 @@ export class ProfilesService {
     const switches = switchFlags(profile);
     const querySearches = await this.querySearch.generate(
       profile.id,
-      toQuerySearchInput(profile, await labelsFor(this.profiles, profile)),
+      await searchInputFor(this.profiles, profile),
       switches,
     );
     const published = await this.profiles.publish(
@@ -468,7 +518,7 @@ export class ProfilesService {
   private async searchInput(
     profile: ProfileWithSkills,
   ): Promise<QuerySearchProfileInput> {
-    return toQuerySearchInput(profile, await labelsFor(this.profiles, profile));
+    return searchInputFor(this.profiles, profile);
   }
 }
 

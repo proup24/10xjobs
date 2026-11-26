@@ -52,6 +52,10 @@
       "model": "FactReport",
       "namespace": "public"
     },
+    "indeed_markets": {
+      "model": "IndeedMarket",
+      "namespace": "public"
+    },
     "iso_currencies": {
       "model": "IsoCurrency",
       "namespace": "public"
@@ -244,6 +248,10 @@
               {
                 "name": "ASHBY",
                 "value": "ASHBY"
+              },
+              {
+                "name": "INDEED",
+                "value": "INDEED"
               }
             ]
           },
@@ -1865,6 +1873,57 @@
               },
               "namespaceId": "public",
               "table": "fact_reports"
+            }
+          },
+          "IndeedMarket": {
+            "fields": {
+              "countryCode": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "mainRemote": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "remoteLocation": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "site": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "countryCode": {
+                  "column": "countryCode"
+                },
+                "mainRemote": {
+                  "column": "mainRemote"
+                },
+                "remoteLocation": {
+                  "column": "remoteLocation"
+                },
+                "site": {
+                  "column": "site"
+                }
+              },
+              "namespaceId": "public",
+              "table": "indeed_markets"
             }
           },
           "IsoCurrency": {
@@ -8788,6 +8847,11 @@
               "namespaceId": "public",
               "tableName": "fact_reports"
             },
+            "indeed_markets": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "indeed_markets"
+            },
             "iso_currencies": {
               "kind": "rls",
               "namespaceId": "public",
@@ -9308,8 +9372,8 @@
                   "prefix": "collection_batches_attempts"
                 },
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "collection_batches_channel_check_6c2cc154",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY', 'INDEED')",
+                  "name": "collection_batches_channel_check_b2699671",
                   "prefix": "collection_batches_channel_check"
                 },
                 {
@@ -10142,6 +10206,52 @@
                 ]
               },
               "uniques": []
+            },
+            "indeed_markets": {
+              "columns": {
+                "countryCode": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "mainRemote": {
+                  "codecId": "pg/bool@1",
+                  "dataType": "pg/bool",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nullable": false
+                },
+                "remoteLocation": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "default": {
+                    "kind": "literal",
+                    "value": "Remote"
+                  },
+                  "nullable": false
+                },
+                "site": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "site"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "countryCode"
+                  ]
+                }
+              ]
             },
             "iso_currencies": {
               "columns": {
@@ -13516,8 +13626,8 @@
                   "prefix": "query_search_builder_associated_profiles"
                 },
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "query_search_builder_channel_check_6c2cc154",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY', 'INDEED')",
+                  "name": "query_search_builder_channel_check_b2699671",
                   "prefix": "query_search_builder_channel_check"
                 },
                 {
@@ -14094,8 +14204,8 @@
             "raw_items": {
               "checks": [
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "raw_items_channel_check_6c2cc154",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY', 'INDEED')",
+                  "name": "raw_items_channel_check_b2699671",
                   "prefix": "raw_items_channel_check"
                 },
                 {
@@ -14411,8 +14521,8 @@
             "search_segment_runs": {
               "checks": [
                 {
-                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY')",
-                  "name": "search_segment_runs_channel_check_6c2cc154",
+                  "expression": "\"channel\" IN ('LINKEDIN_JOB_BOARD', 'LINKEDIN_JOB_BOARD_CHEAP', 'LINKEDIN_JOB_BOARD_BEBITY', 'LINKEDIN_POSTS', 'GREEN_HOUSE', 'ASHBY', 'INDEED')",
+                  "name": "search_segment_runs_channel_check_b2699671",
                   "prefix": "search_segment_runs_channel_check"
                 },
                 {
@@ -15694,7 +15804,8 @@
                 "LINKEDIN_JOB_BOARD_BEBITY",
                 "LINKEDIN_POSTS",
                 "GREEN_HOUSE",
-                "ASHBY"
+                "ASHBY",
+                "INDEED"
               ]
             },
             "ContactKind": {
@@ -15759,7 +15870,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1bd6348e27d674c854f8d18362d721f5379cd5306e2108af21574ad28c31ec6e"
+    "storageHash": "0c74e930b09092645e0058b0a3fe21e9324c1a44e0e7ad61e1ca876cc385b365"
   },
   "execution": {
     "executionHash": "dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7",

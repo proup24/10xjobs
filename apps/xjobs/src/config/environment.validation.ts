@@ -95,6 +95,12 @@ const collectionBudgetShape = {
     .positive()
     .finite()
     .default(1.5),
+  /** Indeed's own cap; each Indeed run may charge at most what is left of it. */
+  COLLECTION_DAILY_BUDGET_USD_INDEED: z.coerce
+    .number()
+    .positive()
+    .finite()
+    .default(1),
   COLLECTION_TRIAL_CHANNELS: z
     .string()
     .default('')

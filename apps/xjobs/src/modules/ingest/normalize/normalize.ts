@@ -27,6 +27,9 @@ const mappers: Partial<Record<Channel, Mapper>> = {
   [Channel.LINKEDIN_POSTS]: mapLinkedinPost,
   [Channel.ASHBY]: mapAshby,
   [Channel.GREEN_HOUSE]: mapGreenhouse,
+  [Channel.INDEED]: () => {
+    throw new Error('Indeed ingest lands in Phase 5 slice 04');
+  },
 };
 
 /**

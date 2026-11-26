@@ -1,9 +1,10 @@
 import { Channel } from 'src/common/enums';
 import type { ProfileRow } from 'src/database';
+import { indeedRecipes } from './indeed';
 import { postRecipes } from './posts';
 import type { QuerySearchProfileInput, QuerySearchRecipe } from './types';
 
-/** A switch's name in URLs and views; not a `Channel` (Indeed joins that enum in slice 03). */
+/** A switch's name in URLs and views. */
 export type SearchSwitchKey = 'posts' | 'indeed';
 /** The profile column that stores a switch. */
 export type SwitchColumn = 'postSearch' | 'indeedSearch';
@@ -14,9 +15,9 @@ export type SwitchFlags = Record<SwitchColumn, boolean>;
 export type SearchSwitch = {
   key: SearchSwitchKey;
   column: SwitchColumn;
-  /** Builders' channel, for detach; null until the channel exists (Indeed: slice 03). */
+  /** Builders' channel, for detach. */
   channel: Channel | null;
-  /** Shown and changeable, for every user. Slice 03 (Indeed) and Phase 4 slice 04b (posts) set it. */
+  /** Shown and changeable, for every user. A later slice (Indeed rollout, Phase 4 slice 04b for posts) sets it. */
   available: boolean;
   /** The recipes the switch adds after the board recipes. */
   recipes(input: QuerySearchProfileInput): QuerySearchRecipe[];
@@ -42,9 +43,9 @@ export const SEARCH_SWITCHES: readonly SearchSwitch[] = [
   {
     key: 'indeed',
     column: 'indeedSearch',
-    channel: null,
+    channel: Channel.INDEED,
     available: false,
-    recipes: () => [],
+    recipes: indeedRecipes,
   },
 ];
 

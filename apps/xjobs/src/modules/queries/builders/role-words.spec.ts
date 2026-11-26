@@ -48,6 +48,45 @@ describe('roleWords', () => {
     );
   });
 
+  it('adds Portuguese words for a profile listing pt', () => {
+    expect(roleWords('backend_engineer', ['pt'])).toEqual(
+      expect.arrayContaining([
+        'desenvolvedor',
+        'engenheiro',
+        'programador',
+        'arquiteto',
+      ]),
+    );
+  });
+
+  it('adds Polish words for pl', () => {
+    expect(roleWords('backend_engineer', ['pl'])).toEqual(
+      expect.arrayContaining(['programista', 'inżynier', 'architekt']),
+    );
+  });
+
+  it('adds Portuguese and Polish architect and tech lead words', () => {
+    expect(roleWords('software_architect', ['pt', 'pl'])).toEqual(
+      expect.arrayContaining(['arquiteto', 'architekt']),
+    );
+    expect(roleWords('tech_lead', ['pt'])).toContain('líder técnico');
+  });
+
+  it('adds nothing for en only', () => {
+    expect(roleWords('backend_engineer', ['en'])).toEqual(
+      roleWords('backend_engineer', []),
+    );
+    expect(roleWords('backend_engineer', ['en'])).toEqual([
+      'architect',
+      'developer',
+      'engineer',
+      'engineering',
+      'programmer',
+      'tech lead',
+      'technical lead',
+    ]);
+  });
+
   it('throws on a position with no family', () => {
     expect(() => roleWords('astronaut', [])).toThrow();
   });

@@ -68,6 +68,11 @@ export function segmentKey(builder: QuerySearchBuilderRow): string {
   if (isLinkedinJobBoard(builder.channel)) return linkedinJobBoardKey(builder);
   if (builder.channel === Channel.LINKEDIN_POSTS)
     return postSegmentKey(params(builder));
+  // Indeed builders of any profile share a run per site and location.
+  if (builder.channel === Channel.INDEED) {
+    const { site, location } = params(builder);
+    return ['INDEED', site, location].join('|');
+  }
   return [builder.channel, builder.domain, builder.type, builder.location].join(
     '|',
   );
@@ -240,6 +245,11 @@ export function planSegments(
       chunks = fitChunks(
         members.map((member) => [member]),
         postsFit,
+      );
+    else if (channel === Channel.INDEED)
+      chunks = fitChunks(
+        members.map((member) => [member]),
+        keywordFits,
       );
     else
       chunks = Array.from(

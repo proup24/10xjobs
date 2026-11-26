@@ -23,7 +23,7 @@ const base: QuerySearchCombination = {
 };
 
 const build = (
-  channel: Exclude<Channel, Channel.LINKEDIN_POSTS>,
+  channel: Exclude<Channel, Channel.LINKEDIN_POSTS | Channel.INDEED>,
   overrides: Partial<QuerySearchCombination> = {},
 ) => CHANNEL_QUERY_BUILDERS[channel].build({ ...base, channel, ...overrides });
 
@@ -234,7 +234,8 @@ describe('Greenhouse and Ashby builders', () => {
 describe('channel query builders', () => {
   it('registers a builder for every channel', () => {
     for (const channel of Object.values(Channel)) {
-      if (channel === Channel.LINKEDIN_POSTS) continue;
+      if (channel === Channel.LINKEDIN_POSTS || channel === Channel.INDEED)
+        continue;
       expect(CHANNEL_QUERY_BUILDERS[channel].channel).toBe(channel);
     }
   });
@@ -279,7 +280,7 @@ describe('channel query builders', () => {
       experienceLevel: '4',
     });
     expect(recipe.hash).toBe(
-      '171d656aa5df4caccfa96d457b52562af4311c7d8564dcb63045f3ba165f00e7',
+      '6b98561831448c1ee7dbc911d8210104a004cb98d5d9c9a0de897aa2739150b1',
     );
   });
 });

@@ -129,6 +129,8 @@ export function jobKey(
       }
       return `linkedin-job:${sourceId(sourceKey)}`;
     }
+    case Channel.INDEED:
+      throw new Error('Indeed ingest lands in Phase 5 slice 04');
   }
 }
 

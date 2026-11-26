@@ -77,6 +77,7 @@ enum Channel {
   LINKEDIN_POSTS = "LINKEDIN_POSTS"
   GREEN_HOUSE = "GREEN_HOUSE"
   ASHBY = "ASHBY"
+  INDEED = "INDEED"
 }
 
 enum ProfileState {
@@ -789,6 +790,21 @@ model RegionTerm {
 
   @@check(expression: sql`status IN ('approved', 'proposed')`, name: "regions_status")
   @@map("regions")
+  @@rls
+}
+
+// Indeed markets: one row per Indeed country site the INDEED channel can search.
+// Engine-only; countryCode has no FK because `countries` holds only vocabulary rows.
+model IndeedMarket {
+  // Indeed's site code (valig's, lowercase), e.g. "us", "uk".
+  site           String  @id
+  // ISO 3166-1 alpha-2, uppercase ("uk" is "GB").
+  countryCode    String  @unique
+  // Whether the site's remote jobs are searched with the main (non-local) remote search.
+  mainRemote     Boolean @default(false)
+  remoteLocation String  @default("Remote")
+
+  @@map("indeed_markets")
   @@rls
 }
 

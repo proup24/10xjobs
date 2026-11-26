@@ -37,6 +37,7 @@
     "worker:linkedin-job-board-cheap:dev": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD_CHEAP tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:linkedin-job-board-bebity:dev": "WORKER_CHANNEL=LINKEDIN_JOB_BOARD_BEBITY tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:linkedin-posts:dev": "WORKER_CHANNEL=LINKEDIN_POSTS tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
+    "worker:indeed:dev": "WORKER_CHANNEL=INDEED tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:greenhouse:dev": "WORKER_CHANNEL=GREEN_HOUSE tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:ashby:dev": "WORKER_CHANNEL=ASHBY tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
     "worker:ingest:dev": "WORKER_ROLE=ingest tsx watch --conditions=@xjobs/source --tsconfig tsconfig.app.json src/worker.ts",
@@ -222,6 +223,19 @@
           "command": "node apps/xjobs/dist/worker.js",
           "env": {
             "WORKER_CHANNEL": "LINKEDIN_POSTS"
+          }
+        }
+      },
+      "worker-indeed": {
+        "continuous": true,
+        "executor": "nx:run-commands",
+        "dependsOn": [
+          "build"
+        ],
+        "options": {
+          "command": "node apps/xjobs/dist/worker.js",
+          "env": {
+            "WORKER_CHANNEL": "INDEED"
           }
         }
       },
