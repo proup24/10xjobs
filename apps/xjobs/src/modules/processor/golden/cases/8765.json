@@ -87,6 +87,18 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": false
+    },
     "requirements": {
       "value": null,
       "reviewed": false

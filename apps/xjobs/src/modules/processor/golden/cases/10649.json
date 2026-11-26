@@ -43,6 +43,18 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "onsite",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": false,
+      "reviewed": false
+    },
     "requirements": {
       "value": null,
       "reviewed": false

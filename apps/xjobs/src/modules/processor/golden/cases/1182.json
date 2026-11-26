@@ -27,6 +27,18 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": false
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": false
+    },
+    "isSoftwareEngineeringRole": {
+      "value": false,
+      "reviewed": false
+    },
     "requirements": {
       "value": null,
       "reviewed": false
