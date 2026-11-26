@@ -39,7 +39,7 @@ Treating `removing` as start, and failing hard on a `docker` error, are my calls
 
 - **start:** unchanged (`$C up -d --remove-orphans`).
 - **hold:** the deploy brings up every other service (`api`, `redis`, `redis-cache`, `caddy`, with `--remove-orphans`). It then recreates the worker from the new image without starting it (`$C up --no-start worker`, or `$C create worker`; the builder picks whichever recreates a changed container and leaves it `created`). The next deploy sees `created` and holds again, and `$C start worker` runs the new image.
-- The script ships with the deploy files: it is copied to `.incoming/` with `compose.yaml` and the `Caddyfile`, and moved into place the same way. The rest of the rollout stays inline in `deploy-engine.yml`.
+- The script ships with the workflow, not the deploy files: the workflow sparse-checks out `worker-hold.sh` at `github.workflow_sha` and pipes it over `ssh … bash -s` in its own step, so a rollback to an older commit still holds, and nothing new is stored on the server. The rest of the rollout stays inline in `deploy-engine.yml`.
 - When it holds, the rollout prints `::notice::Worker was stopped before this deploy; left stopped on <sha>. Start it with $C start worker` (a workflow command printed over ssh still reaches the run summary).
 - The health check also prints the worker's state (`running` or `held`) and never fails on it. It still checks only `api` for health.
 - A manual `workflow_dispatch` follows the same rule. It gets no `start_worker` input: starting the worker stays a server command.

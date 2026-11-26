@@ -14,7 +14,7 @@ Docker Compose project `xjobs-engine`, five services (`compose.yaml`):
 
 CI deploys on merge to `main`: CI, then `Dev database`, then `Deploy engine` (`.github/workflows/deploy-engine.yml`). It skips green while the `ENGINE_SSH_HOST` secret is unset. An automatic deploy also skips green when the server already runs a newer commit, so two quick merges that finish out of order never roll it back.
 
-Each deploy of a new image recreates `api` and `worker`, so the API is briefly down (a short outage) and the worker restarts. If the new image is broken, the API stays down until a rollback (section 9) runs. A failed image pull leaves the running deploy and its files untouched.
+Each deploy of a new image recreates `api` and `worker`, so the API is briefly down (a short outage). The worker restarts, unless it was stopped before the deploy (section 8c). If the new image is broken, the API stays down until a rollback (section 9) runs. A failed image pull leaves the running deploy and its files untouched.
 
 ## 2. Create the server
 
@@ -108,8 +108,8 @@ Always use `$C`, for logs, ps and restart too. `ENGINE_IMAGE_TAG` (from `image.e
 
 1. Logs: `$C logs -f worker` (or `api`, `caddy`, `redis`).
 2. Status: `$C ps`.
-3. Restart: `$C restart worker`.
-4. Change a secret: edit `.env`, then `$C up -d`.
+3. Restart: `$C restart worker`. Stop and start: section 8c.
+4. Change a secret: edit `.env`, then `$C up -d`. This also starts a stopped worker; to keep it stopped, run `$C up -d api caddy` instead.
 
 Containers restart on failure by themselves.
 
@@ -140,6 +140,16 @@ Hiring-post collection (channel `LINKEDIN_POSTS`, design: [posts collect spec](.
 4. It runs hourly (`0 * * * *`, `Africa/Casablanca`), every day, on its own queue, only with `XJOBS_RUN_SCHEDULES=1`. Each run looks back to the last successful run (at most 24 hours, with a 5-minute overlap). With no published profile that has post search on, there are no post segments and nothing is searched.
 5. `ADMIN_USERS` in `.env` lists the Supabase user ids, comma-separated, who may open the admin pages (`/admin/prepare`, the Prepare review). Default empty: nobody. The API reads it; anyone else gets a 404 on the page and a 403 from `/api/admin/*`. Then `$C up -d`.
 6. A `partial` posts run means the actor reported success, but its log had `No available resource` or `Too many boolean operators`, or the log could not be read. Its posts are stored and the cursors do not move, so the next tick searches that window again.
+
+## 8c. Stop and start the worker
+
+Stop: `$C stop worker` (or `docker stop`). It can take up to 7 minutes while a collection segment finishes (`stop_grace_period`).
+
+A stopped worker stays stopped across deploys (automatic and manual, rollbacks too) and reboots. Each deploy still puts the new image in place and adds the notice "Worker was stopped before this deploy; left stopped on `<sha>`" to its run summary.
+
+Start: `$C start worker`. Check: `$C ps -a worker`.
+
+Warning: every `$C up -d` and `$C up -d worker` in this runbook (sections 5, 5a, 8, 8a, 8b, 13 to 17) starts a stopped worker. For `.env` changes that only `api` needs, use `$C up -d api caddy`.
 
 ## 9. Roll back
 

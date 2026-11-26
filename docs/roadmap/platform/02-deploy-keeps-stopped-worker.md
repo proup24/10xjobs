@@ -1,6 +1,6 @@
 # 02: Deploy keeps a stopped worker stopped
 
-Status: Not started. Raised 2026-11-26, after a deploy restarted a worker the owner had stopped.
+Status: Built, PR <n>. Owner check after merge in the PR body.
 
 ## Goal
 
