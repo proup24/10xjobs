@@ -54,7 +54,6 @@ function matchingCase(id = 'c1'): GoldenCase {
       arrangement: reviewed('remote'),
       contractType: reviewed('full_time'),
       isSoftwareEngineeringRole: reviewed(true),
-      engagement: reviewed('employee'),
     },
   };
 }
@@ -65,6 +64,15 @@ describe('scoreCase', () => {
     for (const [name, s] of Object.entries(scores.facts))
       expect(s, name).toMatchObject({ correct: s!.total });
     expect(Object.keys(scores.facts).length).toBeGreaterThanOrEqual(12);
+  });
+
+  it('engagement is not scored', () => {
+    const c = matchingCase();
+    // An old case file may still carry a reviewed engagement label.
+    (c.drafted as Record<string, unknown>).engagement = reviewed('contractor');
+    const scores = scoreCase(fixtureDocument(), c);
+    expect(scores.facts).not.toHaveProperty('engagement');
+    expect(summarize([scores]).facts).not.toHaveProperty('engagement');
   });
 
   it('ignores a drafted value that is not reviewed', () => {

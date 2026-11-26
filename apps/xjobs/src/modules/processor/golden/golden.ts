@@ -6,8 +6,7 @@ import type { SKILL_DOMAINS } from '../schema/shared';
 export type LabelKey =
   | 'arrangement'
   | 'contractType'
-  | 'isSoftwareEngineeringRole'
-  | 'engagement';
+  | 'isSoftwareEngineeringRole';
 /**
  * `requirements` marks the requirements' `domain` and `years` as not yet
  * labeled (the conversion set them to null); its value is unused.
@@ -69,7 +68,6 @@ export interface GoldenFacts {
   arrangement: string;
   contractType: string;
   isSoftwareEngineeringRole: boolean;
-  engagement: string;
 }
 
 export interface GoldenCase {

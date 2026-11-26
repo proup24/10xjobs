@@ -11,7 +11,6 @@ export const FACT_NAMES = [
   'arrangement',
   'contractType',
   'isSoftwareEngineeringRole',
-  'engagement',
   'roleKind',
   'seniority',
   'yearsRequired',
@@ -189,7 +188,6 @@ function expectedFacts(c: GoldenCase): Partial<Record<string, unknown>> {
     arrangement: reviewedLabel(c, 'arrangement'),
     contractType: reviewedLabel(c, 'contractType'),
     isSoftwareEngineeringRole: reviewedLabel(c, 'isSoftwareEngineeringRole'),
-    engagement: reviewedLabel(c, 'engagement'),
   };
 }
 
@@ -221,7 +219,6 @@ function scoreScalars(
     ['arrangement', doc.arrangement],
     ['contractType', doc.contractType],
     ['isSoftwareEngineeringRole', doc.isSoftwareEngineeringRole],
-    ['engagement', doc.engagement],
     ['seniority', doc.seniority],
     ['contractMonths', doc.contractMonths],
   ];

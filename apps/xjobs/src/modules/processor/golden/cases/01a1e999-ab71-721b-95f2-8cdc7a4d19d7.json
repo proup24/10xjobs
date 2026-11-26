@@ -43,10 +43,6 @@
     "isSoftwareEngineeringRole": {
       "value": false,
       "reviewed": false
-    },
-    "engagement": {
-      "value": "unstated",
-      "reviewed": false
     }
   }
 }
