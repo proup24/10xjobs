@@ -242,6 +242,122 @@ describe('decide', () => {
     expect(d.checks.find((c) => c.rule === 'stack')?.outcome).toBe('unknown');
   });
 
+  describe('an unknown stack', () => {
+    const nonComparable = (d: JobFactsDocument) => {
+      d.techStack.value = {
+        requirements: [
+          {
+            technology: { text: 'In-house tool', code: null },
+            kind: 'main',
+            importance: 9,
+            domain: null,
+            years: null,
+            quote: '',
+            confidence: 'sure',
+            group: null,
+          },
+        ],
+        groups: [],
+      };
+    };
+    const stackReview = { rule: 'stack', field: 'techStack' };
+
+    it('a listing whose stack lists no requirements goes to review on stack/techStack', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.techStack.value = null;
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual(stackReview);
+      expect(d.checks.find((c) => c.rule === 'stack')).toMatchObject({
+        outcome: 'fail',
+        unsure: true,
+        unsureField: 'techStack',
+      });
+    });
+
+    it('a listing with only non-comparable requirements goes to review on stack/techStack', () => {
+      const d = decide(job(passingDoc(nonComparable)), exampleProfile(), ctx);
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual(stackReview);
+      expect(d.checks.find((c) => c.rule === 'stack')?.reason).toMatch(
+        /^the posting names no technology we can compare with your stack \(.*no comparable main or must requirements/,
+      );
+    });
+
+    it('a post role with an unknown stack goes to review', () => {
+      const d = decide(
+        {
+          ...job(
+            passingDoc((x) => {
+              x.techStack.value = null;
+            }),
+          ),
+          post: rolePost(),
+        },
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('review');
+      expect(d.review).toEqual(stackReview);
+    });
+
+    it('an unknown stack with a sure location failure stays rejected', () => {
+      const ukCtx: MatchContext = {
+        ...ctx,
+        places: {
+          countriesOfRegion: new Map([['UK', new Set(['GB'])]]),
+          countryOfCity: new Map(),
+          countries: new Set(['GB', 'MA']),
+        },
+      };
+      const p = exampleProfile();
+      p.locations.remote = [{ kind: 'region', code: 'UK' }];
+      p.eligibility = { ...p.eligibility, residenceCountry: 'MA' };
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.techStack.value = null;
+            x.openings = [
+              {
+                ...structuredClone(worldwide),
+                places: [{ kind: 'country', code: 'GB' }],
+                placeStrictness: 'label',
+              },
+            ];
+          }),
+        ),
+        p,
+        ukCtx,
+      );
+      expect(d.outcome).toBe('rejected');
+      expect(d.review).toBeNull();
+    });
+
+    it('an unstated role with an unknown stack still fails on position', () => {
+      const d = decide(
+        job(
+          passingDoc((x) => {
+            x.position.value = { roleKind: 'unstated', title: 'x' };
+            x.techStack.value = null;
+          }),
+        ),
+        exampleProfile(),
+        ctx,
+      );
+      expect(d.outcome).toBe('rejected');
+      expect(d.checks.find((c) => c.rule === 'position')?.reason).toMatch(
+        /neither the role nor the stack/,
+      );
+      expect(d.checks.find((c) => c.rule === 'stack')?.outcome).toBe('unknown');
+    });
+  });
+
   it('still qualifies an unstated role when the stack passes', () => {
     const d = decide(
       job(

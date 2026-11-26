@@ -8,7 +8,13 @@ import { checkPostingLanguage } from './posting-language';
 import { checkCurrency, checkSalary } from './salary';
 import { checkSeniority } from './seniority';
 import { checkStack, type ImpliesMap } from './stack';
-import type { Check, MatchJob, MatchProfile, RuleName } from './types';
+import {
+  restsOn,
+  type Check,
+  type MatchJob,
+  type MatchProfile,
+  type RuleName,
+} from './types';
 import { checkWorkAuthorization } from './work-authorization';
 
 export interface MatchContext {
@@ -49,11 +55,13 @@ export function decide(
     ctx.implies,
     doc.techStack.confidence,
   );
-  let position = checkPosition(doc, profile, stack.check.outcome === 'unknown');
+  const stackUnknown = stack.check.outcome === 'unknown';
+  let position = checkPosition(doc, profile, stackUnknown);
+  let stackCheck = stack.check;
   // Location and seniority are often unstated even on good postings, but a job
   // whose role and stack both say nothing has nothing to show it fits. This rests on two
   // unknowns, not on an unsure value, so it is a sure failure.
-  if (position.outcome === 'unknown' && stack.check.outcome === 'unknown') {
+  if (position.outcome === 'unknown' && stackUnknown) {
     position = {
       ...position,
       outcome: 'fail',
@@ -61,12 +69,20 @@ export function decide(
       unsureField: null,
       reason: `neither the role nor the stack could be verified (${position.reason}; ${stack.check.reason})`,
     };
+  } else if (stackUnknown) {
+    // A stack nothing can be compared on is a doubt, not a pass: the owner reviews it.
+    stackCheck = {
+      ...stack.check,
+      outcome: 'fail',
+      ...restsOn('techStack'),
+      reason: `the posting names no technology we can compare with your stack (${stack.check.reason})`,
+    };
   }
   const checks: Check[] = [
     position,
     checkSeniority(doc, profile),
     checkLocation(doc.openings, profile, ctx.places, doc.limitsBindPerson),
-    stack.check,
+    stackCheck,
     checkSalary(doc, profile, ctx.rates),
     checkCurrency(doc, profile),
     checkContractType(doc, profile),
