@@ -10,6 +10,7 @@ import {
   LinkedinJobBoardCollector,
   type LinkedinPostsRunConfig,
   LinkedinPostsCollector,
+  IndeedCollector,
 } from 'src/modules/collectors';
 import type { WindowConfig } from 'src/modules/segments';
 
@@ -124,7 +125,7 @@ export const channelJobsConfig = {
     queueName: 'collect-indeed',
     ...daily,
     enabled: false,
-    run: { actor: 'valig/indeed-jobs-scraper', maxRunChargeUsd: 0.11 },
+    run: IndeedCollector.config,
   },
 } satisfies {
   [Channel.LINKEDIN_JOB_BOARD]: ChannelJobConfig<LinkedinJobBoardRunConfig>;

@@ -13,6 +13,7 @@ import {
   LinkedinJobBoardCollector,
   type LinkedinJobBoardRunConfig,
   LinkedinPostsCollector,
+  IndeedCollector,
   SearchNotStartedError,
   type SegmentSearch,
   type SegmentResult,
@@ -110,6 +111,7 @@ export class CollectionService {
     private readonly linkedinJobsCheap: LinkedinJobBoardCheapCollector,
     private readonly linkedinJobsBebity: LinkedinJobBoardBebityCollector,
     private readonly linkedinPosts: LinkedinPostsCollector,
+    private readonly indeed: IndeedCollector,
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
     private readonly splits: LinkedinSearchSplitsRepository,
@@ -777,8 +779,7 @@ export class CollectionService {
       case Channel.LINKEDIN_POSTS:
         return this.linkedinPosts.collect(segment);
       case Channel.INDEED:
-        // Task 7 wires the Indeed collector.
-        throw new Error('INDEED collector not wired');
+        return this.indeed.collect(segment);
     }
   }
 }

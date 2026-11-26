@@ -118,6 +118,7 @@ function setup(
     collectors[Channel.LINKEDIN_JOB_BOARD_CHEAP] as never,
     collectors[Channel.LINKEDIN_JOB_BOARD_BEBITY] as never,
     collectors[Channel.LINKEDIN_POSTS] as never,
+    collectors[Channel.INDEED] as never,
     queries as unknown as QuerySearchService,
     segments,
     splits,
@@ -152,8 +153,7 @@ function setup(
 afterEach(() => vi.restoreAllMocks());
 
 describe('channel selection', () => {
-  // Task 7 wires INDEED's collector and adds it back here.
-  it.each(Object.values(Channel).filter((c) => c !== Channel.INDEED))(
+  it.each(Object.values(Channel))(
     'collects %s with its matching collector and limits',
     async (channel) => {
       const { collection, collectors, queries } = setup(
@@ -268,14 +268,6 @@ describe('CollectionService.collect', () => {
       undefined,
       Channel.INDEED,
     );
-    // The INDEED fetch case lands in Task 7; stand in for the collector.
-    vi.spyOn(
-      collection as unknown as {
-        fetch: (segment: SegmentSearch) => Promise<SegmentResult>;
-      },
-      'fetch',
-    ).mockImplementation(async (segment) => resultFor(segment));
-
     const summary = await collection.collect(Channel.INDEED);
 
     expect(summary).toMatchObject({ batches: 1 });
