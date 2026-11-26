@@ -1,7 +1,7 @@
 # Platform
 
 Date: 2026-11-24
-Status: slice 01 built; slices 02 and 03 not started
+Status: slices 01, 02 and 03 built
 
 ## Intent
 
@@ -16,5 +16,5 @@ Same as the phases: each slice is a short brief covering the goal, what exists, 
 | #   | Slice                                                                      | Status                                                                                                                |
 | --- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | 01  | [Migration squash](01-migration-squash.md)                                 | Built as a stepped migrate, not a squash ([spec](../../superpowers/specs/2026-11-24-stepped-migrate-design.md), #131) |
-| 02  | [Deploy keeps a stopped worker stopped](02-deploy-keeps-stopped-worker.md) | Not started                                                                                                           |
-| 03  | [CI runs only what a change affects](03-ci-runs-only-what-changed.md)      | Built, pending merge (PR #146)                                                                                        |
+| 02  | [Deploy keeps a stopped worker stopped](02-deploy-keeps-stopped-worker.md) | Built (PR #143)                                                                                                       |
+| 03  | [CI runs only what a change affects](03-ci-runs-only-what-changed.md)      | Built (PR #146), merged 2026-11-26                                                                                    |
