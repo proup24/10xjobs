@@ -185,26 +185,41 @@ describe('decide', () => {
     }
   });
 
-  it('flags unverified when the extraction needs review', () => {
-    const d = decide(job(passingDoc(), true), exampleProfile(), ctx);
-    expect(d.outcome).toBe('qualified');
-    expect(d.unverified).toBe(true);
-  });
-
-  it('flags unverified when a check is unknown', () => {
+  it('qualified with an unknown contract type is not unverified', () => {
     const d = decide(
       job(
         passingDoc((x) => {
-          x.seniority.value = 'unstated';
-          x.yearsRequired.value = null;
+          x.contractType.value = 'unstated';
         }),
       ),
       exampleProfile(),
       ctx,
     );
-    expect(d.checks.some((c) => c.outcome === 'unknown')).toBe(true);
+    expect(d.checks.find((c) => c.rule === 'contractType')?.outcome).toBe(
+      'unknown',
+    );
+    expect(d.outcome).toBe('qualified');
+    expect(d.unverified).toBe(false);
+  });
+
+  it('qualified with an unsure seniority is unverified', () => {
+    const d = decide(
+      job(
+        passingDoc((x) => {
+          x.seniority.confidence = 'unsure';
+        }),
+      ),
+      exampleProfile(),
+      ctx,
+    );
     expect(d.outcome).toBe('qualified');
     expect(d.unverified).toBe(true);
+  });
+
+  it('qualified on a job with needsReview and no unsure check is not unverified', () => {
+    const d = decide(job(passingDoc(), true), exampleProfile(), ctx);
+    expect(d.outcome).toBe('qualified');
+    expect(d.unverified).toBe(false);
   });
 
   it('rejects when neither the role nor the stack can be verified', () => {
@@ -238,7 +253,7 @@ describe('decide', () => {
       ctx,
     );
     expect(d.outcome).toBe('qualified');
-    expect(d.unverified).toBe(true);
+    expect(d.unverified).toBe(false);
   });
 
   it('golden 1288: fullstack job is rejected on position and stack', () => {
@@ -631,9 +646,9 @@ describe('decide for post roles', () => {
     });
   });
 
-  it('an unknown post age leaves the role qualified and unverified', () => {
+  it('an unknown post age leaves the role qualified, and not unverified', () => {
     const d = decide(roleJob({ ageDays: null }), exampleProfile(), ctx);
     expect(d.outcome).toBe('qualified');
-    expect(d.unverified).toBe(true);
+    expect(d.unverified).toBe(false);
   });
 });

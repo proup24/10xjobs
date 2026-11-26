@@ -247,12 +247,14 @@ describe('needsReview', () => {
     };
     expect(needsReview(doc)).toBe(false);
   });
-  it('is true for unsure engagement or isSoftwareEngineeringRole', () => {
-    const a = fixtureDocument();
-    a.engagement.confidence = 'unsure';
-    expect(needsReview(a)).toBe(true);
-    const b = fixtureDocument();
-    b.isSoftwareEngineeringRole.confidence = 'unsure';
-    expect(needsReview(b)).toBe(true);
+  it('needsReview is false when only engagement is unsure', () => {
+    const doc = fixtureDocument();
+    doc.engagement.confidence = 'unsure';
+    expect(needsReview(doc)).toBe(false);
+  });
+  it('is true for an unsure isSoftwareEngineeringRole', () => {
+    const doc = fixtureDocument();
+    doc.isSoftwareEngineeringRole.confidence = 'unsure';
+    expect(needsReview(doc)).toBe(true);
   });
 });

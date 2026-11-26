@@ -23,7 +23,7 @@ export type MatchOutcome = 'qualified' | 'rejected' | 'review';
 export interface Decision {
   /** `rejected` on a sure failure; `review` when every failure rests on an unsure value. */
   outcome: MatchOutcome;
-  /** Only on `qualified`: a check is unknown or rests on an unsure value, or the extraction needs review. */
+  /** Only on `qualified`: some check rests on an unsure fact (an unknown check, a fact the posting does not state, does not count). */
   unverified: boolean;
   /** On `review`: the first unsure failing check, in rule order, and the fact it rests on. */
   review: { rule: RuleName; field: string } | null;
@@ -90,10 +90,7 @@ export function decide(
     : doubt
       ? 'review'
       : 'qualified';
-  const unverified =
-    outcome === 'qualified' &&
-    (checks.some((c) => c.outcome === 'unknown' || c.unsure) ||
-      job.needsReview);
+  const unverified = outcome === 'qualified' && checks.some((c) => c.unsure);
   return {
     outcome,
     unverified,
