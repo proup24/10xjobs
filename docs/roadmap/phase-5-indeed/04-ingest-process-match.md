@@ -21,6 +21,7 @@ This is the "prepare" and "extract" of the request: for listings, preparing is i
 - `INDEED` added to the processor and matcher channels, and to every channel `switch` and `Record`.
 - The source label and filter entry in the web app.
 - The non-remote leak rules (Phase 3 slice 09) treat Indeed's remote flag like LinkedIn's tag: the description wins when it states an arrangement.
+- Indeed's "not remote" maps to untagged (no `workplaceType`), never to `onsite` or `hybrid`, so the pre-pipeline check of Phase 3 slice 03 (skips a listing only when its tag is `hybrid` or `onsite` in a country) never skips an Indeed job.
 
 ## Out of scope
 

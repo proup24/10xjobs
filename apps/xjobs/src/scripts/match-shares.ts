@@ -9,7 +9,8 @@
  * the shares. The window is `updatedAt`, not `decidedAt`: a re-match that keeps
  * the outcome keeps `decidedAt` but still bumps `updatedAt`. The tables are
  * printed once per job kind: listings (`job`) and LinkedIn post roles
- * (`post_role`).
+ * (`post_role`). One line reports the listings (`kind = 'job'`) first seen in the
+ * same window that the pre-LLM check skipped, and their share of those listings.
  */
 import { Logger } from '@nestjs/common';
 import { loadDatabaseEnvironment, toDatabaseConfig } from 'src/config';
@@ -66,6 +67,20 @@ async function main(): Promise<void> {
     const byKind = outcomeSharesByKind(rows);
     console.log(
       `Match shares: last ${days} days, matcher version >= ${MATCHER_VERSION}, ${rows.length} decisions`,
+    );
+    const [skip] = (await db.query(
+      raw.sql`SELECT count(*) FILTER (WHERE "processingStatus" = 'skipped')::int AS skipped,
+          count(*)::int AS total
+        FROM normalized_jobs
+        WHERE kind = 'job'
+          AND "firstSeenAt" >= now() - make_interval(days => ${days}::int)`
+        .returnsRow({ skipped: 'pg/int4@1', total: 'pg/int4@1' })
+        .build(),
+    )) as { skipped: number; total: number }[];
+    const skipped = skip?.skipped ?? 0;
+    const newListings = skip?.total ?? 0;
+    console.log(
+      `Skipped before processing: ${skipped} of ${newListings} new listings (${newListings === 0 ? 'n/a' : ((skipped / newListings) * 100).toFixed(1) + '%'})`,
     );
     for (const kind of MATCH_JOB_KINDS) {
       const result = byKind[kind];

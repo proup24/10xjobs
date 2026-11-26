@@ -197,5 +197,54 @@ describe.skipIf(!url)(
       expect(by[day(daysAgo(3))]).toMatchObject({ left_window_pending: 1 });
       expect(shaped.reduce((n, r) => n + r.calls, 0)).toBe(2);
     });
+
+    it('section 14 counts skipped listings by tag and country, their share of new listings, and samples titles', async () => {
+      const now = new Date();
+      const skip = async (
+        tag: string,
+        country: string,
+        title: string,
+        firstSeenAt: Date = now,
+      ) => {
+        const id = await job('job');
+        await db.orm.public.NormalizedJob.where({ id }).updateAll({
+          processingStatus: 'skipped',
+          processingSkip: { version: 1, tag, country },
+          title,
+          firstSeenAt,
+          lastSeenAt: firstSeenAt,
+        } as never);
+        return id;
+      };
+      await skip('onsite', 'DE', 'Onsite Dev');
+      await skip('hybrid', 'DE', 'Hybrid Dev');
+      await skip('onsite', 'DE', 'Old Dev', new Date('2026-01-01T00:00:00Z'));
+      const processed = await job('job');
+      await db.orm.public.NormalizedJob.where({ id: processed }).updateAll({
+        firstSeenAt: now,
+        lastSeenAt: now,
+      } as never);
+      const post = await job('post'); // not a listing
+      await db.orm.public.NormalizedJob.where({ id: post }).updateAll({
+        firstSeenAt: now,
+        lastSeenAt: now,
+      } as never);
+
+      const all = await rows('14.');
+      const part = (p: string) => all.filter((r) => r.part === p);
+      expect(
+        part('by_tag_country').map((r) => `${r.tag}/${r.country}/${r.count}`),
+      ).toEqual(expect.arrayContaining(['onsite/DE/1', 'hybrid/DE/1']));
+      expect(part('by_tag_country')).toHaveLength(2);
+      expect(part('share')).toEqual([
+        expect.objectContaining({ count: 2, share: 0.667 }),
+      ]);
+      const sample = part('sample');
+      expect(sample.map((r) => r.title).sort()).toEqual([
+        'Hybrid Dev',
+        'Onsite Dev',
+      ]);
+      expect(sample[0]).toMatchObject({ country: 'DE' });
+    });
   },
 );

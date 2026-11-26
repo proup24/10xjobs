@@ -230,4 +230,33 @@ export const SECTIONS: {
     shape: (rows, now) =>
       shapePostExtraction(rows as never, now).map((r) => ({ ...r })),
   },
+  {
+    // New listings = kind 'job' rows first seen in the last 7 days; skipped =
+    // those whose current status is 'skipped' (the pre-LLM check). The sample
+    // is random, so it differs on every run.
+    title:
+      "14. Skipped before processing (last 7 days; new listings = kind 'job' first seen in the window)",
+    sql: (
+      raw,
+    ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        WITH new_listings AS (
+          SELECT id, title, "processingStatus", "processingSkip"
+          FROM normalized_jobs
+          WHERE kind = 'job' AND "firstSeenAt" >= now() - interval '7 days'),
+        skipped AS (
+          SELECT * FROM new_listings WHERE "processingStatus" = 'skipped')
+        SELECT 'by_tag_country' AS part, "processingSkip"->>'tag' AS tag,
+          "processingSkip"->>'country' AS country, NULL::text AS title,
+          count(*)::int AS count, NULL::numeric AS share
+        FROM skipped GROUP BY 2, 3
+        UNION ALL
+        SELECT 'share', NULL, NULL, NULL,
+          (SELECT count(*)::int FROM skipped),
+          round((SELECT count(*) FROM skipped)::numeric
+            / nullif((SELECT count(*) FROM new_listings), 0), 3)
+        UNION ALL
+        SELECT 'sample', "processingSkip"->>'tag', "processingSkip"->>'country',
+          title, NULL, NULL
+        FROM (SELECT * FROM skipped ORDER BY random() LIMIT 20) s) t`,
+  },
 ];
