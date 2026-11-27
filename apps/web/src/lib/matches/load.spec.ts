@@ -16,10 +16,24 @@ describe('loadMatches', () => {
       p_since: '2026-11-03T21:00:00.000Z',
       p_details: false,
       p_outcome: 'qualified',
+      p_kind: 'job',
     });
     await loadMatches(f.supabase, { since, outcome: 'review' });
     expect(f.rpcs('match_details')[1].args).toMatchObject({
       p_outcome: 'review',
+    });
+  });
+
+  it('sends the kind it is given', async () => {
+    const f = fakeSupabase({ rpc: () => ({ data: [], error: null }) });
+    const since = new Date();
+    await loadMatches(f.supabase, {
+      since,
+      outcome: 'qualified',
+      kind: 'post_role',
+    });
+    expect(f.rpcs('match_details')[0].args).toMatchObject({
+      p_kind: 'post_role',
     });
   });
 
@@ -40,11 +54,13 @@ describe('loadMatch', () => {
     expect(f.rpcs('match_details')[0].args).toEqual({
       p_job_id: 'j1',
       p_outcome: 'qualified',
+      p_kind: 'job',
     });
-    await loadMatch(f.supabase, 'j1', 'review');
+    await loadMatch(f.supabase, 'j1', 'review', 'post_role');
     expect(f.rpcs('match_details')[1].args).toEqual({
       p_job_id: 'j1',
       p_outcome: 'review',
+      p_kind: 'post_role',
     });
   });
 });

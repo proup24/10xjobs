@@ -29,6 +29,7 @@ describe('selectedRows', () => {
     expect(f.rpcs('match_details')).toHaveLength(1);
     expect(f.rpcs('match_details')[0].args).toEqual({
       p_job_id: J,
+      p_kind: 'job',
       p_outcome: 'qualified',
     });
   });
@@ -38,6 +39,7 @@ describe('selectedRows', () => {
     await selectedRows(f.supabase, J, profiles, 'review');
     expect(f.rpcs('match_details')[0].args).toEqual({
       p_job_id: J,
+      p_kind: 'job',
       p_outcome: 'review',
     });
   });
