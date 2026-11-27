@@ -1,0 +1,7 @@
+{
+  "from": "f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7",
+  "to": "f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7",
+  "providedInvariants": ["post-rescue-fixes", "post-webhooks-first-seen"],
+  "createdAt": "2026-11-27T18:20:51.470Z",
+  "migrationHash": "b67bbf97a59501b87436c5014fc0d776e43ff448bc4d09154cebf3431e96d985"
+}

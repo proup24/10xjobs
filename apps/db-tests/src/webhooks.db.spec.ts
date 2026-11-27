@@ -190,7 +190,8 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
       sources: [postDetail({ authorKey: 'profile:olga', authorName: 'Olga' })],
     });
     const job = await seedPostRole(post, 'role', opts.linkKeys ?? []);
-    await seenAgo(job.jobId, '1 hour');
+    // After the cutoff (the migration's moment, which may be under an hour ago).
+    await seenAgo(job.jobId, '1 second');
     const outcome = opts.outcome ?? 'qualified';
     const matchId = await seedMatchOn(a.id, profileA, job, {
       outcome,
@@ -257,6 +258,41 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
         snapshot: {},
       });
       expect(error).toBeNull();
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('sends no role whose post the user rescued from Junk', async () => {
+      const m = await postRoleMatch();
+      const { data, error: readError } = await admin()
+        .from('normalized_jobs')
+        .select('parentJobId')
+        .eq('id', m.job.jobId)
+        .single();
+      expect(readError).toBeNull();
+      const { error } = await admin()
+        .from('post_rescues')
+        .insert({
+          userId: a.id,
+          jobId: data?.parentJobId as string,
+          origin: 'junk',
+          snapshot: {},
+        });
+      expect(error).toBeNull();
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('sends no role first seen before the cutoff, though its match is after', async () => {
+      const m = await postRoleMatch();
+      await withCatalog((c) =>
+        c.query(
+          `UPDATE public.normalized_jobs
+              SET "firstSeenAt" = public.post_webhooks_since() - interval '1 minute'
+            WHERE id = $1`,
+          [m.job.jobId],
+        ),
+      );
       expect(await enqueue(m.matchId)).toBeNull();
       expect(await deliveriesOf(m.job.jobId)).toEqual([]);
     });

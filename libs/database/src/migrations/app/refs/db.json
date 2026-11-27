@@ -44,6 +44,8 @@
     "post-rescue-rpcs",
     "post-reads",
     "post-rescue-junk",
-    "post-webhooks"
+    "post-webhooks",
+    "post-rescue-fixes",
+    "post-webhooks-first-seen"
   ]
 }

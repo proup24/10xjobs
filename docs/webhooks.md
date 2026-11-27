@@ -14,9 +14,9 @@ A delivery is created for a profile and a job when all of these hold:
 A role named in a LinkedIn post (a social post on the Social posts page) is sent like a listing, with these extra rules:
 
 - A post whose role states a contact email is not sent while it shows Email pending. Its delivery is created once the email settles (sent, or apply by hand with the reason), which comes with automatic emails in a later release. Until then such posts send nothing.
-- A post you rescued from Junk or Disqualified sends nothing.
+- A post you rescued from Junk or Disqualified sends nothing, nor does a role found later in a post you rescued from Junk.
 - A post you already marked (Applied, Not for me, Expired), on it or on a linked copy of the same job, sends nothing.
-- Only post roles first decided after social post webhooks shipped are sent: nothing older is backfilled.
+- Only post roles first seen and first decided after social post webhooks shipped are sent: nothing older is backfilled, even when a post search turned off and on again decides them anew.
 
 Unverified matches are sent as well. Their payload has `match.unverified: true`, which means the match passed on at least one fact the processor was unsure of. Facts the posting does not state do not count.
 

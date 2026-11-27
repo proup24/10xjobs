@@ -453,6 +453,26 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
     expect(await paused()).toEqual([]);
   });
 
+  it('does not count a role whose post has a live Junk rescue as a waiting match', async () => {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    await link(profileId, await seedBuilder());
+    const role = await seedJob({ postRole: true });
+    await seedMatch(userId, profileId, role, { decidedAt: hoursBefore(25) });
+    const [{ parentJobId }] = await db.query(
+      db.raw
+        .sql`SELECT "parentJobId" FROM normalized_jobs WHERE id = ${role.jobId}::uuid`
+        .returnsRow({ parentJobId: 'pg/uuid@1' })
+        .build(),
+    );
+    await exec(
+      db.raw
+        .sql`INSERT INTO post_rescues (id, "userId", "jobId", origin, snapshot, "createdAt", "updatedAt")
+        VALUES (${randomUUID()}::uuid, ${userId}::uuid, ${parentJobId}::uuid, 'junk', '{}'::jsonb, now(), now())`,
+    );
+    expect(await paused()).toEqual([]);
+  });
+
   it('does not pause an empty or fully decided list', async () => {
     const empty = await seedUser();
     const emptyProfile = await seedProfile(empty);

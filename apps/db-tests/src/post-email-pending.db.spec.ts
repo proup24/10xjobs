@@ -154,6 +154,24 @@ describe('post_email_pending', () => {
     expect(await pending(a.id, role.jobId)).toBe(false);
   });
 
+  it("is false when the user rescued the role's post from Junk", async () => {
+    const post = await seedPost({
+      verdict: 'hiring',
+      roles: [{ roleKey: 'role', email: 'jobs@acme.test' }],
+    });
+    const role = await seedPostRole(post, 'role');
+    await seedMatchOn(a.id, profileA, role, { outcome: 'qualified' });
+    expect(await pending(a.id, role.jobId)).toBe(true);
+    const { error } = await admin().from('post_rescues').insert({
+      userId: a.id,
+      jobId: post.jobId,
+      origin: 'junk',
+      snapshot: {},
+    });
+    expect(error).toBeNull();
+    expect(await pending(a.id, role.jobId)).toBe(false);
+  });
+
   it('is false when a linked listing has an applied decision', async () => {
     const key = `ats:greenhouse:acme:${randomUUID()}`;
     const listing = await seedKeyedListing({ jobKey: key });
