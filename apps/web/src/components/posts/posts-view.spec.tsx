@@ -374,9 +374,13 @@ describe('PostsView', () => {
       );
       expect(screen.queryByRole('button', { name: 'Rescue' })).toBeNull();
       // Listed: r1 (not rescued here), not the covered d1.
-      expect(
-        rowsOf('Disqualified').map((r) => within(r).queryByText('Junior role')),
-      ).toEqual([null]);
+      const jobs = rowsOf('Disqualified').map((r) =>
+        new URL(
+          within(r).getByRole('link').getAttribute('href') ?? '',
+          'http://x',
+        ).searchParams.get('job'),
+      );
+      expect(jobs).toEqual(['r1']);
     });
 
     it('offers no Rescue on a role rejected for a blocked author', () => {

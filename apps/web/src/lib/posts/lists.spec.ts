@@ -105,6 +105,25 @@ describe('buildPostLists', () => {
       expect(l.disqualified).toEqual([]);
     });
 
+    it("drops a covered role's own Disqualified rescue: the post shows once, as Rescued", () => {
+      const roleRescue = {
+        jobId: 'r-rej',
+        kind: 'post_role',
+        origin: 'disqualified',
+        profileIds: ['p9'],
+        postedAt: ago(2),
+        firstSeenAt: ago(2),
+        decisionStatus: null,
+        coveredJobIds: [],
+      } as unknown as RescueRow;
+      const l = lists([junkRescue(null), roleRescue]);
+      expect(l.matches.map((i) => [i.jobId, i.rescueOrigin])).toEqual([
+        ['post', 'junk'],
+        ['x', null],
+      ]);
+      expect(l.disqualified).toEqual([]);
+    });
+
     it('after Undo rescue the roles return to their tabs', () => {
       const l = lists([]);
       expect(l.matches.map((i) => i.jobId).sort()).toEqual(['r-q', 'x']);

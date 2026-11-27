@@ -1,9 +1,7 @@
 {
   "from": "a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824",
   "to": "a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824",
-  "providedInvariants": [
-    "post-rescue-wins"
-  ],
+  "providedInvariants": ["post-rescue-wins"],
   "createdAt": "2026-11-27T22:47:24.586Z",
   "migrationHash": "e7d218b1bacaaa2ed8409b5e196401c52a6fddc53186695971aa4ebe22d4bea3"
 }

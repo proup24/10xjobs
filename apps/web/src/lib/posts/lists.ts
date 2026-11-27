@@ -42,10 +42,12 @@ export function buildPostLists(input: {
   junk: JunkRow[];
   rescues: RescueRow[];
 }): PostLists {
-  const rescues = rescueItems(input.rescues);
-  const rescued = new Set(rescues.map((r) => r.jobId));
-  for (const r of input.rescues)
-    for (const id of r.coveredJobIds ?? []) rescued.add(id);
+  // The roles live Junk rescues cover: hidden everywhere, their own rescues included.
+  const covered = new Set(input.rescues.flatMap((r) => r.coveredJobIds ?? []));
+  const rescues = rescueItems(input.rescues).filter(
+    (r) => !covered.has(r.jobId),
+  );
+  const rescued = new Set([...rescues.map((r) => r.jobId), ...covered]);
   const notRescued = (i: PostListItem) => !rescued.has(i.jobId);
 
   const byJob = new Map<string, MatchedJob>();

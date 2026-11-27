@@ -207,7 +207,7 @@ describe('post_rescue_list after the rows behind a rescue change', () => {
     ).toBeNull();
   });
 
-  it("a disqualified rescue covers no other job", async () => {
+  it('a disqualified rescue covers no other job', async () => {
     const u = await createTestUser();
     const profile = await seedProfile(u.id);
     await publishProfile(profile);
