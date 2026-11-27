@@ -99,24 +99,69 @@ export function selectPostItems(
   });
 }
 
-/** The first failed check's reason among the rows (a profile's own rows first); null for none. */
-export function firstFailedReason(
+function firstFailed(checks: unknown): string | null {
+  if (!Array.isArray(checks)) return null;
+  for (const c of checks)
+    if (
+      c &&
+      typeof c === 'object' &&
+      !Array.isArray(c) &&
+      c.outcome === 'fail' &&
+      typeof c.reason === 'string'
+    )
+      return c.reason;
+  return null;
+}
+
+/** Each full row's first failed check reason, by job then profile (rows with none left out). */
+export function failedReasons(
   rows: MatchRow[],
+): Record<string, Record<string, string>> {
+  const out: Record<string, Record<string, string>> = {};
+  for (const r of rows) {
+    const reason = firstFailed(r.checks);
+    if (reason === null) continue;
+    (out[r.jobId] ??= {})[r.profileId] ??= reason;
+  }
+  return out;
+}
+
+/** A job's reason for the picked profile, else its first profile's; null for none. */
+export function pickFailedReason(
+  byProfile: Record<string, string> | undefined,
   profileId: string | 'all',
 ): string | null {
-  const own = rows.filter((r) => r.profileId === profileId);
-  for (const r of own.length ? own : rows) {
-    if (!Array.isArray(r.checks)) continue;
-    for (const c of r.checks) {
-      if (
-        c &&
-        typeof c === 'object' &&
-        !Array.isArray(c) &&
-        c.outcome === 'fail' &&
-        typeof c.reason === 'string'
-      )
-        return c.reason;
-    }
-  }
-  return null;
+  if (!byProfile) return null;
+  return byProfile[profileId] ?? Object.values(byProfile)[0] ?? null;
+}
+
+const asObj = (v: unknown): Record<string, unknown> | null =>
+  v && typeof v === 'object' && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
+
+/**
+ * A full row cut back to what a list row carries (no checks, description or conflicts; facts
+ * with only the arrangement and the openings' arrangements), so a list read in full for its
+ * failed checks doesn't ship them to the client.
+ */
+export function toListRow(row: MatchRow): MatchRow {
+  const f = asObj(row.facts);
+  const facts = f
+    ? {
+        arrangement: f.arrangement ?? null,
+        openings: Array.isArray(f.openings)
+          ? f.openings.map((o) => ({
+              arrangements: asObj(o)?.arrangements ?? [],
+            }))
+          : [],
+      }
+    : null;
+  return {
+    ...row,
+    checks: null,
+    descriptionText: null,
+    conflicts: null,
+    facts,
+  } as unknown as MatchRow;
 }

@@ -44,16 +44,12 @@ const REVIEW: MatchRow[] = [
     postedAt: hoursAgo(3),
   }),
 ];
-const failed = (reason: string) => [
-  { rule: 'position', outcome: 'pass', reason: 'ok' },
-  { rule: 'seniority', outcome: 'fail', reason },
-];
 const REJECTED: MatchRow[] = [
   post({
     jobId: 'r1',
     title: 'Rescued role',
     outcome: 'rejected',
-    checks: failed('job seniority junior is below yours'),
+    checks: null, // list rows: the page sends failedReasons apart
     postedAt: hoursAgo(4),
     decidedAt: hoursAgo(1),
   }),
@@ -61,7 +57,7 @@ const REJECTED: MatchRow[] = [
     jobId: 'd1',
     title: 'Junior role',
     outcome: 'rejected',
-    checks: failed('job seniority intern is below yours'),
+    checks: null, // list rows: the page sends failedReasons apart
     postedAt: hoursAgo(5),
     decidedAt: hoursAgo(2),
   }),
@@ -127,6 +123,10 @@ function renderView(initial: Partial<PostsViewState> = {}) {
       junk={JUNK}
       rescues={RESCUES}
       extras={EXTRAS}
+      failedReasons={{
+        r1: { [P1]: 'job seniority junior is below yours' },
+        d1: { [P1]: 'job seniority intern is below yours' },
+      }}
       profiles={[{ id: P1, label: 'Backend', state: 'published' }]}
       labels={labels}
       initial={{

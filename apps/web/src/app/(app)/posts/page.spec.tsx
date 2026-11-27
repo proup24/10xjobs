@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Page from './page';
 
@@ -32,6 +32,13 @@ vi.mock('../preferences/data', () => ({
     currencies: [],
     contractTypes: [],
   }),
+}));
+const viewProps = vi.hoisted(() => ({ last: null as null | Record<string, unknown> }));
+vi.mock('@/components/posts/posts-view', () => ({
+  PostsView: (props: Record<string, unknown>) => {
+    viewProps.last = props;
+    return null;
+  },
 }));
 vi.mock('../actions', () => ({
   decideReviewAction: vi.fn(),
@@ -76,11 +83,59 @@ describe('Social posts page', () => {
     for (const [, args] of reads) expect(args.p_kind).toBe('post_role');
     expect(rpc).toHaveBeenCalledWith('post_junk_list', expect.anything());
     expect(rpc).toHaveBeenCalledWith('post_rescue_list');
-    expect(screen.getByRole('heading', { name: 'Social posts' })).toBeTruthy();
-    expect(
-      screen
-        .getByRole('link', { name: 'Social posts' })
-        .getAttribute('aria-current'),
-    ).toBe('page');
+    expect(viewProps.last).not.toBeNull();
+  });
+
+  it('sends Disqualified its failed reasons, not the full rows', async () => {
+    profiles.items = [profile(true)];
+    const J = '99999999-9999-4999-8999-999999999999';
+    rpc.mockImplementation(async (fn: string, args: Record<string, unknown>) => {
+      if (fn === 'match_details' && args.p_outcome === 'rejected')
+        return {
+          data: [
+            {
+              jobId: J,
+              matchId: 'm',
+              profileId: P1,
+              kind: 'post_role',
+              outcome: 'rejected',
+              postedAt: new Date().toISOString(),
+              firstSeenAt: new Date().toISOString(),
+              decidedAt: new Date().toISOString(),
+              closed: false,
+              channels: ['LINKEDIN_POSTS'],
+              descriptionText: 'the whole post',
+              conflicts: [{ field: 'x' }],
+              checks: [
+                { rule: 'position', outcome: 'pass', reason: 'ok' },
+                { rule: 'seniority', outcome: 'fail', reason: 'too junior' },
+              ],
+              facts: {
+                arrangement: { code: 'remote', label: 'Remote' },
+                seniority: { code: 'junior', label: 'Junior' },
+                openings: [
+                  { arrangements: [{ code: 'remote', label: 'Remote' }], places: [] },
+                ],
+              },
+            },
+          ],
+          error: null,
+        };
+      return { data: [], error: null };
+    });
+    await renderPage();
+    const props = viewProps.last as {
+      rejected: { jobId: string; rows: Record<string, unknown>[] }[];
+      failedReasons: Record<string, Record<string, string>>;
+    };
+    expect(props.failedReasons).toEqual({ [J]: { [P1]: 'too junior' } });
+    const [row] = props.rejected[0].rows;
+    expect(row.checks).toBeNull();
+    expect(row.descriptionText).toBeNull();
+    expect(row.conflicts).toBeNull();
+    expect(row.facts).toEqual({
+      arrangement: { code: 'remote', label: 'Remote' },
+      openings: [{ arrangements: [{ code: 'remote', label: 'Remote' }] }],
+    });
   });
 });

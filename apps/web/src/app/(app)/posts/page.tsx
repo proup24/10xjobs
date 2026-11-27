@@ -10,6 +10,7 @@ import {
   loadPostExtras,
   loadRescues,
 } from '@/lib/posts/load';
+import { failedReasons, toListRow } from '@/lib/posts/lists';
 import { readPostsViewState } from '@/lib/posts/view-state';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { preferenceLists, preferenceProfiles } from '../preferences/data';
@@ -63,26 +64,47 @@ export default async function Page({
   const params = toParams(await searchParams);
   const asked = readPostsViewState(params);
   const kind = 'post_role' as const;
-  const [qualifiedRows, reviewRows, rejectedRows, junk, rescues, lists, selectedRead, details] =
-    await Promise.all([
-      loadMatches(supabase, { since, outcome: 'qualified', kind }),
-      loadMatches(supabase, { since, outcome: 'review', kind }),
-      // Full rows: each Disqualified row shows its failed check.
-      loadMatches(supabase, { since, outcome: 'rejected', kind, details: true }),
-      loadJunk(supabase, since),
-      loadRescues(supabase),
-      preferenceLists(),
-      asked.list === 'junk'
-        ? Promise.resolve(null)
-        : selectedRows(
-            supabase,
-            asked.job,
-            profiles,
-            SELECTED_OUTCOME[asked.list],
-            kind,
-          ),
-      loadPostDetails(supabase, asked.job),
-    ]);
+  const listReads = Promise.all([
+    loadMatches(supabase, { since, outcome: 'qualified', kind }),
+    loadMatches(supabase, { since, outcome: 'review', kind }),
+    // Full rows for their failed checks; cut back to list rows before they reach the client.
+    loadMatches(supabase, { since, outcome: 'rejected', kind, details: true }),
+    loadJunk(supabase, since),
+    loadRescues(supabase),
+  ]);
+  // The extras start as soon as the lists are in, alongside the other reads.
+  const extrasRead = listReads.then(([q, r, rej, j, res]) =>
+    loadPostExtras(supabase, [
+      ...new Set([
+        ...[q, r, rej].flatMap((rows) =>
+          publishedRows(rows, profiles).map((row) => row.jobId),
+        ),
+        ...j.map((x) => x.jobId),
+        ...res.map((x) => x.jobId),
+      ]),
+    ]),
+  );
+  const [
+    [qualifiedRows, reviewRows, rejectedFull, junk, rescues],
+    extras,
+    lists,
+    selectedRead,
+    details,
+  ] = await Promise.all([
+    listReads,
+    extrasRead,
+    preferenceLists(),
+    asked.list === 'junk'
+      ? Promise.resolve(null)
+      : selectedRows(
+          supabase,
+          asked.job,
+          profiles,
+          SELECTED_OUTCOME[asked.list],
+          kind,
+        ),
+    loadPostDetails(supabase, asked.job),
+  ]);
   const rescued = new Set(rescues.map((r) => r.jobId));
   // On Matches, the open job's qualified rows (a review row moved to Matches included), or all
   // of a rescued job's rows.
@@ -104,13 +126,8 @@ export default async function Page({
   const state = { ...read, profile: knownProfile(read.profile, profiles) };
   const qualified = groupByJob(publishedRows(qualifiedRows, profiles));
   const review = groupByJob(publishedRows(reviewRows, profiles));
-  const rejected = groupByJob(publishedRows(rejectedRows, profiles));
-  const ids = new Set([
-    ...[qualified, review, rejected].flatMap((js) => js.map((j) => j.jobId)),
-    ...junk.map((j) => j.jobId),
-    ...rescues.map((r) => r.jobId),
-  ]);
-  const extras = await loadPostExtras(supabase, [...ids]);
+  const rejectedRows = publishedRows(rejectedFull, profiles);
+  const rejected = groupByJob(rejectedRows.map(toListRow));
 
   return (
     <PostsView
@@ -120,6 +137,7 @@ export default async function Page({
       junk={junk}
       rescues={rescues}
       extras={Object.fromEntries(extras)}
+      failedReasons={failedReasons(rejectedRows)}
       profiles={profiles}
       labels={{
         positions: lists.positions,

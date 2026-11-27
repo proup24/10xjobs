@@ -4,7 +4,6 @@ import { stackScoreText } from '@/components/matches/match-row';
 import { arrangementLine } from '@/lib/matches/facts';
 import { isNew, postedAge, timeAgo } from '@/lib/matches/freshness';
 import type { PostExtras, PostListItem } from '@/lib/posts/load';
-import { firstFailedReason } from '@/lib/posts/lists';
 import type { PostList } from '@/lib/posts/view-state';
 import { cn } from '@/lib/utils';
 
@@ -34,7 +33,7 @@ export function PostRow({
   href,
   selected,
   now,
-  profileId,
+  failedReason,
   showProfiles,
   profileLabels,
 }: {
@@ -44,8 +43,8 @@ export function PostRow({
   href: string;
   selected: boolean;
   now: Date;
-  /** The profile picked; its own failed check comes first on Disqualified. */
-  profileId: string | 'all';
+  /** Disqualified only: the first failed check's reason. */
+  failedReason: string | null;
   showProfiles: boolean;
   profileLabels: Record<string, string>;
 }) {
@@ -61,10 +60,7 @@ export function PostRow({
     .filter(Boolean)
     .join(' · ');
   const how = applyWord(extras?.applyKinds);
-  const reason =
-    list === 'disqualified' && job
-      ? firstFailedReason(job.rows, profileId)
-      : null;
+  const reason = list === 'disqualified' ? failedReason : null;
   const age = job
     ? postedAge(job, now)
     : timeAgo(list === 'junk' ? item.firstSeenAt : item.postedAt, now);

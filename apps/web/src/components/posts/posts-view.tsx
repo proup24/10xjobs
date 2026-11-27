@@ -16,7 +16,11 @@ import type {
   PostExtras,
   RescueRow,
 } from '@/lib/posts/load';
-import { buildPostLists, selectPostItems } from '@/lib/posts/lists';
+import {
+  buildPostLists,
+  pickFailedReason,
+  selectPostItems,
+} from '@/lib/posts/lists';
 import {
   postsViewStateHref,
   type PostList,
@@ -59,6 +63,7 @@ export function PostsView({
   junk,
   rescues,
   extras,
+  failedReasons,
   profiles,
   labels,
   initial: state,
@@ -70,12 +75,14 @@ export function PostsView({
   qualified: MatchedJob[];
   /** Grouped review post roles of the last 7 days. */
   review: MatchedJob[];
-  /** Grouped rejected post roles of the last 7 days, with their checks. */
+  /** Grouped rejected post roles of the last 7 days, as list rows. */
   rejected: MatchedJob[];
   junk: JunkRow[];
   rescues: RescueRow[];
   /** Per-job extras (apply kinds, Email pending), by job id. */
   extras: Record<string, PostExtras>;
+  /** Disqualified's first failed check reason, by job then profile (computed on the server). */
+  failedReasons: Record<string, Record<string, string>>;
   /** The profiles with post search on. */
   profiles: Profile[];
   labels: Labels;
@@ -155,7 +162,10 @@ export function PostsView({
               href={href({ ...state, job: item.jobId })}
               selected={item.jobId === state.job}
               now={now}
-              profileId={state.profile}
+              failedReason={pickFailedReason(
+                failedReasons[item.jobId],
+                state.profile,
+              )}
               showProfiles={state.profile === 'all'}
               profileLabels={profileLabels}
             />

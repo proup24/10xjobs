@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { groupByJob } from '@/lib/matches/group';
 import { matchRow } from '@/components/matches/test-fixtures';
 import type { JunkRow, RescueRow } from './load';
-import { buildPostLists, firstFailedReason, selectPostItems } from './lists';
+import {
+  buildPostLists,
+  failedReasons,
+  pickFailedReason,
+  selectPostItems,
+  toListRow,
+} from './lists';
 
 const NOW = new Date('2026-11-10T21:00:00.000Z');
 const ago = (h: number) => new Date(NOW.getTime() - h * 3600_000).toISOString();
@@ -92,20 +98,56 @@ describe('selectPostItems', () => {
   });
 });
 
-describe('firstFailedReason', () => {
-  it("prefers the profile's own failed check", () => {
+describe('failedReasons', () => {
+  it("keeps each row's first failed check, by job and profile", () => {
     const rows = [
-      role({ profileId: 'p1', checks: [{ outcome: 'fail', reason: 'one' }] }),
       role({
-        profileId: 'p2',
+        jobId: 'a',
+        profileId: 'p1',
         checks: [
           { outcome: 'pass', reason: 'ok' },
-          { outcome: 'fail', reason: 'two' },
+          { outcome: 'fail', reason: 'one' },
+          { outcome: 'fail', reason: 'later' },
         ],
       }),
+      role({ jobId: 'a', profileId: 'p2', checks: [{ outcome: 'fail', reason: 'two' }] }),
+      role({ jobId: 'b', checks: null }),
     ];
-    expect(firstFailedReason(rows, 'p2')).toBe('two');
-    expect(firstFailedReason(rows, 'all')).toBe('one');
-    expect(firstFailedReason([role({ checks: null })], 'all')).toBeNull();
+    expect(failedReasons(rows)).toEqual({ a: { p1: 'one', p2: 'two' } });
+  });
+});
+
+describe('pickFailedReason', () => {
+  it("prefers the profile's own reason, else the first", () => {
+    const by = { p1: 'one', p2: 'two' };
+    expect(pickFailedReason(by, 'p2')).toBe('two');
+    expect(pickFailedReason(by, 'all')).toBe('one');
+    expect(pickFailedReason(undefined, 'all')).toBeNull();
+  });
+});
+
+describe('toListRow', () => {
+  it('drops checks, description and conflicts, and keeps only the arrangement facts', () => {
+    const r = toListRow(
+      role({
+        checks: [{ outcome: 'fail', reason: 'x' }],
+        descriptionText: 'long',
+        conflicts: [{}],
+      }),
+    );
+    expect(r.checks).toBeNull();
+    expect(r.descriptionText).toBeNull();
+    expect(r.conflicts).toBeNull();
+    expect(Object.keys(r.facts as object).sort()).toEqual([
+      'arrangement',
+      'openings',
+    ]);
+    expect((r.facts as { openings: object[] }).openings[0]).toEqual({
+      arrangements: [{ code: 'remote', label: 'Remote' }],
+    });
+  });
+
+  it('keeps null facts null', () => {
+    expect(toListRow(role({ facts: null })).facts).toBeNull();
   });
 });
