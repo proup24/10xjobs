@@ -22,6 +22,10 @@ A post that qualifies for a profile and states a contact email gets one email fr
 
 - **Gate** _(user, 2026-11-22, slice 03)_: nothing is sent automatically until slice 03's post eval passes its bars on the current prompt, schema and model: no not-hiring or junk post comes out hiring with a contact email, the contact email is exact on every hiring post, and at least 95% of hiring posts come out hiring.
 - **Never for an unsure verdict** _(user, 2026-11-22)_: a role job whose post verdict is unsure is never emailed, whatever its match outcome.
+- **Approved post reviews are emailed** like any qualified post when their verdict is sure and they state an email _(user, 2026-11-27, slice 04a)_.
+- **Never for a rescued post** _(user, 2026-11-27, slice 04a)_: a post the user rescued from Junk or Disqualified is applied to by hand, never emailed.
+- **"Email pending" is slice 04a's definition, extended here** _(user, 2026-11-27)_: the badge shows while a post would be or is queued to be emailed, before and after this slice ships. This slice adds the address-and-role rule, the cap, Gmail and the blocked-author check at send time to the same SQL function.
+- **Post webhooks wait for the send** _(user, 2026-11-27, slice 04a)_: an emailable post gets no match webhook while Email pending. This slice creates it when the send settles: applied by email, or apply by hand with the reason.
 - **One email per post per user**, naming the role that matched, when a post names several roles (slice 03 makes one job per role).
 
 ## In scope
@@ -38,8 +42,8 @@ A post that qualifies for a profile and states a contact email gets one email fr
 
 ## Open questions
 
+- **"Email this" on a rescued post** _(user, 2026-11-27, slice 04a)_: a button on a post rescued from Junk or Disqualified that sends one email after the user confirms the address (checked to appear in the post text) and the role. Rescues are hand-only until then.
 - Gmail permission and Google's app verification: what invite-only allows, and what wider access would need.
-- What the user sees before Gmail is connected: "would have emailed" in Applications?
 - How "same role" is told from "new role" for one address: which of Extract's facts (company, role title) must match, and what happens when one is missing?
 - How many different roles may one address hear about from one user before it counts as spamming that recruiter?
 - The daily cap: how many, and per user or per profile?
