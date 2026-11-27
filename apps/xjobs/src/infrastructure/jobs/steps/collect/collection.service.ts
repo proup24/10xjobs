@@ -41,6 +41,7 @@ import {
   PostsBudgetService,
   POSTS_NULL_COST_MICRO_USD,
   moroccoDayStart,
+  longestWaitingFirst,
   planSegments,
   postsBudgetReached,
   segmentHash,
@@ -151,7 +152,12 @@ export class CollectionService {
       config.segmentSize,
       new Map([...remembered].map(([key, { parts }]) => [key, parts])),
     );
-    const { segments } = plan;
+    // Posts have a daily budget that can run out mid-tick: the search that has
+    // waited longest goes first, so the skipped ones lead next time.
+    const segments =
+      channel === Channel.LINKEDIN_POSTS
+        ? longestWaitingFirst(plan.segments)
+        : plan.segments;
     // Keyword length, not a full search, cut these groups: one line per group.
     for (const cut of plan.cuts) {
       const parts = remembered.get(cut.key)?.parts ?? 1;

@@ -1344,6 +1344,65 @@ describe('CollectionService posts budget and incomplete runs', () => {
     expect(limits[1]).toBeCloseTo(0.5, 9);
   });
 
+  it('runs the longest-waiting post search first when the budget allows one', async () => {
+    const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+    const ranFirst = async (fullstackHours: number, backendHours: number) => {
+      const { collection, collector } = setup(
+        [
+          ...posts(1).map((b) => ({
+            ...b,
+            coveredUntil: hoursAgo(fullstackHours),
+          })),
+          ...posts(1, 'backend').map((b) => ({
+            ...b,
+            coveredUntil: hoursAgo(backendHours),
+          })),
+        ],
+        async (s) => resultFor(s, undefined, { costUsd: 1.5 }),
+        POSTS,
+        1.5,
+      );
+      await collection.collect(POSTS);
+      expect(collector.collect).toHaveBeenCalledTimes(1);
+      const [search] = collector.collect.mock.calls[0];
+      return search.queries[0].params?.position;
+    };
+
+    expect(await ranFirst(1, 5)).toBe('backend');
+    expect(await ranFirst(5, 1)).toBe('fullstack');
+  });
+
+  it('keeps job board groups in key order whatever their cursors', async () => {
+    const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+    const ran = async (emeaHours: number, europeHours: number) => {
+      const rows = [
+        builder({
+          channel: Channel.LINKEDIN_JOB_BOARD,
+          type: Arrangement.remote,
+          params: { location: 'emea' },
+          coveredUntil: hoursAgo(emeaHours),
+        }),
+        builder({
+          channel: Channel.LINKEDIN_JOB_BOARD,
+          type: Arrangement.remote,
+          params: { location: 'europe' },
+          coveredUntil: hoursAgo(europeHours),
+        }),
+      ];
+      const { collection, collector } = setup(
+        rows,
+        undefined,
+        Channel.LINKEDIN_JOB_BOARD,
+      );
+      await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      return collector.collect.mock.calls.map(([s]) =>
+        s.queries.map((q) => q.params?.location),
+      );
+    };
+
+    expect(await ran(1, 5)).toEqual(await ran(5, 1));
+  });
+
   it('skips posts segments once less than a cent is left', async () => {
     const { collection, collector, segments } = setup(
       posts(1),

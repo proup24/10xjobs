@@ -26,6 +26,7 @@ export {
   type SearchSegment,
   type SegmentPlan,
 } from './services/segments';
+export { longestWaitingFirst } from './services/run-order';
 export {
   segmentWindow,
   type SegmentWindow,
