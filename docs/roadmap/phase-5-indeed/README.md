@@ -24,6 +24,7 @@ Same as Phases 1 to 4: each slice is a short brief covering the goal, what exist
 | 01  | [Actor sample](01-actor-sample.md)                       | Done: go, valig (2026-11-25)                                                                                                              |
 | 02  | [Indeed switch](02-indeed-switch.md)                     | Built (spec)                                                                                                                              |
 | 03  | [Collect](03-collect.md)                                 | Built ([spec](../../superpowers/specs/2026-11-25-indeed-collect-design.md), [plan](../../superpowers/plans/2026-11-25-indeed-collect.md)) |
+| 03a | [Indeed weekday checks](03a-weekday-checks.md)           | Planned for 2026-11-30                                                                                                                    |
 | 04  | [Ingest, process and match](04-ingest-process-match.md)  | Brief                                                                                                                                     |
 | 05  | [Cross-source duplicates](05-cross-source-duplicates.md) | Brief                                                                                                                                     |
 | 06  | [Channel compare report](06-channel-compare.md)          | Brief                                                                                                                                     |
