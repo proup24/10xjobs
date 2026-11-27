@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@xjobs/database/types';
 import { UUID } from '@/lib/setup/answers';
+import type { MatchedJob } from '@/lib/matches/group';
 import { loadError } from '@/lib/setup/load';
 
 type Client = SupabaseClient<Database>;
@@ -56,24 +57,39 @@ export async function loadPostDetails(
 }
 
 /**
- * A post list item. `MatchedJob` does not fit junk: it holds `MatchRow`s, which carry company,
- * title, checks and decisions that a dropped post never had, so filling them would lie. Task 4
- * builds the other three tabs' items in this shape as well.
+ * One post row on any of the four tabs, whatever its source (a match row, a rescue or a junk
+ * row). Tab-specific parts are null elsewhere. `MatchedJob` stays the input of `MatchList`; the
+ * mappers below turn each tab's data into this one shape so Task 4 filters and sorts one type.
  */
 export type PostListItem = {
   jobId: string;
+  kind: string | null;
+  title: string | null;
+  companyName: string | null;
+  postingUrl: string | null;
+  /** Effective posted time; falls back to `firstSeenAt` when the post has none. */
   postedAt: Date;
-  authorKey: string;
-  authorName: string;
-  authorUrl: string;
-  postingUrl: string;
-  /** Profiles the post was dropped for. */
+  /** The 24h/7d filter on Junk uses this. */
+  firstSeenAt: Date;
   profileIds: string[];
-  verdict: string;
-  reason: string;
-  confidence: string;
-  text: string;
+  decisionStatus: string | null;
+  authorName: string | null;
+  /** Junk only. */
+  junk: { verdict: string; reason: string; confidence: string } | null;
+  /** Rescues only: where the rescued post came from. */
+  rescueOrigin: string | null;
 };
+
+function newestFirst(a: PostListItem, b: PostListItem): number {
+  return (
+    b.postedAt.getTime() - a.postedAt.getTime() ||
+    (a.jobId < b.jobId ? -1 : a.jobId > b.jobId ? 1 : 0)
+  );
+}
+
+function mergeProfiles(into: string[], more: string[] | null | undefined) {
+  for (const p of more ?? []) if (p && !into.includes(p)) into.push(p);
+}
 
 /** Junk rows to one item per job (profiles merged); newest posted first, then by job id. */
 export function groupJunk(rows: JunkRow[]): PostListItem[] {
@@ -81,27 +97,80 @@ export function groupJunk(rows: JunkRow[]): PostListItem[] {
   for (const r of rows) {
     const item = byJob.get(r.jobId);
     if (item) {
-      for (const p of r.profileIds ?? [])
-        if (!item.profileIds.includes(p)) item.profileIds.push(p);
+      mergeProfiles(item.profileIds, r.profileIds);
       continue;
     }
+    const firstSeenAt = new Date(r.firstSeenAt);
     byJob.set(r.jobId, {
       jobId: r.jobId,
-      postedAt: new Date(r.postedAt ?? r.firstSeenAt),
-      authorKey: r.authorKey,
-      authorName: r.authorName,
-      authorUrl: r.authorUrl,
-      postingUrl: r.postingUrl,
+      kind: null,
+      title: null,
+      companyName: null,
+      postingUrl: r.postingUrl ?? null,
+      postedAt: r.postedAt ? new Date(r.postedAt) : firstSeenAt,
+      firstSeenAt,
       profileIds: [...(r.profileIds ?? [])],
-      verdict: r.verdict,
-      reason: r.reason,
-      confidence: r.confidence,
-      text: r.text,
+      decisionStatus: null,
+      authorName: r.authorName ?? null,
+      junk: { verdict: r.verdict, reason: r.reason, confidence: r.confidence },
+      rescueOrigin: null,
     });
   }
-  return [...byJob.values()].sort(
-    (a, b) =>
-      b.postedAt.getTime() - a.postedAt.getTime() ||
-      (a.jobId < b.jobId ? -1 : a.jobId > b.jobId ? 1 : 0),
-  );
+  return [...byJob.values()].sort(newestFirst);
+}
+
+/** Rescue rows to one item per job; newest first. */
+export function rescueItems(rows: RescueRow[]): PostListItem[] {
+  const byJob = new Map<string, PostListItem>();
+  for (const r of rows) {
+    const item = byJob.get(r.jobId);
+    if (item) {
+      mergeProfiles(item.profileIds, r.profileIds);
+      continue;
+    }
+    const firstSeenAt = new Date(r.firstSeenAt);
+    byJob.set(r.jobId, {
+      jobId: r.jobId,
+      kind: r.kind ?? null,
+      title: r.title ?? null,
+      companyName: r.companyName ?? null,
+      postingUrl: r.postingUrl ?? null,
+      postedAt: r.postedAt ? new Date(r.postedAt) : firstSeenAt,
+      firstSeenAt,
+      profileIds: [...(r.profileIds ?? [])],
+      decisionStatus: r.decisionStatus ?? null,
+      authorName: r.authorName ?? null,
+      junk: null,
+      rescueOrigin: r.origin ?? null,
+    });
+  }
+  return [...byJob.values()].sort(newestFirst);
+}
+
+/** Grouped match jobs (Matches, Review, Disqualified) as items; keeps their order. */
+export function matchedJobItems(jobs: MatchedJob[]): PostListItem[] {
+  return jobs.map((j) => {
+    const first = j.rows[0];
+    const profileIds: string[] = [];
+    mergeProfiles(
+      profileIds,
+      j.rows.map((r) => r.profileId),
+    );
+    return {
+      jobId: j.jobId,
+      kind: first?.kind ?? null,
+      title: first?.title ?? null,
+      companyName: first?.companyName ?? null,
+      postingUrl: first?.postingUrl ?? null,
+      postedAt: j.postedAt,
+      firstSeenAt: first?.firstSeenAt
+        ? new Date(first.firstSeenAt)
+        : j.postedAt,
+      profileIds,
+      decisionStatus: first?.decisionStatus ?? null,
+      authorName: first?.posterName ?? null,
+      junk: null,
+      rescueOrigin: null,
+    };
+  });
 }

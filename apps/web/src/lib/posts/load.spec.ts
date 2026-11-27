@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { fakeSupabase } from '@/test/fake-supabase';
 import {
   groupJunk,
+  matchedJobItems,
+  rescueItems,
   loadJunk,
   loadPostDetails,
   loadPostExtras,
@@ -111,5 +113,98 @@ describe('groupJunk', () => {
     expect(items.map((i) => i.jobId)).toEqual(['b', 'a']);
     expect(items[1].profileIds).toEqual(['p1', 'p2']);
     expect(items[1].postedAt).toEqual(new Date('2026-11-01T00:00:00Z'));
+  });
+
+  it('handles null postedAt (falls back to firstSeenAt) and null profileIds', () => {
+    const r = { ...(row('n', '2026-11-05T00:00:00Z', []) as object) } as never;
+    const items = groupJunk([
+      { ...(r as object), postedAt: null, profileIds: null } as never,
+    ]);
+    expect(items[0].postedAt).toEqual(new Date('2026-11-05T00:00:00Z'));
+    expect(items[0].firstSeenAt).toEqual(new Date('2026-11-05T00:00:00Z'));
+    expect(items[0].profileIds).toEqual([]);
+    expect(items[0].junk).toEqual({
+      verdict: 'not_a_job',
+      reason: 'r',
+      confidence: 'high',
+    });
+  });
+});
+
+describe('rescueItems', () => {
+  const rr = (o: object) =>
+    ({
+      jobId: 'a',
+      authorName: 'A',
+      companyName: 'Co',
+      decisionStatus: null,
+      firstSeenAt: '2026-11-01T00:00:00Z',
+      kind: 'post_role',
+      origin: 'junk',
+      postedAt: '2026-11-02T00:00:00Z',
+      postingUrl: 'p',
+      profileIds: ['p1'],
+      title: 'Eng',
+      ...o,
+    }) as never;
+  it('maps rescue rows, merging and sorting', () => {
+    const items = rescueItems([
+      rr({}),
+      rr({ profileIds: ['p1', 'p2'] }),
+      rr({ jobId: 'b', postedAt: '2026-11-03T00:00:00Z' }),
+    ]);
+    expect(items.map((i) => i.jobId)).toEqual(['b', 'a']);
+    expect(items[1]).toMatchObject({
+      title: 'Eng',
+      companyName: 'Co',
+      rescueOrigin: 'junk',
+      profileIds: ['p1', 'p2'],
+      junk: null,
+    });
+  });
+  it('handles null postedAt and null profileIds', () => {
+    const [i] = rescueItems([rr({ postedAt: null, profileIds: null })]);
+    expect(i.postedAt).toEqual(new Date('2026-11-01T00:00:00Z'));
+    expect(i.profileIds).toEqual([]);
+  });
+});
+
+describe('matchedJobItems', () => {
+  it('maps a matched job, one profile id per row', () => {
+    const rows = [
+      {
+        profileId: 'p1',
+        title: 'T',
+        companyName: 'C',
+        kind: 'post_role',
+        postingUrl: 'u',
+        decisionStatus: 'applied',
+        firstSeenAt: '2026-11-01T00:00:00Z',
+        posterName: 'P',
+      },
+      { profileId: 'p2' },
+      { profileId: 'p1' },
+    ];
+    const postedAt = new Date('2026-11-02T00:00:00Z');
+    const [i] = matchedJobItems([{ jobId: 'j', rows, postedAt } as never]);
+    expect(i).toMatchObject({
+      jobId: 'j',
+      title: 'T',
+      companyName: 'C',
+      kind: 'post_role',
+      decisionStatus: 'applied',
+      authorName: 'P',
+      profileIds: ['p1', 'p2'],
+      postedAt,
+      firstSeenAt: new Date('2026-11-01T00:00:00Z'),
+    });
+  });
+  it('handles null postedAt-like gaps: no firstSeenAt falls back to postedAt', () => {
+    const postedAt = new Date('2026-11-02T00:00:00Z');
+    const [i] = matchedJobItems([
+      { jobId: 'j', rows: [{ profileId: null }], postedAt } as never,
+    ]);
+    expect(i.firstSeenAt).toEqual(postedAt);
+    expect(i.profileIds).toEqual([]);
   });
 });
