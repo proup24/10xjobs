@@ -38,6 +38,7 @@ const ITEMS: ProfileListItem[] = [
     firstPlace: null,
     hasResume: true,
     state: 'published',
+    postSearch: false,
   },
   {
     id: B,
@@ -45,6 +46,7 @@ const ITEMS: ProfileListItem[] = [
     firstPlace: null,
     hasResume: false,
     state: 'published',
+    postSearch: false,
   },
 ];
 const LABELS = {

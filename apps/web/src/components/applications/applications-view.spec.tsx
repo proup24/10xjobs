@@ -181,6 +181,18 @@ describe('ApplicationsView list', () => {
     );
   });
 
+  it('marks a post role as a social post', () => {
+    renderView({
+      decisions: [
+        decision({ jobId: 'p1', title: 'Post role', kind: 'post_role' }),
+        decision({ jobId: 'l1', title: 'Listing' }),
+      ],
+    });
+    const [post, listing] = within(list('Applied')).getAllByRole('link');
+    expect(within(post).getByText('Social post')).toBeTruthy();
+    expect(within(listing).queryByText('Social post')).toBeNull();
+  });
+
   it('shows Closed on a closed job', () => {
     renderView({
       decisions: [

@@ -34,13 +34,14 @@ export default async function Page({
     if (v !== undefined) params.set(key, v);
   }
   const view = readAppView(params);
-  // The open job's match rows of any outcome, so "Why it matched" shows while one is left.
+  // The open job's match rows of any outcome and any kind (a listing or a post role), so "Why
+  // it matched" shows while one is left.
   // None (or a malformed id, which the uuid argument would refuse) shows the job alone.
   const selectedRead =
     view.job === null
       ? Promise.resolve(null)
       : UUID.test(view.job)
-        ? loadMatch(supabase, view.job, null)
+        ? loadMatch(supabase, view.job, null, null)
         : Promise.resolve([]);
   const [decisions, lists, profiles, selected, postings] = await Promise.all([
     loadDecisions(supabase),

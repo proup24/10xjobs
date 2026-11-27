@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Tab } from '@/lib/matches/group';
-import type { List } from '@/lib/matches/view-state';
 
 type Option = { value: string; label: string };
 
@@ -51,12 +50,12 @@ function FilterSelect({
 }
 
 /**
- * The list tabs (matches or review) with their counts, then the profile and source selects,
- * then the two time tabs with their counts.
+ * The list tabs (the page's lists, e.g. matches and review) with their counts, then the profile
+ * and source selects, then the two time tabs with their counts.
  */
 export function MatchFilters({
+  lists,
   list,
-  listCounts,
   onList,
   profileItems,
   profile,
@@ -68,14 +67,17 @@ export function MatchFilters({
   counts,
   onTab,
 }: {
-  list: List;
-  listCounts: Record<List, number>;
-  onList: (list: List) => void;
+  lists: { value: string; label: string; count: number }[];
+  list: string;
+  onList: (list: string) => void;
   /** Null hides the profile switcher. */
   profileItems: Option[] | null;
   profile: string;
   onProfile: (value: string) => void;
-  /** Null hides the source and tab controls (a draft profile). */
+  /**
+   * Null hides the source and tab controls (a draft profile); an empty array hides only the
+   * source select (a page with one source).
+   */
   sourceItems: Option[] | null;
   source: string;
   onSource: (value: string) => void;
@@ -89,16 +91,15 @@ export function MatchFilters({
         <Tabs
           value={list}
           onValueChange={(v) => {
-            if (v === 'matches' || v === 'review') onList(v);
+            if (typeof v === 'string') onList(v);
           }}
         >
           <TabsList aria-label="List" className="w-full">
-            <TabsTrigger value="matches">
-              Matches ({listCounts.matches})
-            </TabsTrigger>
-            <TabsTrigger value="review">
-              Review ({listCounts.review})
-            </TabsTrigger>
+            {lists.map((l) => (
+              <TabsTrigger key={l.value} value={l.value}>
+                {l.label} ({l.count})
+              </TabsTrigger>
+            ))}
           </TabsList>
         </Tabs>
       )}
@@ -111,7 +112,7 @@ export function MatchFilters({
             onChange={onProfile}
           />
         )}
-        {sourceItems && (
+        {sourceItems && sourceItems.length > 0 && (
           <FilterSelect
             label="Source"
             items={sourceItems}

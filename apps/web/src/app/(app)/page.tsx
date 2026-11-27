@@ -2,9 +2,14 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { MatchesView } from '@/components/matches/matches-view';
 import { SearchesNotice } from '@/components/matches/searches-notice';
+import { SourceSwitch } from '@/components/matches/source-switch';
 import { loadMatches } from '@/lib/matches/load';
 import { loadPostings } from '@/lib/matches/postings';
-import { decidedJobHref, selectedRows } from '@/lib/matches/selected';
+import {
+  decidedJobHref,
+  decidedJobId,
+  selectedRows,
+} from '@/lib/matches/selected';
 import { groupByJob, publishedRows, undecidedRows } from '@/lib/matches/group';
 import {
   defaultProfile,
@@ -48,12 +53,16 @@ export default async function Page({
       state: p.state,
     })),
   );
+  // With post search on in some profile, Matches has a Social posts sub-page.
+  const postsRead = preferenceProfiles().then(({ items }) =>
+    items.some((p) => p.postSearch),
+  );
   // The window has list rows only; the job in the URL is read in full, alongside it, from
   // the list it was opened in. Both lists are read, for the counts on their tabs.
   const since = new Date(now.getTime() - WEEK_MS);
   const asked = readViewState(params);
   const outcome = asked.list === 'review' ? 'review' : 'qualified';
-  const [rows, reviewRows, profiles, lists, selected, postings] =
+  const [rows, reviewRows, profiles, lists, selected, postings, posts] =
     await Promise.all([
       loadMatches(supabase, { since, outcome: 'qualified' }),
       loadMatches(supabase, { since, outcome: 'review' }),
@@ -61,9 +70,13 @@ export default async function Page({
       preferenceLists(),
       selectedRows(supabase, asked.job, profilesRead, outcome),
       loadPostings(supabase, asked.job),
+      postsRead,
     ]);
   // A decided job opened by link (a match webhook's) shows where it now lives.
-  const decided = decidedJobHref(selected);
+  const decided = decidedJobHref(
+    selected,
+    await decidedJobId(supabase, selected),
+  );
   if (decided) redirect(decided);
   const read = readViewState(params, {
     tab: '24h',
@@ -96,10 +109,13 @@ export default async function Page({
       selected={selected}
       postings={postings}
       notice={
-        // Streamed in: the engine's state read never holds up the list.
-        <Suspense fallback={null}>
-          <SearchesNotice />
-        </Suspense>
+        <>
+          {posts && <SourceSwitch current="job_board" />}
+          {/* Streamed in: the engine's state read never holds up the list. */}
+          <Suspense fallback={null}>
+            <SearchesNotice />
+          </Suspense>
+        </>
       }
     />
   );
