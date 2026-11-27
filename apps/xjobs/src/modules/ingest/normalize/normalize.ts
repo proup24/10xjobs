@@ -1,5 +1,6 @@
 import { Channel } from 'src/common/enums';
 import { mapAshby, mapGreenhouse } from './ats';
+import { mapIndeedJob } from './mappers/indeed-job.mapper';
 import { mapLinkedinPost } from './mappers/linkedin-post.mapper';
 import { mapLinkedinJob } from './mappers/linkedin-job.mapper';
 import {
@@ -27,9 +28,7 @@ const mappers: Partial<Record<Channel, Mapper>> = {
   [Channel.LINKEDIN_POSTS]: mapLinkedinPost,
   [Channel.ASHBY]: mapAshby,
   [Channel.GREEN_HOUSE]: mapGreenhouse,
-  [Channel.INDEED]: () => {
-    throw new Error('Indeed ingest lands in Phase 5 slice 04');
-  },
+  [Channel.INDEED]: mapIndeedJob,
 };
 
 /**
