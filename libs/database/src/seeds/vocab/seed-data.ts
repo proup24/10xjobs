@@ -1014,6 +1014,7 @@ export const ENGINEERING_ROLE_KINDS: readonly string[] = [
   'software_architect',
   'tech_lead',
   'engineering_manager',
+  'ai_training',
 ];
 
 /** Which countries each region contains. GLOBAL has none: it matches everywhere. */

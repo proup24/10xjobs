@@ -1,3 +1,4 @@
+import { ENGINEERING_ROLE_KINDS } from '@xjobs/database';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -256,5 +257,16 @@ describe('needsReview', () => {
     const doc = fixtureDocument();
     doc.isSoftwareEngineeringRole.confidence = 'unsure';
     expect(needsReview(doc)).toBe(true);
+  });
+});
+
+describe('checkConsistency with the seeded engineering role kinds', () => {
+  it('ai_training with isSoftwareEngineeringRole true is not marked unsure', () => {
+    const doc = fixtureDocument();
+    doc.isSoftwareEngineeringRole.value = true;
+    doc.position.value = { roleKind: 'ai_training', title: 'AI Trainer' };
+    const out = checkConsistency(doc, new Set(ENGINEERING_ROLE_KINDS));
+    expect(out.isSoftwareEngineeringRole.confidence).not.toBe('unsure');
+    expect(out.position.confidence).not.toBe('unsure');
   });
 });

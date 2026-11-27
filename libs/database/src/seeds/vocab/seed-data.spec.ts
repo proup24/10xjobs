@@ -112,7 +112,7 @@ describe('processor seed data', () => {
     expect(SEED_REGION_COUNTRIES.filter(([r]) => r === 'GLOBAL')).toEqual([]);
   });
 
-  it('marks exactly the 17 engineering role kinds, all seeded', () => {
+  it('marks exactly the 18 engineering role kinds, all seeded', () => {
     expect([...ENGINEERING_ROLE_KINDS].sort()).toEqual(
       [
         'backend_engineer',
@@ -132,6 +132,7 @@ describe('processor seed data', () => {
         'software_architect',
         'tech_lead',
         'engineering_manager',
+        'ai_training',
       ].sort(),
     );
     expect(codes('roleKinds')).toEqual(

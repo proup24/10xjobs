@@ -134,9 +134,11 @@ Only languages the posting requires, as ISO 639-1 codes, with \`level\`: \`nativ
 
 \`position.value.roleKind\` is what the job mostly is, judged from the responsibilities and requirements in the description, never from the title. A title such as "Forward Deployed Engineer" or "Solutions Engineer" names no kind by itself: read what the person will do all day and what they must know. Use \`other\` for a job that is not one of the listed kinds, for example support or marketing, and \`unstated\` only when the posting gives no duties at all. Hesitating between kinds of building software (backend, frontend, fullstack, mobile, AI, platform) is not unsure: pick the closest one, \`sure\`. A product role that also builds AI features, touches infrastructure or talks to customers keeps its main kind. Mark the role kind unsure only when the duties split between building software and a different kind of work and neither is clearly the larger share.
 
+**AI-training work:** the job's main output is data used to train or evaluate AI models: writing, solving, reviewing or rating tasks, prompts, answers or code for a model or AI lab, labeling or annotation, or building benchmarks and RL environments for AI agents. A job that builds or runs a product, including AI products and evaluation tooling a team uses, is not AI-training work, even when it mentions training or evaluating models. What the work produces beats the title: a "Software Engineer" or "Fullstack Engineer" posting whose work is AI-training work has the role kind \`ai_training\`, not the kind its title suggests.
+
 \`position.value.title\` is the cleaned title: no "(m/f/d)", no location suffix, no emoji.
 
-\`isSoftwareEngineeringRole\`: \`true\` when the job is mainly about building or running software. A support, sales, marketing or recruiting job is \`false\`, even at a software company.
+\`isSoftwareEngineeringRole\`: \`true\` when the job is mainly about building or running software. A support, sales, marketing or recruiting job is \`false\`, even at a software company. AI-training work is \`true\`.
 
 ## \`techStack\`
 

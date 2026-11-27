@@ -14,6 +14,10 @@ describe('parseReprocessArgs', () => {
     });
   });
 
+  it('reads --matched alone', () => {
+    expect(parseReprocessArgs(['--matched'])).toEqual({ matched: true });
+  });
+
   it('collects every --job id', () => {
     expect(parseReprocessArgs(['--job', 'a', '--job', 'b'])).toEqual({
       jobIds: ['a', 'b'],
@@ -22,7 +26,7 @@ describe('parseReprocessArgs', () => {
 
   it('refuses no selector', () => {
     expect(() => parseReprocessArgs([])).toThrow(
-      'pass at least one of --all-in-scope, --null-status, --failed, --job',
+      'pass at least one of --all-in-scope, --null-status, --failed, --matched, --job',
     );
   });
 

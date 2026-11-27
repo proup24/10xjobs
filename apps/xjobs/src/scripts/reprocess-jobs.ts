@@ -3,7 +3,9 @@
  * again. Run after a prompt, schema or model change:
  *
  *   pnpm --filter @xjobs/xjobs db:reprocess -- --null-status
- *   ... --failed | --all-in-scope | --job <id> [--job <id> ...]
+ *   ... --failed | --matched | --all-in-scope | --job <id> [--job <id> ...]
+ *
+ * `--matched` sends the jobs with a current qualified or review decision (the job's current extraction, the current matcher version).
  *
  * Out-of-scope and archived jobs are never touched, nor `--all-in-scope` the
  * jobs the prefilter skipped (never processed; `--job` sends one back to `pending`, where the next sweep skips it again if it still fails the check). Opens the client directly, like
