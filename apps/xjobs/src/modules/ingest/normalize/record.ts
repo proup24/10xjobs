@@ -15,8 +15,11 @@ import { z } from 'zod';
  * LinkedIn job as a link; run `db:renormalize`.
  * Version 10 drops LinkedIn posts by the first Prepare rules (`open-to-work`,
  * `bench-sales-hotlist`); run `db:renormalize`.
+ * Version 11 maps Indeed (valig) items and drops the board markers
+ * `lever-source`, `iis`, `iisn`, `indeed-apply-token`, `postedDate` from
+ * apply-URL keys; run `db:renormalize`, then `db:recheck-skips`.
  */
-export const NORMALIZER_VERSION = 10;
+export const NORMALIZER_VERSION = 11;
 
 const text = z.string().min(1).nullable();
 const url = z.url({ protocol: /^https?$/ });

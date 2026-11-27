@@ -91,6 +91,21 @@ describe('jobKey', () => {
     );
   });
 
+  it('unifies one posting seen through LinkedIn and Indeed board markers', () => {
+    const base = 'https://jobs.lever.co/acme/1234-5678';
+    expect(liJob(`${base}?lever-source=LinkedIn`)).toBe(
+      liJob(`${base}?lever-source=Indeed`),
+    );
+    expect(
+      liJob(`${base}?iis=Indeed&iisn=Indeed&indeed-apply-token=abc`),
+    ).toBe(liJob(base));
+    expect(
+      liJob(
+        'https://acme.bamboohr.com/careers/25?source=indeed&postedDate=2026-11-23',
+      ),
+    ).toBe(liJob('https://acme.bamboohr.com/careers/25'));
+  });
+
   it('falls back to the LinkedIn id for an apply URL with no identifier', () => {
     expect(liJob('https://acme.com/careers/')).toBe('linkedin-job:4483908744');
   });
