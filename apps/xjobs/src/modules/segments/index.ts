@@ -31,3 +31,15 @@ export {
   type SegmentWindow,
   type WindowConfig,
 } from './services/window';
+export {
+  PostsBudgetService,
+  type PostsBudgetDay,
+} from './services/posts-budget';
+export {
+  DailyBudget,
+  POSTS_MIN_LEFT_USD,
+  POSTS_NULL_COST_MICRO_USD,
+  moroccoDayStart,
+  nextMoroccoDayStart,
+  postsBudgetReached,
+} from './services/spend';

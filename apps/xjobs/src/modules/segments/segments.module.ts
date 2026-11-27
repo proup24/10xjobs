@@ -8,6 +8,7 @@ import {
   LinkedinSearchSplitsRepository,
   PrismaLinkedinSearchSplitsRepository,
 } from './repositories/splits.repository';
+import { PostsBudgetService } from './services/posts-budget';
 
 /** Search segments: run records, builder collection cursors and claims. */
 @Module({
@@ -21,7 +22,12 @@ import {
       provide: LinkedinSearchSplitsRepository,
       useClass: PrismaLinkedinSearchSplitsRepository,
     },
+    PostsBudgetService,
   ],
-  exports: [SearchSegmentsRepository, LinkedinSearchSplitsRepository],
+  exports: [
+    SearchSegmentsRepository,
+    LinkedinSearchSplitsRepository,
+    PostsBudgetService,
+  ],
 })
 export class SearchSegmentsModule {}

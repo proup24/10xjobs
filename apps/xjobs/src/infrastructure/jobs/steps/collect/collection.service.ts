@@ -36,15 +36,19 @@ import {
   type SegmentWindow,
   SearchSegmentsRepository,
   type SegmentQueryOutcome,
+  DailyBudget,
   LinkedinSearchSplitsRepository,
+  POSTS_MIN_LEFT_USD,
+  POSTS_NULL_COST_MICRO_USD,
+  moroccoDayStart,
   planSegments,
+  postsBudgetReached,
   segmentHash,
   segmentWindow,
 } from 'src/modules/segments';
 import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from './config';
 import { IngestQueue } from '../ingest';
-import { DailyBudget, moroccoDayStart } from './spend';
 import { canHalve, halve, nextParts } from './splits';
 import { CollectionSummary, SegmentOutcome } from './types';
 const HOUR_MS = 3_600_000;
@@ -58,10 +62,6 @@ export const COLLECT_JOB = 'collect';
  */
 const LINKEDIN_JOB_BOARD_TICK_LIMIT_MS = 60 * 60_000;
 
-/** What a posts run with no recorded cost counts as, until its cost is re-read. */
-const POSTS_NULL_COST_MICRO_USD = 250_000;
-/** A posts run is not started with less than this left of the day's budget. */
-const POSTS_MIN_LEFT_USD = 0.01;
 /** An Indeed run is not started with less than this left of the day's budget. */
 const INDEED_MIN_LEFT_USD = 0.001;
 
@@ -321,9 +321,10 @@ export class CollectionService {
     }
     if (
       budget &&
-      (budget.reached ||
-        (chargesFromBudget(channel) &&
-          budget.leftUsd < minLeftUsd(channel)))
+      (channel === Channel.LINKEDIN_POSTS
+        ? postsBudgetReached(budget)
+        : budget.reached ||
+          (chargesFromBudget(channel) && budget.leftUsd < minLeftUsd(channel)))
     ) {
       // Not a failure: no run started and no cursor moved, so the next tick re-covers the window.
       this.logBudgetReached(channel, budget);

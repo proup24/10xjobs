@@ -49,6 +49,30 @@ export function moroccoDayStart(now: Date): Date {
 }
 
 /**
+ * The instant of the next 00:00 in Morocco after `now`. Starts from the day
+ * start of `now + 26h` (always on the next local date or the one after) and
+ * steps back a day at a time while the previous midnight is still after `now`.
+ */
+export function nextMoroccoDayStart(now: Date): Date {
+  let next = moroccoDayStart(new Date(now.getTime() + 26 * 3_600_000));
+  for (;;) {
+    const previous = moroccoDayStart(new Date(next.getTime() - 1));
+    if (previous.getTime() <= now.getTime()) return next;
+    next = previous;
+  }
+}
+
+/** A posts run is not started with less than this left of the day's budget. */
+export const POSTS_MIN_LEFT_USD = 0.01;
+/** What a posts run with no recorded cost counts as, until its cost is re-read. */
+export const POSTS_NULL_COST_MICRO_USD = 250_000;
+
+/** Whether the posts channel may start no more runs today. */
+export function postsBudgetReached(budget: DailyBudget): boolean {
+  return budget.reached || budget.leftUsd < POSTS_MIN_LEFT_USD;
+}
+
+/**
  * What a channel may still spend in a tick: the day's spend so far, and each
  * run's cost added as it ends, so the next run is checked against the total.
  */
