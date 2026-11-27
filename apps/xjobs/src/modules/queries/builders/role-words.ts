@@ -5,7 +5,8 @@ export type RoleFamily =
   | 'devops'
   | 'architect'
   | 'tech_lead'
-  | 'engineering_manager';
+  | 'engineering_manager'
+  | 'ai_training';
 
 const OVERRIDES: Readonly<Record<string, RoleFamily>> = {
   devops_engineer: 'devops',
@@ -13,6 +14,7 @@ const OVERRIDES: Readonly<Record<string, RoleFamily>> = {
   software_architect: 'architect',
   tech_lead: 'tech_lead',
   engineering_manager: 'engineering_manager',
+  ai_training: 'ai_training',
 };
 
 /** The role family of every position in `POSITION_TITLES`; most are `engineer`. */
@@ -70,6 +72,9 @@ export const ROLE_WORDS: Readonly<
   },
   engineering_manager: {
     en: ['engineering manager', 'head of engineering'],
+  },
+  ai_training: {
+    en: ['ai trainer', 'ai training', 'ai tutor'],
   },
 };
 

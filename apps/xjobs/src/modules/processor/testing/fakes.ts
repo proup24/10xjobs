@@ -474,6 +474,9 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       .reduce((sum, a) => sum + a.costUsd, 0);
   }
 
+  /** Jobs the test says have a current qualified or review decision (what `matched` selects). */
+  readonly matchedJobIds = new Set<string>();
+
   async markPending(filter: ReprocessFilter): Promise<MarkPendingResult> {
     this.log.push('markPending');
     const ids = new Set(filter.jobIds ?? []);
@@ -486,6 +489,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
         filter.allInScope ||
         (filter.nullStatus && job.processingStatus === null) ||
         (filter.failed && job.processingStatus === 'failed') ||
+        (filter.matched && this.matchedJobIds.has(job.id)) ||
         ids.has(job.id);
       if (!match) continue;
       if (job.processingStatus === 'archived') {
