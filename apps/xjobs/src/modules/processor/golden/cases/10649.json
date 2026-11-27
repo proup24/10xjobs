@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["onsite"],
+        "arrangements": [
+          "onsite"
+        ],
         "places": [
           {
             "kind": "city",
@@ -27,7 +29,7 @@
     "seniority": "unstated",
     "yearsRequired": {
       "min": 3,
-      "max": null
+      "max": 6
     },
     "contractMonths": null,
     "requirements": [],
@@ -43,9 +45,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "onsite",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": false,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

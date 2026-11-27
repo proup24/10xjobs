@@ -134,6 +134,7 @@ export interface MemoryJob extends Omit<JobForProcessing, 'kind'> {
     | 'processed'
     | 'failed'
     | 'archived'
+    | 'skipped'
     | null;
   processingReason: 'new' | 'reopened' | 'joined' | null;
   /** Set when `status` is `merged`. */
@@ -433,8 +434,14 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       outcome.status === 'processed' &&
       outcome.extractionId !== null &&
       job.processingStatus !== 'processed'
-    )
+    ) {
       job.currentExtractionId = outcome.extractionId;
+      // A job with an extraction is never `skipped`.
+      if (job.processingStatus === 'skipped') {
+        job.processingStatus = 'pending';
+        job.processingRequestedAt = this.now();
+      }
+    }
     return 'superseded';
   }
 
@@ -467,21 +474,31 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       .reduce((sum, a) => sum + a.costUsd, 0);
   }
 
+  /** Jobs the test says have a current qualified or review decision (what `matched` selects). */
+  readonly matchedJobIds = new Set<string>();
+
   async markPending(filter: ReprocessFilter): Promise<MarkPendingResult> {
     this.log.push('markPending');
     const ids = new Set(filter.jobIds ?? []);
     let n = 0;
     let skippedArchived = 0;
+    let leftSkipped = 0;
     for (const job of this.jobs.values()) {
       if (!this.inScope(job)) continue;
       const match =
         filter.allInScope ||
         (filter.nullStatus && job.processingStatus === null) ||
         (filter.failed && job.processingStatus === 'failed') ||
+        (filter.matched && this.matchedJobIds.has(job.id)) ||
         ids.has(job.id);
       if (!match) continue;
       if (job.processingStatus === 'archived') {
         skippedArchived++;
+        continue;
+      }
+      // Only an explicit id sends a job the prefilter skipped.
+      if (job.processingStatus === 'skipped' && !ids.has(job.id)) {
+        leftSkipped++;
         continue;
       }
       job.processingStatus = 'pending';
@@ -491,7 +508,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       job.processingStartedAt = null;
       n++;
     }
-    return { marked: n, skippedArchived };
+    return { marked: n, skippedArchived, leftSkipped };
   }
 
   async jobState(jobId: string): Promise<JobState | null> {
@@ -533,6 +550,7 @@ export class MemoryProcessorRepository extends ProcessorRepository {
       processed: 0,
       failed: 0,
       archived: 0,
+      skipped: 0,
       unset: 0,
     });
     const counts: ProcessingCounts = {

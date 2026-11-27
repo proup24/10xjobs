@@ -1194,6 +1194,7 @@ export type Database = {
           processingError: string | null;
           processingReason: string | null;
           processingRequestedAt: string | null;
+          processingSkip: Json | null;
           processingStartedAt: string | null;
           processingStatus: string | null;
           publishedAt: string | null;
@@ -1256,6 +1257,7 @@ export type Database = {
           processingError?: string | null;
           processingReason?: string | null;
           processingRequestedAt?: string | null;
+          processingSkip?: Json | null;
           processingStartedAt?: string | null;
           processingStatus?: string | null;
           publishedAt?: string | null;
@@ -1317,6 +1319,7 @@ export type Database = {
           processingError?: string | null;
           processingReason?: string | null;
           processingRequestedAt?: string | null;
+          processingSkip?: Json | null;
           processingStartedAt?: string | null;
           processingStatus?: string | null;
           publishedAt?: string | null;
@@ -1480,6 +1483,7 @@ export type Database = {
           providerRequestId: string | null;
           quoteFailures: number;
           step: string;
+          turns: Json | null;
         };
         ComputedFields: never;
         Insert: {
@@ -1500,6 +1504,7 @@ export type Database = {
           providerRequestId?: string | null;
           quoteFailures?: number;
           step: string;
+          turns?: Json | null;
         };
         Update: {
           cachedInputTokens?: number;
@@ -1519,6 +1524,7 @@ export type Database = {
           providerRequestId?: string | null;
           quoteFailures?: number;
           step?: string;
+          turns?: Json | null;
         };
         Relationships: [
           {
@@ -1674,6 +1680,7 @@ export type Database = {
           noticePeriodDays: number;
           position: string;
           postSearch: boolean;
+          prefilterCheckedVersion: number | null;
           publishedAt: string | null;
           resumeFilename: string | null;
           resumeKey: string | null;
@@ -1708,6 +1715,7 @@ export type Database = {
           noticePeriodDays: number;
           position: string;
           postSearch?: boolean;
+          prefilterCheckedVersion?: number | null;
           publishedAt?: string | null;
           resumeFilename?: string | null;
           resumeKey?: string | null;
@@ -1741,6 +1749,7 @@ export type Database = {
           noticePeriodDays?: number;
           position?: string;
           postSearch?: boolean;
+          prefilterCheckedVersion?: number | null;
           publishedAt?: string | null;
           resumeFilename?: string | null;
           resumeKey?: string | null;

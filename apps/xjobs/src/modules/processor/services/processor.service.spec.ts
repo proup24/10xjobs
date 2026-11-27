@@ -729,6 +729,7 @@ describe('ProcessorService', () => {
             processed: 1,
             failed: 0,
             archived: 0,
+            skipped: 0,
             unset: 1,
           },
           posts: {
@@ -737,6 +738,7 @@ describe('ProcessorService', () => {
             processed: 0,
             failed: 0,
             archived: 0,
+            skipped: 0,
             unset: 0,
             outOfWindow: 0,
             silenced: 0,

@@ -1,6 +1,6 @@
 # 03: Collect
 
-Status: Built. Spec: [Indeed collect design](../../superpowers/specs/2026-11-25-indeed-collect-design.md). Plan: [Indeed collect plan](../../superpowers/plans/2026-11-25-indeed-collect.md). Collection runs hourly on weekdays under `COLLECTION_DAILY_BUDGET_USD_INDEED` (default $1). The Indeed switch stays unavailable until slice 04, so for the dev rollout only the owner's profile is turned on, by SQL. Batches wait unprocessed until slice 04.
+Status: Built. Spec: [Indeed collect design](../../superpowers/specs/2026-11-25-indeed-collect-design.md). Plan: [Indeed collect plan](../../superpowers/plans/2026-11-25-indeed-collect.md). Collection runs every 3 hours on weekdays (09, 12, 15, 18 and 21 Morocco time) under `COLLECTION_DAILY_BUDGET_USD_INDEED` (default $1). It shipped hourly; on 2026-11-27 it moved to every 3 hours, because each run returns the last 24 hours and hourly runs paid mostly for repeat rows _(user)_. Expected spend is about $0.10 a weekday per profile, against $0.26 hourly. The Indeed switch stays unavailable until slice 04, so for the dev rollout only the owner's profile is turned on, by SQL. Batches wait unprocessed until slice 04.
 
 ## Goal
 

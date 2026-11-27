@@ -66,13 +66,15 @@ const linkedinPosts = {
 } as const;
 
 /**
- * Indeed hourly 09-21 Morocco time on weekdays, one hour a tick; a gap widens
- * the window up to 72 hours (Indeed's 3-day filter), no further. Each run's
- * charge limit is what is left of the day's Indeed budget.
+ * Indeed every 3 hours, 09:00 to 21:00 Morocco time on weekdays (09, 12, 15,
+ * 18, 21). Each run asks for the last 24 hours (Indeed's smallest filter), so
+ * hourly ticks paid mostly for repeat rows. A gap widens the window up to 72
+ * hours (Indeed's 3-day filter), no further. Each run's charge limit is what is
+ * left of the day's Indeed budget.
  */
 const indeed = {
   ...hourly,
-  schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+  schedule: { pattern: '0 9-21/3 * * 1-5', timezone: 'Africa/Casablanca' },
   window: { initialHours: 24, overlapMinutes: 0, maximumHours: 72 },
   resumeHours: 24,
 } as const;

@@ -1,10 +1,7 @@
 {
-  "from": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72",
-  "to": "5299fb8fc35c27b60dfa6c603b48c8f630d6657c3b48e80e47a4d33132349dc5",
-  "providedInvariants": [
-    "blocked-authors-lower-key",
-    "post-rescue-rpcs"
-  ],
-  "createdAt": "2026-11-27T16:04:13.123Z",
-  "migrationHash": "589afef10de699214778e769b5da59acdb9a03b681075eae4058363be43b1c5b"
+  "from": "668c4a1752b51f2e7aa44792a829918d5251da7b7d8c2ccad6fdeb544f3d9a9f",
+  "to": "830fc4a03331a38a1c682ee66f7b0250b50d72327d8c8a93f96461451902e63f",
+  "providedInvariants": ["blocked-authors-lower-key", "post-rescue-rpcs"],
+  "createdAt": "2026-11-27T22:22:08.407Z",
+  "migrationHash": "861f262b301a11a3a85db3f0242ee101ca4dcca3ad62b887e7359a18e08eb517"
 }

@@ -4018,6 +4018,13 @@
                   }
                 }
               },
+              "processingSkip": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
               "processingStartedAt": {
                 "nullable": true,
                 "type": {
@@ -4507,6 +4514,9 @@
                 },
                 "processingRequestedAt": {
                   "column": "processingRequestedAt"
+                },
+                "processingSkip": {
+                  "column": "processingSkip"
                 },
                 "processingStartedAt": {
                   "column": "processingStartedAt"
@@ -5057,6 +5067,13 @@
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
+              },
+              "turns": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -5145,6 +5162,9 @@
                 },
                 "step": {
                   "column": "step"
+                },
+                "turns": {
+                  "column": "turns"
                 }
               },
               "namespaceId": "public",
@@ -5253,6 +5273,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "prefilterCheckedVersion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -5493,6 +5520,9 @@
                 },
                 "postSearch": {
                   "column": "postSearch"
+                },
+                "prefilterCheckedVersion": {
+                  "column": "prefilterCheckedVersion"
                 },
                 "publishedAt": {
                   "column": "publishedAt"
@@ -12320,8 +12350,8 @@
                   "prefix": "normalized_jobs_processing_reason"
                 },
                 {
-                  "expression": "\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed', 'archived')",
-                  "name": "normalized_jobs_processing_status_89abdf7d",
+                  "expression": "\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed', 'archived', 'skipped')",
+                  "name": "normalized_jobs_processing_status_0418256a",
                   "prefix": "normalized_jobs_processing_status"
                 },
                 {
@@ -12581,6 +12611,11 @@
                   "typeParams": {
                     "precision": 3
                   }
+                },
+                "processingSkip": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 },
                 "processingStartedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -13240,6 +13275,11 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "turns": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -13858,6 +13898,11 @@
                     "value": false
                   },
                   "nullable": false
+                },
+                "prefilterCheckedVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
                 },
                 "publishedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -16274,7 +16319,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7"
+    "storageHash": "a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824"
   },
   "execution": {
     "executionHash": "43f96e9ea4c3242b3e60bf904369955db4873127cd090ad393c291c8a54db296",

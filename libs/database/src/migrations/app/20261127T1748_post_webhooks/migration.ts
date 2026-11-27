@@ -2,9 +2,9 @@
 import type {
   Contract as End,
   Contract as Start,
-} from '../../snapshots/f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7/contract';
-import endContract from '../../snapshots/f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7/contract.json' with { type: 'json' };
-import startContract from '../../snapshots/f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7/contract.json' with { type: 'json' };
+} from '../../snapshots/a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824/contract';
+import endContract from '../../snapshots/a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824/contract.json' with { type: 'json' };
+import startContract from '../../snapshots/a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824/contract.json' with { type: 'json' };
 import {
   Migration,
   MigrationCLI,
