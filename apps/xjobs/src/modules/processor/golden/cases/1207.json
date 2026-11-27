@@ -114,6 +114,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "Go",
+        "code": "go",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -147,7 +155,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

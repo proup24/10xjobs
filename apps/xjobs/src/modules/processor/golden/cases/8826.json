@@ -16,7 +16,7 @@
             "code": "EMEA"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "fullstack_engineer",
@@ -35,34 +35,53 @@
       {
         "text": "React",
         "code": "react",
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
-        "group": "g1"
+        "group": null
       },
       {
         "text": "Svelte",
         "code": "svelte",
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
-        "group": "g1"
+        "group": null
       },
       {
         "text": "TypeScript",
         "code": "typescript",
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
-        "group": "g1"
-      }
-    ],
-    "groups": [
+        "group": null
+      },
       {
-        "id": "g1",
-        "min": 1
+        "text": "Python",
+        "code": "python",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
+    "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
@@ -83,7 +102,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

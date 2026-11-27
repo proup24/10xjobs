@@ -16,7 +16,7 @@
             "code": "EMEA"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "ux_engineering",

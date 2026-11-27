@@ -16,7 +16,7 @@
             "code": "CA"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "fullstack_engineer",

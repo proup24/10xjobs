@@ -16,7 +16,7 @@
             "code": "LATAM"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "fullstack_engineer",

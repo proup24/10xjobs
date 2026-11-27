@@ -16,7 +16,7 @@
             "code": "AR"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "support",

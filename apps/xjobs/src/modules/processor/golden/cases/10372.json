@@ -14,9 +14,13 @@
           {
             "kind": "country",
             "code": "CA"
+          },
+          {
+            "kind": "country",
+            "code": "US"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "limit"
       }
     ],
     "roleKind": "ai_engineer",
@@ -30,7 +34,7 @@
       {
         "text": "Haskell",
         "code": null,
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
@@ -38,7 +42,7 @@
       {
         "text": "React",
         "code": "react",
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
@@ -46,7 +50,7 @@
       {
         "text": "TypeScript",
         "code": "typescript",
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
@@ -58,15 +62,23 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "Redux",
+        "code": "redux",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": {
-      "min": 122400,
-      "max": 176000,
-      "currency": "USD",
+      "min": 115700,
+      "max": 166399,
+      "currency": "CAD",
       "period": "year"
     },
     "junkFlags": []
@@ -86,7 +98,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

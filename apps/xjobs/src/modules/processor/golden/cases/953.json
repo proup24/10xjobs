@@ -16,7 +16,7 @@
             "code": "PL"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "backend_engineer",

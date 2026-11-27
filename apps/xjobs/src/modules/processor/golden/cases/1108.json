@@ -14,7 +14,7 @@
         "placeStrictness": "unstated"
       }
     ],
-    "roleKind": "devops_engineer",
+    "roleKind": "platform_engineer",
     "seniority": "senior",
     "yearsRequired": null,
     "contractMonths": 12,
@@ -237,10 +237,6 @@
     "requiredLanguages": [
       {
         "lang": "en",
-        "level": "fluent"
-      },
-      {
-        "lang": "fr",
         "level": "fluent"
       }
     ],

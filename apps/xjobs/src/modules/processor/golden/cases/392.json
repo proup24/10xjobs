@@ -12,15 +12,21 @@
         ],
         "places": [
           {
-            "kind": "country",
-            "code": "CZ"
+            "kind": "city",
+            "name": "Prague",
+            "countryCode": "CZ"
+          },
+          {
+            "kind": "city",
+            "name": "Brno",
+            "countryCode": "CZ"
           },
           {
             "kind": "region",
             "code": "EU"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "frontend_engineer",

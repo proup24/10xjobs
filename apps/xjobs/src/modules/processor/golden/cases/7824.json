@@ -10,11 +10,24 @@
         "arrangements": [
           "unstated"
         ],
-        "places": [],
-        "placeStrictness": "unstated"
+        "places": [
+          {
+            "kind": "country",
+            "code": "FR"
+          },
+          {
+            "kind": "country",
+            "code": "BE"
+          },
+          {
+            "kind": "country",
+            "code": "ES"
+          }
+        ],
+        "placeStrictness": "limit"
       }
     ],
-    "roleKind": "security_engineer",
+    "roleKind": "other",
     "seniority": "junior",
     "yearsRequired": {
       "min": 2,

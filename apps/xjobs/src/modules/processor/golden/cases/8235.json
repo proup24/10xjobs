@@ -8,7 +8,7 @@
     "openings": [
       {
         "arrangements": [
-          "unstated"
+          "remote"
         ],
         "places": [
           {
@@ -17,7 +17,7 @@
             "countryCode": "US"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "backend_engineer",
@@ -131,6 +131,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "Spring Boot",
+        "code": "spring",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -154,7 +162,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -16,7 +16,7 @@
             "code": "PL"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "fullstack_engineer",
@@ -119,8 +119,8 @@
   },
   "drafted": {
     "arrangement": {
-      "value": "onsite",
-      "reviewed": false
+      "value": "unstated",
+      "reviewed": true
     },
     "contractType": {
       "value": "unstated",

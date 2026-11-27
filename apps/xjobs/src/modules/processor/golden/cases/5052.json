@@ -8,7 +8,7 @@
     "openings": [
       {
         "arrangements": [
-          "unstated"
+          "remote"
         ],
         "places": [
           {
@@ -16,7 +16,7 @@
             "code": "FR"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "limit"
       }
     ],
     "roleKind": "mobile_engineer",

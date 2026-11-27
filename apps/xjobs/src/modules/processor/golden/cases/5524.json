@@ -16,7 +16,7 @@
             "code": "US"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "frontend_engineer",
