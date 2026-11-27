@@ -59,12 +59,55 @@ Merged 2026-11-27.
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | **Cost per job on dev,** from `processing_attempts`, per day, after each change above. | Down from $0.042 (the current prompt). The spec's target is below $0.037. | This decides whether the engine can move to an API key before other users. Report it to the owner. |
 
+## PR 164: `AND remote` in remote LinkedIn searches
+
+Merged 2026-11-27. Remote LinkedIn job-board searches send `… AND remote` (`linkedinBoardKeyword`). A group that would pass the 319-character or 25-term limit with the word is cut into another run, and a lone search that can't fit it goes without. On dev's builders, runs per tick are unchanged: the longest keyword is 304 characters, and the merged backend and ml pair is 306 characters and 25 terms.
+
+| Check                                                                                                                                                                                                                                                                                  | Pass                                                              | If it fails                                                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Apify accepts harvestapi.** The first LinkedIn job-board tick after 2026-11-27 in `search_segment_runs`. Every run from 17:00 to 21:00 UTC that day failed with "This Actor requires full access to your account" (the new Apify account); the owner approved it at about 22:30 UTC. | Runs succeed.                                                     | Approve the actor's permissions in the Apify console of the account whose token the hosted engine uses.                                  |
+| **The word is sent.** A remote run's Apify input (`jobTitles`), or the `query` field on its items.                                                                                                                                                                                     | It ends with ` AND remote`. Hybrid and onsite runs don't have it. | The deploy did not include PR 164.                                                                                                       |
+| **Remote share.** Of the new listings from remote searches, the share with `workplaceType` remote, over one weekday.                                                                                                                                                                   | About 97% (it was about 25%).                                     | Near 25%: LinkedIn treats the word differently on this actor's searches. Report to the owner.                                            |
+| **Fewer skips.** `db:analyze` section 14, the skip share of remote-search listings.                                                                                                                                                                                                    | A sharp drop against the PR 151 numbers.                          | Read the skipped titles: they show what LinkedIn now returns.                                                                            |
+| **No remote jobs lost.** Qualified matches per profile on remote searches, the week after against the week before.                                                                                                                                                                     | Not down.                                                         | The test could not rule out losses: it capped both runs at 100 rows. Run `db:remote-keyword-check` with more rows, or take the word out. |
+
 ## Trials
 
-| Check                                                                                                                                                                   | Pass                                                                                                                          | If it fails                                                                                                          |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| **Haiku 5.5** (plan Task 13). `processor:eval -- --generator claude-haiku-5-5`, compared with the PR 155 numbers.                                                       | The four bars are no worse within noise, and role kind and seniority are each within 2 points of Sonnet's.                    | List the facts it misses. Sonnet stays.                                                                              |
-| **`AND remote` keyword** (plan Task 14), after the Apify top-up and the owner's OK on about $0.40. Build `db:remote-keyword-check` on `db:split-check`'s capped runner. | Row counts with and without the word, the share LinkedIn tags remote, and the keyword length against the 319-character limit. | Not a pass or fail: the owner decides whether the word goes into remote searches. The PR 151 check stays either way. |
+Both ran on 2026-11-27.
+
+**Haiku 5.5 (plan Task 13): failed, Sonnet stays.** The eval was run on main at 01c5ff10 and cost about $0.23.
+
+| Fact                    | Haiku     | Sonnet (PR 155) |
+| ----------------------- | --------- | --------------- |
+| openingPlaces           | 91.5%     | 93.6%           |
+| arrangement             | 93.6%     | 94.7%           |
+| mainStack               | **79.2%** | 94.0%           |
+| sure facts contradicted | **3.4%**  | 2.7%            |
+| roleKind                | 85.1%     | 86.2%           |
+| seniority               | **89.4%** | 96.8%           |
+| cost per job            | $0.0024   | $0.0421         |
+
+What it missed:
+
+- On main stack it lists too few technologies. It drops frameworks such as Spring, NestJS, Next.js and React, and gave 4 empty stacks.
+- On seniority, 7 of its 10 misses are "unstated" where the label has a level.
+- Three "remote from anywhere" openings got no place instead of worldwide.
+
+The spec's fallback for cost is Sonnet at a lower effort setting, not two models. It hasn't been tried.
+
+**`AND remote` keyword (plan Task 14): the owner added it (PR 164).** The test was `db:remote-keyword-check`, on the Europe remote fullstack search over the same 24 hours, with two runs of 100 rows each. It cost $0.16. The script is on the branch `feat/slice-03-remote-keyword-check`, not merged.
+
+|                     | Plain                                    | With ` AND remote`       |
+| ------------------- | ---------------------------------------- | ------------------------ |
+| LinkedIn's total    | 167                                      | 183                      |
+| Tagged remote       | 25% (49 hybrid, 15 on-site, 11 untagged) | 97%                      |
+| Cost per remote row | $0.0031                                  | $0.00085                 |
+| Keyword             | 293 characters, 22 terms                 | 304 characters, 23 terms |
+
+Two caveats:
+
+- Of the plain run's 25 remote jobs, 10 were not in the other run's first 100 rows, and 5 of those never say "remote". That run left 83 rows unfetched, so losses are neither shown nor ruled out.
+- LinkedIn's total is higher with the word than without it, so it isn't a strict AND.
 
 ## Follow-ups (not checks)
 

@@ -24,7 +24,7 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 | 01  | [LinkedIn source data](01-linkedin-source-data.md)                             | Harvest | Done (PR 52)                                                                          |
 | 02  | [Listing facts](02-listing-facts.md)                                           | Enrich  | Done (PRs 53–60)                                                                      |
 | 02b | [Models on Claude](02b-claude-models.md) (interim)                             | Enrich  | Done (PRs 62–65)                                                                      |
-| 03  | [Processor quality](03-processor-quality.md)                                   | Enrich  | Built (PRs 150, 151, 154, 155, 156); dev checks in 13; Tasks 13–14 open               |
+| 03  | [Processor quality](03-processor-quality.md)                                   | Enrich  | Built (PRs 150, 151, 154, 155, 156, 164); dev checks in 13; open: max-turns fix, cost |
 | 04  | [Search precision](04-search-precision.md)                                     | Harvest | Done (PRs 66–70)                                                                      |
 | 05  | [Posting language for close languages](05-posting-language-close-languages.md) | Enrich  | Done (PR 84)                                                                          |
 | 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Done (PR 86)                                                                          |
