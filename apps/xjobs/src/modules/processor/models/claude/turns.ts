@@ -3,9 +3,10 @@
  * stream-json stdout (slice 03 task 12): stored on the call's
  * `processing_attempts.turns`, so a call that needed two or three requests
  * shows whether it answered in text (and was nudged) or had its
- * `StructuredOutput` call rejected by the CLI's schema check.
+ * `StructuredOutput` call rejected by the CLI's schema check. A type, not an
+ * interface, so it is assignable to the jsonb column's `JsonValue`.
  */
-export interface CallTurns {
+export type CallTurns = {
   /** The result line's `num_turns`. */
   numTurns: number | null;
   /** The result line's `subtype`: `success`, `error_max_turns`, … */
@@ -20,7 +21,7 @@ export interface CallTurns {
   toolCalls: number;
   /** The text of each rejected tool call (`is_error: true`), clipped; the last few. */
   rejections: string[];
-}
+};
 
 const REJECTION_MAX = 300;
 const REJECTIONS_KEPT = 3;
