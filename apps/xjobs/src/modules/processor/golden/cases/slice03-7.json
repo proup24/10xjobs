@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "unstated"
+        ],
         "places": [],
         "placeStrictness": "unstated"
       }
@@ -43,19 +45,19 @@
   "drafted": {
     "arrangement": {
       "value": "unstated",
-      "reviewed": false
+      "reviewed": true
     },
     "contractType": {
       "value": "unstated",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

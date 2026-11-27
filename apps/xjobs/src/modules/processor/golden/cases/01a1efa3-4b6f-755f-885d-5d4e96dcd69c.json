@@ -7,7 +7,10 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["onsite", "hybrid"],
+        "arrangements": [
+          "onsite",
+          "hybrid"
+        ],
         "places": [],
         "placeStrictness": "unstated"
       }
@@ -156,11 +159,11 @@
     },
     "contractType": {
       "value": "full_time",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,

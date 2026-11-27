@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "unstated"
+        ],
         "places": [
           {
             "kind": "city",
@@ -62,15 +64,15 @@
   "drafted": {
     "arrangement": {
       "value": "hybrid",
-      "reviewed": false
+      "reviewed": true
     },
     "contractType": {
       "value": "full_time",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,

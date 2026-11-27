@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["hybrid"],
+        "arrangements": [
+          "hybrid"
+        ],
         "places": [
           {
             "kind": "city",
@@ -99,7 +101,7 @@
   "drafted": {
     "arrangement": {
       "value": "hybrid",
-      "reviewed": false
+      "reviewed": true
     },
     "contractType": {
       "value": "unstated",
@@ -107,7 +109,7 @@
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,

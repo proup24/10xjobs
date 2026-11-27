@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["remote"],
+        "arrangements": [
+          "remote"
+        ],
         "places": [
           {
             "kind": "country",
@@ -38,11 +40,11 @@
     },
     "contractType": {
       "value": "unstated",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": false,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

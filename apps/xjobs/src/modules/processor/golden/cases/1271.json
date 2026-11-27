@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["remote"],
+        "arrangements": [
+          "remote"
+        ],
         "places": [
           {
             "kind": "worldwide"
@@ -16,7 +18,9 @@
         "placeStrictness": "mention"
       },
       {
-        "arrangements": ["hybrid"],
+        "arrangements": [
+          "hybrid"
+        ],
         "places": [
           {
             "kind": "city",
@@ -81,11 +85,11 @@
   "drafted": {
     "arrangement": {
       "value": "hybrid",
-      "reviewed": false
+      "reviewed": true
     },
     "contractType": {
       "value": "unstated",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": false,

@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["remote"],
+        "arrangements": [
+          "remote"
+        ],
         "places": [],
         "placeStrictness": "unstated"
       }
@@ -35,19 +37,19 @@
   "drafted": {
     "arrangement": {
       "value": "remote",
-      "reviewed": false
+      "reviewed": true
     },
     "contractType": {
       "value": "full_time",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

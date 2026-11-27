@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["hybrid"],
+        "arrangements": [
+          "hybrid"
+        ],
         "places": [
           {
             "kind": "city",
@@ -147,7 +149,7 @@
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,
