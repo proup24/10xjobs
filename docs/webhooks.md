@@ -11,7 +11,7 @@ A delivery is created for a profile and a job when all of these hold:
 - The job is new: it was first seen after the profile was published and after you turned the webhook on. Old jobs that only qualify after a profile edit or a rule change are not sent, and nothing is backfilled.
 - That profile and job were not sent before. Re-decisions, rematches and a match that flips from qualified to rejected and back never send again. Merges count too: when two listings are merged into one job, the job is not sent again for a profile that already got any of them.
 
-Unverified matches are sent as well. Their payload has `match.unverified: true`.
+Unverified matches are sent as well. Their payload has `match.unverified: true`, which means the match passed on at least one fact the processor was unsure of. Facts the posting does not state do not count.
 
 The body is built at the first attempt, from the match as it is then:
 
