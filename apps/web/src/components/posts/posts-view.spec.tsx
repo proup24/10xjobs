@@ -1,7 +1,12 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { groupByJob, type MatchRow } from '@/lib/matches/group';
-import type { JunkRow, PostExtras, RescueRow } from '@/lib/posts/load';
+import type {
+  JunkRow,
+  PostDetails,
+  PostExtras,
+  RescueRow,
+} from '@/lib/posts/load';
 import type { PostsViewState } from '@/lib/posts/view-state';
 import {
   NOW,
@@ -114,7 +119,10 @@ const EXTRAS: Record<string, PostExtras> = {
   },
 };
 
-function renderView(initial: Partial<PostsViewState> = {}) {
+function renderView(
+  initial: Partial<PostsViewState> = {},
+  open: { selected?: MatchRow[] | null; details?: PostDetails | null } = {},
+) {
   render(
     <PostsView
       qualified={groupByJob(QUALIFIED)}
@@ -138,8 +146,8 @@ function renderView(initial: Partial<PostsViewState> = {}) {
       }}
       now={NOW}
       userId="u1"
-      selected={null}
-      details={null}
+      selected={open.selected ?? null}
+      details={open.details ?? null}
     />,
   );
 }
@@ -199,5 +207,64 @@ describe('PostsView', () => {
   it('shows the Junk empty state for a quiet day', () => {
     renderView({ list: 'junk', profile: 'other' });
     expect(screen.getByText('No junk in the last 24 hours')).toBeTruthy();
+  });
+
+  const detailsOf = (over: Partial<PostDetails>): PostDetails =>
+    ({
+      jobId: 'q1',
+      kind: 'post_role',
+      postJobId: 'p1',
+      postingUrl: 'https://www.linkedin.com/posts/q1',
+      postedAt: hoursAgo(50),
+      verdict: { value: 'hiring', reason: 'hiring' },
+      howToApply: { kinds: ['connect_dm_comment'], email: null, links: [] },
+      authorRelation: 'employer',
+      sources: [
+        {
+          author: {
+            name: 'Bob',
+            profileUrl: 'https://www.linkedin.com/in/bob',
+          },
+          text: 'We are hiring a Go engineer',
+          original: null,
+        },
+      ],
+      emailPending: false,
+      rescue: null,
+      linked: [],
+      ...over,
+    }) as PostDetails;
+
+  it("shows the post's section in a matched post's detail", () => {
+    renderView({ job: 'q1' }, { selected: QUALIFIED, details: detailsOf({}) });
+    const article = within(screen.getByRole('article'));
+    expect(article.getByText(/Why it matched/)).toBeTruthy();
+    expect(
+      article.getByText('DM, comment or connect with the author'),
+    ).toBeTruthy();
+    expect(article.getByText('We are hiring a Go engineer')).toBeTruthy();
+  });
+
+  it('shows a Junk post with its verdict instead of "not in your matches"', () => {
+    renderView(
+      { list: 'junk', job: 'j1' },
+      {
+        details: detailsOf({
+          jobId: 'j1',
+          kind: 'post',
+          verdict: {
+            value: 'not_hiring',
+            reason: 'the author is looking for a job',
+          },
+          howToApply: null,
+        }),
+      },
+    );
+    const article = within(screen.getByRole('article'));
+    expect(
+      article.getByText('Not hiring · the author is looking for a job'),
+    ).toBeTruthy();
+    expect(screen.queryByText("This job isn't in your matches")).toBeNull();
+    expect(screen.queryByText(/Why it matched/)).toBeNull();
   });
 });

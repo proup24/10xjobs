@@ -20,7 +20,8 @@ export function applyWord(kinds: string[] | null | undefined): string | null {
   return null;
 }
 
-const VERDICTS: Record<string, string> = {
+/** The verdict words for a dropped post. */
+export const VERDICTS: Record<string, string> = {
   not_hiring: 'Not hiring',
   junk: 'Junk',
 };

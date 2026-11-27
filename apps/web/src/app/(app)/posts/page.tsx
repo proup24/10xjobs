@@ -2,7 +2,11 @@ import { redirect } from 'next/navigation';
 import { PostsView } from '@/components/posts/posts-view';
 import { groupByJob, publishedRows } from '@/lib/matches/group';
 import { loadMatches } from '@/lib/matches/load';
-import { decidedJobHref, selectedRows } from '@/lib/matches/selected';
+import {
+  decidedJobHref,
+  decidedJobId,
+  selectedRows,
+} from '@/lib/matches/selected';
 import { defaultProfile, knownProfile } from '@/lib/matches/view-state';
 import {
   loadJunk,
@@ -115,7 +119,10 @@ export default async function Page({
         )
       : selectedRead;
   // A decided job opened by link shows where it now lives.
-  const decided = decidedJobHref(selected);
+  const decided = decidedJobHref(
+    selected,
+    await decidedJobId(supabase, selected),
+  );
   if (decided) redirect(decided);
 
   const read = readPostsViewState(params, {

@@ -5,7 +5,11 @@ import { SearchesNotice } from '@/components/matches/searches-notice';
 import { SourceSwitch } from '@/components/matches/source-switch';
 import { loadMatches } from '@/lib/matches/load';
 import { loadPostings } from '@/lib/matches/postings';
-import { decidedJobHref, selectedRows } from '@/lib/matches/selected';
+import {
+  decidedJobHref,
+  decidedJobId,
+  selectedRows,
+} from '@/lib/matches/selected';
 import { groupByJob, publishedRows, undecidedRows } from '@/lib/matches/group';
 import {
   defaultProfile,
@@ -69,7 +73,10 @@ export default async function Page({
       postsRead,
     ]);
   // A decided job opened by link (a match webhook's) shows where it now lives.
-  const decided = decidedJobHref(selected);
+  const decided = decidedJobHref(
+    selected,
+    await decidedJobId(supabase, selected),
+  );
   if (decided) redirect(decided);
   const read = readViewState(params, {
     tab: '24h',

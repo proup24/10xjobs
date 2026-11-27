@@ -18,9 +18,12 @@ vi.mock('@/lib/matches/postings', () => ({ loadPostings: async () => [] }));
 vi.mock('@/lib/matches/selected', () => ({
   selectedRows: async () => null,
   decidedJobHref: () => null,
+  decidedJobId: async () => null,
 }));
 const profiles = vi.hoisted(() => ({
-  items: [{ id: 'p1', position: 'Engineer', state: 'published', postSearch: false }],
+  items: [
+    { id: 'p1', position: 'Engineer', state: 'published', postSearch: false },
+  ],
 }));
 vi.mock('./preferences/data', () => ({
   preferenceProfiles: async () => ({ items: profiles.items, labels: {} }),
@@ -111,7 +114,9 @@ describe('Matches page source switch', () => {
     ];
     await renderPage();
     expect(
-      screen.getByRole('link', { name: 'Job board' }).getAttribute('aria-current'),
+      screen
+        .getByRole('link', { name: 'Job board' })
+        .getAttribute('aria-current'),
     ).toBe('page');
     expect(
       screen.getByRole('link', { name: 'Social posts' }).getAttribute('href'),

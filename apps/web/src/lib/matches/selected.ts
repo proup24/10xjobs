@@ -35,16 +35,39 @@ export async function selectedRows(
 }
 
 /**
+ * The job of the open job's linked group that holds the user's winning decision, read only when
+ * a row says the job is decided (`decisionStatus` is the group's). Null otherwise, and on a
+ * failed read: the decided row's own job is then opened, as before linked groups.
+ */
+export async function decidedJobId(
+  supabase: SupabaseClient<Database>,
+  rows: MatchRow[] | null,
+): Promise<string | null> {
+  const row = rows?.find((r) => r.decisionStatus != null);
+  if (!row) return null;
+  const r = await supabase.rpc('group_decision_job', { p_job_id: row.jobId });
+  if (r.error) {
+    console.error('group decision read failed', r.error.code);
+    return null;
+  }
+  return r.data ?? null;
+}
+
+/**
  * Where a job opened on Matches belongs once the user has decided on it: its Applications
  * detail, under the tab of its decision. Null for no job, no rows or an undecided job. A
  * decided job shown on Matches would offer Applied / Not for me / Expired again, and their Undo
- * would delete the earlier mark.
+ * would delete the earlier mark. A decision inherited through a linked group opens the copy
+ * that holds it (`decidedJobId`), where Applications lists it.
  */
-export function decidedJobHref(rows: MatchRow[] | null): string | null {
+export function decidedJobHref(
+  rows: MatchRow[] | null,
+  decidedJobId?: string | null,
+): string | null {
   const row = rows?.find((r) => r.decisionStatus != null);
   if (!row) return null;
   return appViewHref({
     status: isAppStatus(row.decisionStatus) ? row.decisionStatus : 'applied',
-    job: row.jobId,
+    job: decidedJobId ?? row.jobId,
   });
 }

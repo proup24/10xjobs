@@ -27,7 +27,9 @@ import {
   type PostsViewState,
 } from '@/lib/posts/view-state';
 import { cn } from '@/lib/utils';
+import { PostDetail } from './post-detail';
 import { PostRow } from './post-row';
+import { PostSection } from './post-section';
 
 type Profile = { id: string; label: string; state: 'draft' | 'published' };
 
@@ -70,6 +72,7 @@ export function PostsView({
   now: nowIso,
   userId,
   selected,
+  details,
 }: {
   /** Grouped qualified post roles of the last 7 days, post-search profiles only. */
   qualified: MatchedJob[];
@@ -191,7 +194,16 @@ export function PostsView({
   let detail: React.ReactNode;
   if (state.job === null) detail = <MatchEmpty kind="pick" />;
   else if (detailRows.length === 0)
-    detail = (
+    // A Junk post or a junk rescue has no match row: the post alone, with its verdict.
+    detail = details ? (
+      <PostDetail
+        key={state.job}
+        details={details}
+        now={now}
+        userId={userId}
+        backHref={backHref}
+      />
+    ) : (
       <div className="flex flex-col gap-6">
         <BackLink href={backHref} />
         <MatchEmpty kind="not-found" />
@@ -215,6 +227,9 @@ export function PostsView({
         }
         onReport={reportMismatchAction}
         postings={[]}
+        actions={
+          details ? <PostSection details={details} now={now} /> : undefined
+        }
       />
     );
 
