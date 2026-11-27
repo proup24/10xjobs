@@ -324,5 +324,99 @@ describe.skipIf(!url)(
       ]);
       expect(sample[0]).toMatchObject({ country: 'DE' });
     });
+    it('section 15 splits recorded calls by request count and kind, and counts what the repeats did', async () => {
+      const now = new Date();
+      const turns = (
+        requests: number,
+        over: Partial<{
+          textReplies: number;
+          enforceNudges: number;
+          rejections: string[];
+          subtype: string;
+        }> = {},
+      ) => ({
+        numTurns: requests + 1,
+        subtype: 'success',
+        requests,
+        textReplies: 0,
+        enforceNudges: 0,
+        toolCalls: 1,
+        rejections: [],
+        ...over,
+      });
+      const attempt = (
+        docType: string,
+        record: unknown,
+        options: { evalRun?: boolean; at?: Date } = {},
+      ) =>
+        db.orm.public.ProcessingAttempt.create({
+          jobId: null,
+          extractionId: null,
+          eval: options.evalRun ?? false,
+          step: 'generation',
+          docType,
+          model: 'm',
+          providerRequestId: null,
+          inputTokens: 1,
+          outputTokens: 1,
+          cachedInputTokens: 0,
+          costUsd: '0.01',
+          latencyMs: 1,
+          outcome: 'ok',
+          error: null,
+          quoteFailures: 0,
+          turns: record,
+          createdAt: options.at ?? now,
+        } as never);
+      const enumMiss =
+        'Output does not match required schema: /openings/0/arrangement/value: must be equal to one of the allowed values';
+      await attempt('listing', turns(1));
+      await attempt('listing', turns(1));
+      await attempt('listing', turns(2, { textReplies: 1, enforceNudges: 1 }));
+      await attempt('listing', turns(2, { rejections: [enumMiss] }));
+      await attempt(
+        'listing',
+        turns(3, {
+          subtype: 'error_max_turns',
+          rejections: [
+            enumMiss,
+            enumMiss.replace('/openings/0/', '/openings/1/'),
+            'Output does not match required schema: /title: must be string',
+          ],
+        }),
+      );
+      await attempt('post', turns(1));
+      await attempt('listing', null); // no record: ignored
+      await attempt('listing', turns(3), { evalRun: true }); // eval: ignored
+      await attempt('listing', turns(3), {
+        at: new Date(now.getTime() - 9 * 86_400_000),
+      }); // outside the window
+
+      const all = await rows('15.');
+      const part = (p: string) => all.filter((r) => r.part === p);
+      const pick = (r: Record<string, unknown>) =>
+        `${r.kind}/${r.key}/${r.count}/${r.share}`;
+      expect(part('requests').map(pick)).toEqual([
+        'listing/1/2/0.4',
+        'listing/2/2/0.4',
+        'listing/3/1/0.2',
+        'post/1/1/1',
+      ]);
+      expect(part('multi').map(pick)).toEqual([
+        'listing/calls/3/null',
+        'listing/with_text_replies/1/0.333',
+        'listing/with_enforce_nudges/1/0.333',
+        'listing/with_rejections/2/0.667',
+      ]);
+      expect(part('max_turns').map(pick)).toEqual([
+        'listing/error_max_turns/1/0.2',
+        'post/error_max_turns/0/0',
+      ]);
+      // Array indices are normalized, so both openings count as one text.
+      expect(part('rejection').map((r) => `${r.key}/${r.count}`)).toEqual([
+        '/openings/N/arrangement/value: must be equal to one of the allowed values/3',
+        '/title: must be string/1',
+      ]);
+    });
   },
 );
