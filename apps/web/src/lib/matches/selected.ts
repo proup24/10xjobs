@@ -3,7 +3,7 @@ import type { Database } from '@xjobs/database/types';
 import { appViewHref, isAppStatus } from '@/lib/applications/view-state';
 import { UUID } from '@/lib/setup/answers';
 import { publishedRows, type MatchRow } from './group';
-import { loadMatch, type ListOutcome } from './load';
+import { loadMatch, type ListOutcome, type MatchKind } from './load';
 
 type Profiles = { id: string; state: 'draft' | 'published' }[];
 
@@ -19,12 +19,13 @@ export async function selectedRows(
   supabase: SupabaseClient<Database>,
   jobId: string | null,
   profiles: Profiles | Promise<Profiles>,
-  outcome: ListOutcome = 'qualified',
+  outcome: ListOutcome | null = 'qualified',
+  kind: MatchKind = 'job',
 ): Promise<MatchRow[] | null> {
   if (!jobId) return null;
   if (!UUID.test(jobId)) return [];
   const [rows, known] = await Promise.all([
-    loadMatch(supabase, jobId, outcome),
+    loadMatch(supabase, jobId, outcome, kind),
     profiles,
   ]);
   return publishedRows(

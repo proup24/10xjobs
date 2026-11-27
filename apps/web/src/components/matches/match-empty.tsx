@@ -15,6 +15,10 @@ export type EmptyKind =
   | { kind: 'no-matches-7d' }
   | { kind: 'no-review-24h'; weekHref: string }
   | { kind: 'no-review-7d' }
+  | { kind: 'no-disqualified-24h'; weekHref: string }
+  | { kind: 'no-disqualified-7d' }
+  | { kind: 'no-junk-24h'; weekHref: string }
+  | { kind: 'no-junk-7d' }
   | { kind: 'filtered'; clearHref: string }
   | { kind: 'not-found' }
   | { kind: 'pick' };
@@ -29,7 +33,7 @@ function Action({ href, children }: { href: string; children: string }) {
   );
 }
 
-/** Every "nothing to show" state of the matches page. */
+/** Every "nothing to show" state of the matches and social posts pages. */
 export function MatchEmpty(props: EmptyKind) {
   const [title, description] = TEXT[props.kind];
   return (
@@ -41,7 +45,7 @@ export function MatchEmpty(props: EmptyKind) {
       {props.kind === 'no-profile' && (
         <Action href="/setup">Set up your profile</Action>
       )}
-      {(props.kind === 'no-matches-24h' || props.kind === 'no-review-24h') && (
+      {'weekHref' in props && (
         <Action href={props.weekHref}>Last 7 days</Action>
       )}
       {props.kind === 'draft' && (
@@ -78,6 +82,22 @@ const TEXT: Record<EmptyKind['kind'], [string, string | null]> = {
   'no-review-7d': [
     'Nothing to review',
     "Jobs show here when a check failed on a fact the job wasn't clear about.",
+  ],
+  'no-disqualified-24h': [
+    'Nothing disqualified in the last 24 hours',
+    'Posts that failed a check show here, with the check that failed.',
+  ],
+  'no-disqualified-7d': [
+    'Nothing disqualified',
+    'Posts that failed a check show here, with the check that failed.',
+  ],
+  'no-junk-24h': [
+    'No junk in the last 24 hours',
+    "Posts your searches found that aren't hiring show here, so you can check nothing valuable was thrown out.",
+  ],
+  'no-junk-7d': [
+    'No junk',
+    "Posts your searches found that aren't hiring show here, so you can check nothing valuable was thrown out.",
   ],
   filtered: ['No matches for this filter', null],
   'not-found': [

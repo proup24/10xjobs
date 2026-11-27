@@ -19,11 +19,11 @@ vi.mock('@/lib/matches/selected', () => ({
   selectedRows: async () => null,
   decidedJobHref: () => null,
 }));
+const profiles = vi.hoisted(() => ({
+  items: [{ id: 'p1', position: 'Engineer', state: 'published', postSearch: false }],
+}));
 vi.mock('./preferences/data', () => ({
-  preferenceProfiles: async () => ({
-    items: [{ id: 'p1', position: 'Engineer', state: 'published' }],
-    labels: {},
-  }),
+  preferenceProfiles: async () => ({ items: profiles.items, labels: {} }),
   preferenceLists: async () => ({
     positions: [],
     seniorities: [],
@@ -44,7 +44,12 @@ vi.mock('./actions', () => ({
   reportMismatchAction: vi.fn(),
 }));
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  profiles.items = [
+    { id: 'p1', position: 'Engineer', state: 'published', postSearch: false },
+  ];
+});
 afterEach(cleanup);
 
 const renderPage = async () =>
@@ -86,5 +91,30 @@ describe('Matches page', () => {
     await renderPage();
     expect(screen.getByRole('heading', { name: 'Matches' })).toBeTruthy();
     expect(resumeButton()).toBeNull();
+  });
+});
+
+describe('Matches page source switch', () => {
+  beforeEach(() =>
+    engine.searchesState.mockResolvedValue({ kind: 'unauthorized' }),
+  );
+
+  it('has no switch when no profile has post search on', async () => {
+    await renderPage();
+    expect(screen.queryByRole('link', { name: 'Social posts' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Job board' })).toBeNull();
+  });
+
+  it('shows the switch, Job board current, when a profile has post search on', async () => {
+    profiles.items = [
+      { id: 'p1', position: 'Engineer', state: 'published', postSearch: true },
+    ];
+    await renderPage();
+    expect(
+      screen.getByRole('link', { name: 'Job board' }).getAttribute('aria-current'),
+    ).toBe('page');
+    expect(
+      screen.getByRole('link', { name: 'Social posts' }).getAttribute('href'),
+    ).toBe('/posts');
   });
 });

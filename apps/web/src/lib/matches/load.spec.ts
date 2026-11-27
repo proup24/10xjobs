@@ -37,6 +37,20 @@ describe('loadMatches', () => {
     });
   });
 
+  it('reads full rows when asked for details', async () => {
+    const f = fakeSupabase({ rpc: () => ({ data: [], error: null }) });
+    await loadMatches(f.supabase, {
+      since: new Date(),
+      outcome: 'rejected',
+      kind: 'post_role',
+      details: true,
+    });
+    expect(f.rpcs('match_details')[0].args).toMatchObject({
+      p_details: true,
+      p_outcome: 'rejected',
+    });
+  });
+
   it('throws through loadError on an rpc error', async () => {
     const f = fakeSupabase({
       rpc: () => ({ data: null, error: { code: '42501' } }),

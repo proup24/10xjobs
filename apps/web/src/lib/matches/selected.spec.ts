@@ -44,6 +44,16 @@ describe('selectedRows', () => {
     });
   });
 
+  it('reads a post role in any outcome when asked', async () => {
+    const f = fakeSupabase({ rpc: () => ({ data: [row(J)], error: null }) });
+    await selectedRows(f.supabase, J, profiles, null, 'post_role');
+    expect(f.rpcs('match_details')[0].args).toEqual({
+      p_job_id: J,
+      p_kind: 'post_role',
+      p_outcome: null,
+    });
+  });
+
   // The page passes its profiles still loading, so the job read runs alongside them.
   it('starts the read before the profiles are known', async () => {
     const f = fakeSupabase({

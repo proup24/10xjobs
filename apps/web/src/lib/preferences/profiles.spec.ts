@@ -22,6 +22,7 @@ const item = (
   firstPlace,
   hasResume: true,
   state: 'published',
+  postSearch: false,
 });
 const berlin: Place = { kind: 'country', code: 'DE' };
 
@@ -99,6 +100,7 @@ describe('loadProfileList', () => {
             position: 'frontend_engineer',
             resumeKey: null,
             state: 'published',
+            postSearch: true,
             locations: {
               remote: [{ kind: 'region', code: 'EU' }],
               hybrid: [{ kind: 'country', code: 'DE' }],
@@ -123,6 +125,7 @@ describe('loadProfileList', () => {
         firstPlace: { kind: 'country', code: 'DE' },
         hasResume: true,
         state: 'published',
+        postSearch: false,
       },
       {
         id: 'b',
@@ -130,6 +133,7 @@ describe('loadProfileList', () => {
         firstPlace: { kind: 'region', code: 'EU' },
         hasResume: false,
         state: 'published',
+        postSearch: true,
       },
       {
         id: 'c',
@@ -137,6 +141,7 @@ describe('loadProfileList', () => {
         firstPlace: null,
         hasResume: false,
         state: 'draft',
+        postSearch: false,
       },
     ]);
     const [q] = f.queries('profiles');

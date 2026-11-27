@@ -78,6 +78,10 @@ export type PostListItem = {
   junk: { verdict: string; reason: string; confidence: string } | null;
   /** Rescues only: where the rescued post came from. */
   rescueOrigin: string | null;
+  /** The grouped match rows behind the item (the row layout, failed checks); null for Junk and a rescue with no row. */
+  job: MatchedJob | null;
+  /** The newest decision of the item's match rows; Disqualified sorts on it. */
+  decidedAt: Date | null;
 };
 
 function newestFirst(a: PostListItem, b: PostListItem): number {
@@ -114,6 +118,8 @@ export function groupJunk(rows: JunkRow[]): PostListItem[] {
       authorName: r.authorName ?? null,
       junk: { verdict: r.verdict, reason: r.reason, confidence: r.confidence },
       rescueOrigin: null,
+      job: null,
+      decidedAt: null,
     });
   }
   return [...byJob.values()].sort(newestFirst);
@@ -142,9 +148,18 @@ export function rescueItems(rows: RescueRow[]): PostListItem[] {
       authorName: r.authorName ?? null,
       junk: null,
       rescueOrigin: r.origin ?? null,
+      job: null,
+      decidedAt: null,
     });
   }
   return [...byJob.values()].sort(newestFirst);
+}
+
+function newestDecidedAt(j: MatchedJob): Date | null {
+  const times = j.rows
+    .map((r) => (r.decidedAt ? new Date(r.decidedAt).getTime() : NaN))
+    .filter((t) => !Number.isNaN(t));
+  return times.length ? new Date(Math.max(...times)) : null;
 }
 
 /** Grouped match jobs (Matches, Review, Disqualified) as items; keeps their order. */
@@ -171,6 +186,8 @@ export function matchedJobItems(jobs: MatchedJob[]): PostListItem[] {
       authorName: first?.posterName ?? null,
       junk: null,
       rescueOrigin: null,
+      job: j,
+      decidedAt: newestDecidedAt(j),
     };
   });
 }

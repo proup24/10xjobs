@@ -18,15 +18,21 @@ export type MatchKind = 'job' | 'post_role' | null;
  * profile in memory, so switching profiles needs no refetch. These are list rows
  * (`p_details: false`): no checks or description, and facts hold only the arrangement.
  * Building the full facts for every row was most of the read's time and of the page's size;
- * the selected job is read in full with `loadMatch`.
+ * the selected job is read in full with `loadMatch`. `details` reads full rows instead (the
+ * social posts' Disqualified list shows each row's failed check).
  */
 export async function loadMatches(
   supabase: Client,
-  opts: { since: Date; outcome: ListOutcome; kind?: MatchKind },
+  opts: {
+    since: Date;
+    outcome: ListOutcome;
+    kind?: MatchKind;
+    details?: boolean;
+  },
 ): Promise<MatchRow[]> {
   const r = await supabase.rpc('match_details', {
     p_since: opts.since.toISOString(),
-    p_details: false,
+    p_details: opts.details ?? false,
     p_outcome: opts.outcome,
     // The generated args type has no null, but the function takes null as "any kind".
     p_kind: (opts.kind === undefined ? 'job' : opts.kind) as string,
