@@ -75,6 +75,7 @@ function storedRow(): ProfileRow {
     indeedSearch: false,
     matchVersion: 0,
     searchesVersion: null,
+    prefilterCheckedVersion: null,
     resumeFilename: null,
     resumeKey: null,
     resumeSha256: null,
