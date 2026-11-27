@@ -1,5 +1,7 @@
 # 03: Processor quality
 
+Built 2026-11-27 from the [spec](../../superpowers/specs/2026-11-26-processor-quality-design.md) and [plan](../../superpowers/plans/2026-11-26-processor-quality.md), in PRs 150 (matcher rules), 151 (the check before the LLM), 154 (reviewed golden set and baseline), 155 (AI-training role kind, vocabulary) and 156 (per-call turn record). The engagement and short-quote change (plan Task 11) saved nothing on the eval and was not shipped; its branch `feat/slice-03-cost` is kept. Dev checks: [slice 13](13-slice-03-rollout-checks.md). The brief below is kept as written.
+
 Revised: 2026-11-17, from the first Claude batch on `10xjobs-dev` and the golden eval. The first version described the 60 DeepSeek jobs from 2026-11-09; those were archived in 02b, and most of their problems are gone.
 
 ## Where it stands
