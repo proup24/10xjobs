@@ -131,7 +131,7 @@ describe('post_rescue_list after the rows behind a rescue change', () => {
     ]);
   });
 
-  it('a junk rescue keeps the profiles that found it, and hides once a role of its post is listed', async () => {
+  it('a junk rescue keeps the profiles that found it, and stays listed once a role of its post is matched', async () => {
     const u = await createTestUser();
     const profile = await seedProfile(u.id);
     await publishProfile(profile);
@@ -156,9 +156,72 @@ describe('post_rescue_list after the rows behind a rescue change', () => {
         profileIds: [profile],
       }),
     ]);
-    // A re-extraction made a role of the post, and it matched: the role shows instead.
+    // A re-extraction made a role of the post, and it matched: the rescue wins and covers it.
     const role = await seedPostRole(post, 'role');
     await seedMatchOn(u.id, profile, role, { outcome: 'qualified' });
+    expect(await listOf(u)).toEqual([
+      expect.objectContaining({
+        jobId: post.jobId,
+        origin: 'junk',
+        coveredJobIds: [role.jobId],
+      }),
+    ]);
+  });
+
+  it('a junk rescue stays listed over a rejected role, which gets no second rescue, and undo uncovers it', async () => {
+    const u = await createTestUser();
+    const profile = await seedProfile(u.id);
+    await publishProfile(profile);
+    await enablePostSearch(profile);
+    const post = await seedPost({ verdict: 'junk', reason: 'funnel' });
+    const queryId = await seedPostQuery(profile);
+    await seedPostRawItem(post.jobId, [queryId]);
+    expect(
+      (await u.client.rpc('post_rescue', { p_job_id: post.jobId })).error,
+    ).toBeNull();
+    const rejected = await seedPostRole(post, 'rejected');
+    const review = await seedPostRole(post, 'review');
+    await seedMatchOn(u.id, profile, rejected, { outcome: 'rejected' });
+    await seedMatchOn(u.id, profile, review, {
+      outcome: 'review',
+      review: { rule: 'seniority', field: 'seniority' },
+    });
+    const [row] = await listOf(u);
+    expect(row).toEqual(
+      expect.objectContaining({ jobId: post.jobId, decisionStatus: null }),
+    );
+    expect([...(row.coveredJobIds ?? [])].sort()).toEqual(
+      [rejected.jobId, review.jobId].sort(),
+    );
+    const second = await u.client.rpc('post_rescue', {
+      p_job_id: rejected.jobId,
+    });
+    expect(second.error?.message).toContain('not rescuable');
+    expect(
+      (await u.client.rpc('post_rescue_undo', { p_job_id: post.jobId })).error,
+    ).toBeNull();
     expect(await listOf(u)).toEqual([]);
+    // Uncovered, the rejected role can be rescued from Disqualified again.
+    expect(
+      (await u.client.rpc('post_rescue', { p_job_id: rejected.jobId })).error,
+    ).toBeNull();
+  });
+
+  it('a disqualified rescue covers no other job', async () => {
+    const u = await createTestUser();
+    const profile = await seedProfile(u.id);
+    await publishProfile(profile);
+    const post = await seedPost({
+      verdict: 'hiring',
+      roles: [{ roleKey: 'role', email: null }],
+    });
+    const role = await seedPostRole(post, 'role');
+    await seedMatchOn(u.id, profile, role, { outcome: 'rejected' });
+    expect(
+      (await u.client.rpc('post_rescue', { p_job_id: role.jobId })).error,
+    ).toBeNull();
+    expect(await listOf(u)).toEqual([
+      expect.objectContaining({ jobId: role.jobId, coveredJobIds: [] }),
+    ]);
   });
 });

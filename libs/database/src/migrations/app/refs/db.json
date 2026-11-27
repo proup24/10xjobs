@@ -48,6 +48,7 @@
     "post-rescue-junk",
     "post-webhooks",
     "post-rescue-fixes",
-    "post-webhooks-first-seen"
+    "post-webhooks-first-seen",
+    "post-rescue-wins"
   ]
 }

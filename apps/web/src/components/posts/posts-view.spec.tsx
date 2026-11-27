@@ -358,6 +358,31 @@ describe('PostsView', () => {
       expect(screen.getByRole('button', { name: 'Rescue' })).toBeTruthy();
     });
 
+    it('offers no second Rescue on a role a Junk rescue of its post covers', () => {
+      const rescues = [
+        {
+          ...RESCUES[0],
+          jobId: 'post1',
+          kind: 'post',
+          origin: 'junk',
+          coveredJobIds: ['d1'],
+        },
+      ] as unknown as RescueRow[];
+      renderView(
+        { list: 'disqualified', job: 'd1' },
+        { selected: disq({}), details: detailsOf({ jobId: 'd1' }), rescues },
+      );
+      expect(screen.queryByRole('button', { name: 'Rescue' })).toBeNull();
+      // Listed: r1 (not rescued here), not the covered d1.
+      const jobs = rowsOf('Disqualified').map((r) =>
+        new URL(
+          within(r).getByRole('link').getAttribute('href') ?? '',
+          'http://x',
+        ).searchParams.get('job'),
+      );
+      expect(jobs).toEqual(['r1']);
+    });
+
     it('offers no Rescue on a role rejected for a blocked author', () => {
       renderView(
         { list: 'disqualified', job: 'd1' },

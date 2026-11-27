@@ -2743,6 +2743,7 @@ export type Database = {
         Returns: {
           authorName: string;
           companyName: string;
+          coveredJobIds: string[];
           decisionStatus: string;
           firstSeenAt: string;
           jobId: string;
