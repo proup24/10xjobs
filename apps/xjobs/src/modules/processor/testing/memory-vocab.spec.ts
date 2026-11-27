@@ -1,10 +1,10 @@
 import { MemoryVocabRepository } from './fakes';
 
 describe('MemoryVocabRepository snapshot', () => {
-  it('holds the 17 seeded engineering role kinds', async () => {
+  it('holds the 18 seeded engineering role kinds', async () => {
     const { engineeringRoleKinds } =
       await new MemoryVocabRepository().snapshot();
-    expect(engineeringRoleKinds.size).toBe(17);
+    expect(engineeringRoleKinds.size).toBe(18);
     expect(engineeringRoleKinds.has('backend_engineer')).toBe(true);
     expect(engineeringRoleKinds.has('support')).toBe(false);
   });

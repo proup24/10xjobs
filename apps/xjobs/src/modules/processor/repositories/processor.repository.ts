@@ -7,6 +7,7 @@ import type { PostDetail } from 'src/modules/ingest/normalize/record';
 import type { JobForProcessing, ModelCallMeta } from '../models/types';
 import { roleJobPostedAt } from './role-posted-at';
 import { PROCESSOR_CHANNELS } from '../config/processor.config';
+import { MATCHER_VERSION } from 'src/modules/matcher/config/matcher.config';
 import type { TypedColumns } from '../rules/typed-columns';
 import {
   type ExtractionDocument,
@@ -112,6 +113,8 @@ export type ReprocessFilter = {
   allInScope?: boolean;
   nullStatus?: boolean;
   failed?: boolean;
+  /** Jobs with a `qualified` or `review` decision on their current extraction, by this matcher version or later. */
+  matched?: boolean;
   jobIds?: string[];
 };
 
@@ -839,6 +842,22 @@ export class PrismaProcessorRepository extends ProcessorRepository {
             WHERE j.status = 'active' AND ${scope()}
               AND "processingStatus" = 'failed'
               AND "processingStatus" IS DISTINCT FROM 'archived'
+            RETURNING id`
+            .returnsRow({ id: UUID })
+            .build(),
+        );
+      if (filter.matched)
+        await run(
+          raw.sql`UPDATE normalized_jobs j SET ${pendingColumns(raw)}
+            WHERE j.status = 'active' AND ${scope()}
+              AND "processingStatus" IS DISTINCT FROM 'archived'
+              AND "processingStatus" IS DISTINCT FROM 'skipped'
+              AND EXISTS (
+                SELECT 1 FROM job_matches m
+                WHERE m."jobId" = j.id
+                  AND m."extractionId" = j."currentExtractionId"
+                  AND m."matcherVersion" >= ${MATCHER_VERSION}::int
+                  AND m.outcome IN ('qualified', 'review'))
             RETURNING id`
             .returnsRow({ id: UUID })
             .build(),
