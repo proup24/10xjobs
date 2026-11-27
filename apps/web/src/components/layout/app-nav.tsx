@@ -26,9 +26,12 @@ export const NAV_ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/preferences', label: 'Preferences', icon: SlidersHorizontal },
 ];
 
-/** Matches only at `/`; any other item for its own path and everything under it. */
+/**
+ * Matches at `/` and on its Social posts sub-page (`/posts`); any other item for its own path
+ * and everything under it.
+ */
 export function isActive(href: string, pathname: string): boolean {
-  if (href === '/') return pathname === '/';
+  if (href === '/') return pathname === '/' || pathname === '/posts';
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

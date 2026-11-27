@@ -37,6 +37,7 @@ const input = (over: Partial<PayloadInput> = {}): PayloadInput => ({
   },
   job: {
     id: 'j1',
+    kind: 'job',
     title: 'Senior Backend Engineer',
     companyName: 'Acme',
     companyUrl: 'https://acme.test',
@@ -74,6 +75,7 @@ const input = (over: Partial<PayloadInput> = {}): PayloadInput => ({
     ],
   },
   ...over,
+  post: over.post ?? null,
 });
 
 describe('buildMatchPayload', () => {
@@ -90,6 +92,7 @@ describe('buildMatchPayload', () => {
       'trigger',
       'match',
       'job',
+      'post',
       'links',
     ]);
     expect(p.createdAt).toBe('2026-11-16T10:00:00.000Z');
@@ -104,6 +107,7 @@ describe('buildMatchPayload', () => {
     ]);
     expect(p.job).toEqual({
       id: 'j1',
+      source: 'job_board',
       title: 'Senior Backend Engineer',
       company: { name: 'Acme', url: 'https://acme.test' },
       postingUrl: 'https://www.linkedin.com/jobs/view/1',
@@ -127,7 +131,86 @@ describe('buildMatchPayload', () => {
       languages: ['en'],
       description: 'Build things.',
     });
+    expect(p.post).toBeNull();
     expect(p.links.match).toBe('https://app.example.com/?job=j1');
+  });
+
+  it('a post role is a social post with its author, sharers and how to apply', () => {
+    const person = (key: string, name: string) => ({
+      key: `profile:${key}`,
+      name,
+      profileUrl: `https://www.linkedin.com/in/${key}`,
+    });
+    const p = buildMatchPayload(
+      input({
+        job: { ...input().job, kind: 'post_role' },
+        facts: null,
+        post: {
+          url: 'https://www.linkedin.com/feed/update/urn:li:activity:1',
+          sources: [
+            {
+              author: person('sam', 'Sam Sharer'),
+              text: 'Look at this',
+              original: { author: person('olga', 'Olga Original') },
+            },
+            {
+              author: person('tim', 'Tim Two'),
+              original: { author: person('olga', 'Olga Original') },
+            },
+          ],
+          howToApply: {
+            kinds: ['connect_dm_comment', 'external_link'],
+            email: null,
+            links: ['https://acme.test/apply'],
+            quote: 'DM me',
+          },
+        },
+      }),
+      labels,
+      ctx,
+    );
+    expect(p.version).toBe(1);
+    expect(p.job.source).toBe('social_post');
+    expect(p.links.match).toBe('https://app.example.com/posts?job=j1');
+    expect(p.post).toEqual({
+      url: 'https://www.linkedin.com/feed/update/urn:li:activity:1',
+      author: {
+        name: 'Olga Original',
+        url: 'https://www.linkedin.com/in/olga',
+      },
+      sharers: [
+        { name: 'Sam Sharer', url: 'https://www.linkedin.com/in/sam' },
+        { name: 'Tim Two', url: 'https://www.linkedin.com/in/tim' },
+      ],
+      howToApply: {
+        kinds: ['connect_dm_comment', 'external_link'],
+        email: null,
+        links: ['https://acme.test/apply'],
+      },
+      rescued: false,
+    });
+  });
+
+  it('a plain post has its own author, no sharers, and nulls for what it lacks', () => {
+    const p = buildMatchPayload(
+      input({
+        job: { ...input().job, kind: 'post_role' },
+        post: {
+          url: null,
+          sources: [{ author: { name: 'Olga Original', profileUrl: null } }],
+          howToApply: null,
+        },
+      }),
+      labels,
+      ctx,
+    );
+    expect(p.post).toEqual({
+      url: null,
+      author: { name: 'Olga Original', url: null },
+      sharers: [],
+      howToApply: { kinds: [], email: null, links: [] },
+      rescued: false,
+    });
   });
 
   it('unknown facts are null, not missing', () => {

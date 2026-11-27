@@ -11,6 +11,13 @@ A delivery is created for a profile and a job when all of these hold:
 - The job is new: it was first seen after the profile was published and after you turned the webhook on. Old jobs that only qualify after a profile edit or a rule change are not sent, and nothing is backfilled.
 - That profile and job were not sent before. Re-decisions, rematches and a match that flips from qualified to rejected and back never send again. Merges count too: when two listings are merged into one job, the job is not sent again for a profile that already got any of them.
 
+A role named in a LinkedIn post (a social post on the Social posts page) is sent like a listing, with these extra rules:
+
+- A post whose role states a contact email is not sent while it shows Email pending. Its delivery is created once the email settles (sent, or apply by hand with the reason), which comes with automatic emails in a later release. Until then such posts send nothing.
+- A post you rescued from Junk or Disqualified sends nothing, nor does a role found later in a post you rescued from Junk.
+- A post you already marked (Applied, Not for me, Expired), on it or on a linked copy of the same job, sends nothing.
+- Only post roles first seen and first decided after social post webhooks shipped are sent: nothing older is backfilled, even when a post search turned off and on again decides them anew.
+
 Unverified matches are sent as well. Their payload has `match.unverified: true`, which means the match passed on at least one fact the processor was unsure of. Facts the posting does not state do not count.
 
 The body is built at the first attempt, from the match as it is then:
@@ -23,7 +30,7 @@ New qualified matches go out right after the engine decides them. Review approva
 There are two events:
 
 - `match.qualified`: a new qualified match.
-- `test`: sent when you press "Send test". It carries a sample job from your latest qualified match, or a fixed example if you have none. The webhook must be on, and you can send one test every 10 seconds. A test is not held back by failing deliveries (see Hold-back) and doesn't count toward auto-disable: its success or failure doesn't change the failure count.
+- `test`: sent when you press "Send test". It carries a sample job from your latest qualified listing (never a social post), or a fixed example if you have none. The webhook must be on, and you can send one test every 10 seconds. A test is not held back by failing deliveries (see Hold-back) and doesn't count toward auto-disable: its success or failure doesn't change the failure count.
 
 ## Request
 
@@ -54,6 +61,7 @@ There are two events:
   },
   "job": {
     "id": "...",
+    "source": "job_board",
     "title": "Senior Backend Engineer",
     "company": { "name": "Acme", "url": "https://acme.example" },
     "postingUrl": "https://www.linkedin.com/jobs/view/...",
@@ -68,14 +76,34 @@ There are two events:
     "languages": ["en"],
     "description": "..."
   },
+  "post": null,
   "links": { "match": "https://<app>/?job=<job id>" }
 }
 ```
 
+For a role found in a social post, `job.source` is `social_post` and `post` describes the post:
+
+```json
+{
+  "job": { "id": "...", "source": "social_post", "title": "Backend Engineer", "...": "..." },
+  "post": {
+    "url": "https://www.linkedin.com/posts/...",
+    "author": { "name": "Olga Original", "url": "https://www.linkedin.com/in/olga" },
+    "sharers": [{ "name": "Sam Sharer", "url": "https://www.linkedin.com/in/sam" }],
+    "howToApply": { "kinds": ["external_link"], "email": null, "links": ["https://acme.example/apply"] },
+    "rescued": false
+  },
+  "links": { "match": "https://<app>/posts?job=<job id>" }
+}
+```
+
 - `trigger` is `decision` (the engine qualified it) or `review` (you approved it).
+- `job.source` is `job_board` for a listing and `social_post` for a role named in a LinkedIn post. `post` is `null` for a listing.
+- `post.author` is who wrote the post (for a share, the original's author), or `null` when unknown. `post.sharers` lists who shared it, oldest first, and is empty for a post seen only first-hand. `post.howToApply.kinds` holds what the post asks for (`email`, `external_link`, `linkedin_job`, `connect_dm_comment` or `unstated`); `email` is the stated contact address or `null`; `links` are the apply links it gives. `post.rescued` is always `false`: a rescued post is never sent.
+- A post role's facts (`locations`, `seniority`, ...) come from the post and are `null` when it does not state them, which is common.
 - A fact we don't know is `null`, never left out.
-- `links.match` opens the job in the 10xjobs web app: `<web app address>/?job=<job.id>`. It is `null` when the engine has no web app address configured (`WEB_APP_URL`).
-- `description` is the listing text, cut at 20 000 characters.
+- `links.match` opens the job in the 10xjobs web app: `<web app address>/?job=<job.id>` for a listing, `<web app address>/posts?job=<job.id>` for a social post. It is `null` when the engine has no web app address configured (`WEB_APP_URL`).
+- `description` is the listing text (for a social post, the post text the role was read from), cut at 20 000 characters.
 - The body is built once, at the first attempt, and every retry sends the same bytes.
 - New fields can appear within version 1. A removed or renamed field bumps `version`.
 

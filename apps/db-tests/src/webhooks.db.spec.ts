@@ -1,13 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { withCatalog } from './support/pg.js';
+import { admin } from './support/admin.js';
 import {
   addExtraction,
   cleanupDetailedJobs,
   detailedDocument,
+  postDetail,
   publishProfile,
   seedDetailedJob,
+  seedKeyedListing,
   seedMatchOn,
+  seedPost,
+  seedPostRole,
   seedProfile,
   type SeededJob,
 } from './support/fixtures.js';
@@ -153,17 +158,192 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     });
   });
 
-  it('never sends a post role', async () => {
-    const parent = await seedDetailedJob({ noFacts: true });
-    const m = await matchOn();
-    await withCatalog((c) =>
-      c.query(
-        `UPDATE public.normalized_jobs SET kind = 'post_role', "parentJobId" = $2 WHERE id = $1`,
-        [m.job.jobId, parent.jobId],
-      ),
-    );
-    expect(await enqueue(m.matchId)).toBeNull();
-    expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+  const review = (
+    m: { job: SeededJob; matchId: string },
+    choice: 'qualified' | 'rejected',
+  ) =>
+    a.client.from('match_reviews').insert({
+      userId: a.id,
+      profileId: profileA,
+      matchId: m.matchId,
+      jobId: m.job.jobId,
+      choice,
+      rule: 'seniority',
+      field: 'seniority',
+    });
+
+  /**
+   * A qualified role of a sure hiring post, first seen an hour ago, and A's match on it. With
+   * `email` the role states a contact email, so it is Email pending; with `linkKeys` its apply
+   * links resolve to those job keys.
+   */
+  const postRoleMatch = async (
+    opts: {
+      email?: string | null;
+      outcome?: 'qualified' | 'review';
+      linkKeys?: string[];
+    } = {},
+  ): Promise<{ job: SeededJob; matchId: string }> => {
+    const post = await seedPost({
+      verdict: 'hiring',
+      roles: [{ roleKey: 'role', email: opts.email ?? null }],
+      sources: [postDetail({ authorKey: 'profile:olga', authorName: 'Olga' })],
+    });
+    const job = await seedPostRole(post, 'role', opts.linkKeys ?? []);
+    // After the cutoff (the migration's moment, which may be under an hour ago).
+    await seenAgo(job.jobId, '1 second');
+    const outcome = opts.outcome ?? 'qualified';
+    const matchId = await seedMatchOn(a.id, profileA, job, {
+      outcome,
+      review:
+        outcome === 'review'
+          ? { rule: 'seniority', field: 'seniority' }
+          : undefined,
+    });
+    return { job, matchId };
+  };
+
+  describe('post roles', () => {
+    it('sends a qualified role with no contact email, decided after the cutoff', async () => {
+      const m = await postRoleMatch();
+      const id = await enqueued(m.matchId);
+      expect(await deliveriesOf(m.job.jobId)).toMatchObject([
+        { id, kind: 'match', matchId: m.matchId, trigger: 'decision' },
+      ]);
+    });
+
+    it('holds a role while it is Email pending', async () => {
+      const m = await postRoleMatch({ email: 'jobs@acme.test' });
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('sends no role whose match was created before the cutoff', async () => {
+      const m = await postRoleMatch();
+      await withCatalog((c) =>
+        c.query(
+          `UPDATE public.job_matches
+              SET "createdAt" = public.post_webhooks_since() - interval '1 minute'
+            WHERE id = $1`,
+          [m.matchId],
+        ),
+      );
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('an approved review of an Email pending role creates no delivery', async () => {
+      const m = await postRoleMatch({
+        email: 'jobs@acme.test',
+        outcome: 'review',
+      });
+      expect((await review(m, 'qualified')).error).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('an approved review of a role with no email creates a review delivery', async () => {
+      const m = await postRoleMatch({ outcome: 'review' });
+      expect((await review(m, 'qualified')).error).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toMatchObject([
+        { kind: 'match', matchId: m.matchId, trigger: 'review' },
+      ]);
+    });
+
+    it('sends no role the user rescued', async () => {
+      const m = await postRoleMatch();
+      const { error } = await admin().from('post_rescues').insert({
+        userId: a.id,
+        jobId: m.job.jobId,
+        origin: 'disqualified',
+        snapshot: {},
+      });
+      expect(error).toBeNull();
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('sends no role whose post the user rescued from Junk', async () => {
+      const m = await postRoleMatch();
+      const { data, error: readError } = await admin()
+        .from('normalized_jobs')
+        .select('parentJobId')
+        .eq('id', m.job.jobId)
+        .single();
+      expect(readError).toBeNull();
+      const { error } = await admin()
+        .from('post_rescues')
+        .insert({
+          userId: a.id,
+          jobId: data?.parentJobId as string,
+          origin: 'junk',
+          snapshot: {},
+        });
+      expect(error).toBeNull();
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('sends no role first seen before the cutoff, though its match is after', async () => {
+      const m = await postRoleMatch();
+      await withCatalog((c) =>
+        c.query(
+          `UPDATE public.normalized_jobs
+              SET "firstSeenAt" = public.post_webhooks_since() - interval '1 minute'
+            WHERE id = $1`,
+          [m.job.jobId],
+        ),
+      );
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('sends no role whose linked listing the user applied to', async () => {
+      const key = `ats:greenhouse:acme:${randomUUID()}`;
+      const listing = await seedKeyedListing({ jobKey: key });
+      const m = await postRoleMatch({ linkKeys: [key] });
+      const { error } = await admin()
+        .from('job_decisions')
+        .insert({ userId: a.id, jobId: listing.jobId, status: 'applied' });
+      expect(error).toBeNull();
+      expect(await enqueue(m.matchId)).toBeNull();
+      expect(await deliveriesOf(m.job.jobId)).toEqual([]);
+    });
+
+    it('post_webhooks_since is a fixed moment, granted to nobody', async () => {
+      const [first, second] = await withCatalog(async (c) => {
+        const q = () =>
+          c.query<{ at: Date; now: Date }>(
+            'SELECT public.post_webhooks_since() AS at, now() AS now',
+          );
+        return [(await q()).rows[0], (await q()).rows[0]];
+      });
+      expect(first.at).toEqual(second.at);
+      expect(first.at.getTime()).toBeLessThan(first.now.getTime());
+      for (const role of ['authenticated', 'anon']) {
+        const code = await withCatalog(async (c) => {
+          await c.query('BEGIN');
+          try {
+            await c.query(`SET LOCAL ROLE ${role}`);
+            await c.query('SELECT public.post_webhooks_since()');
+            return null;
+          } catch (error) {
+            return (error as { code?: string }).code;
+          } finally {
+            await c.query('ROLLBACK');
+          }
+        });
+        expect(code, role).toBe(DENIED);
+      }
+      const { rows } = await withCatalog((c) =>
+        c.query<{ prosecdef: boolean; proconfig: string[] | null }>(
+          `SELECT prosecdef, proconfig FROM pg_proc
+            WHERE oid = 'public.post_webhooks_since()'::regprocedure`,
+        ),
+      );
+      expect(rows).toEqual([
+        { prosecdef: true, proconfig: ['search_path=""'] },
+      ]);
+    });
   });
 
   it('a second call creates nothing', async () => {
@@ -321,20 +501,6 @@ describe('webhooks, webhook_deliveries and webhook_enqueue_match', () => {
     expect(await enqueue(p.b)).toBeNull();
     expect(await deliveriesOf(p.bJob)).toEqual([]);
   });
-
-  const review = (
-    m: { job: SeededJob; matchId: string },
-    choice: 'qualified' | 'rejected',
-  ) =>
-    a.client.from('match_reviews').insert({
-      userId: a.id,
-      profileId: profileA,
-      matchId: m.matchId,
-      jobId: m.job.jobId,
-      choice,
-      rule: 'seniority',
-      field: 'seniority',
-    });
 
   it('an approved review creates a delivery with trigger review', async () => {
     const m = await matchOn('1 hour', 'review');

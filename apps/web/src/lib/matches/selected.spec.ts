@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { fakeSupabase } from '@/test/fake-supabase';
 import type { MatchRow } from './group';
-import { decidedJobHref, selectedRows } from './selected';
+import { decidedJobHref, decidedJobId, selectedRows } from './selected';
 
 const J = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const row = (jobId: string, profileId = 'P1', closed = false) =>
@@ -29,6 +29,7 @@ describe('selectedRows', () => {
     expect(f.rpcs('match_details')).toHaveLength(1);
     expect(f.rpcs('match_details')[0].args).toEqual({
       p_job_id: J,
+      p_kind: 'job',
       p_outcome: 'qualified',
     });
   });
@@ -38,7 +39,18 @@ describe('selectedRows', () => {
     await selectedRows(f.supabase, J, profiles, 'review');
     expect(f.rpcs('match_details')[0].args).toEqual({
       p_job_id: J,
+      p_kind: 'job',
       p_outcome: 'review',
+    });
+  });
+
+  it('reads a post role in any outcome when asked', async () => {
+    const f = fakeSupabase({ rpc: () => ({ data: [row(J)], error: null }) });
+    await selectedRows(f.supabase, J, profiles, null, 'post_role');
+    expect(f.rpcs('match_details')[0].args).toEqual({
+      p_job_id: J,
+      p_kind: 'post_role',
+      p_outcome: null,
     });
   });
 
@@ -104,5 +116,50 @@ describe('decidedJobHref', () => {
     expect(decidedJobHref([decided('expired')])).toBe(
       `/applications?status=expired&job=${J}`,
     );
+  });
+
+  // A decision inherited through a linked group lives on the copy that holds it.
+  it("opens the group's decided copy when it is another job", () => {
+    expect(decidedJobHref([decided('applied')], 'L1')).toBe(
+      '/applications?job=L1',
+    );
+    expect(decidedJobHref([decided('dismissed')], 'L1')).toBe(
+      '/applications?status=dismissed&job=L1',
+    );
+  });
+
+  it('falls back to the row when no decided copy is known', () => {
+    expect(decidedJobHref([decided('applied')], null)).toBe(
+      `/applications?job=${J}`,
+    );
+  });
+
+  it('is null for an undecided job even with a decided copy', () => {
+    expect(decidedJobHref([decided(null)], 'L1')).toBeNull();
+  });
+});
+
+describe('decidedJobId', () => {
+  const decided = (decisionStatus: string | null) =>
+    ({ jobId: J, profileId: 'P1', closed: false, decisionStatus }) as MatchRow;
+
+  it('reads nothing without a decided row', async () => {
+    const f = fakeSupabase();
+    expect(await decidedJobId(f.supabase, null)).toBeNull();
+    expect(await decidedJobId(f.supabase, [decided(null)])).toBeNull();
+    expect(f.rpcs('group_decision_job')).toHaveLength(0);
+  });
+
+  it("reads the group's decided job for a decided row", async () => {
+    const f = fakeSupabase({ rpc: () => ({ data: 'L1', error: null }) });
+    expect(await decidedJobId(f.supabase, [decided('applied')])).toBe('L1');
+    expect(f.rpcs('group_decision_job')[0].args).toEqual({ p_job_id: J });
+  });
+
+  it('is null on a failed read, so the row itself is opened', async () => {
+    const f = fakeSupabase({
+      rpc: () => ({ data: null, error: { code: '500' } }),
+    });
+    expect(await decidedJobId(f.supabase, [decided('applied')])).toBeNull();
   });
 });

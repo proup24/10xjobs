@@ -23,6 +23,7 @@ function input(jobId = 'j1'): PayloadInput {
     },
     job: {
       id: jobId,
+      kind: 'job',
       title: 'Backend Engineer',
       companyName: 'Acme',
       companyUrl: null,
@@ -33,6 +34,7 @@ function input(jobId = 'j1'): PayloadInput {
       descriptionText: 'Text',
     },
     facts: null,
+    post: null,
   };
 }
 

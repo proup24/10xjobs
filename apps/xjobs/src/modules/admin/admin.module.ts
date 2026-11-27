@@ -13,11 +13,16 @@ import {
   PrismaPrepareReviewRepository,
 } from './prepare-review.repository';
 import { PrepareReviewService } from './prepare-review.service';
+import { RescuesController } from './rescues.controller';
+import {
+  PrismaRescuesRepository,
+  RescuesRepository,
+} from './rescues.repository';
 
 /** Admin-only routes. Only the API app imports it; the worker never does. */
 @Module({
   imports: [DatabaseModule, IngestModule],
-  controllers: [PrepareReviewController],
+  controllers: [PrepareReviewController, RescuesController],
   providers: [
     AdminAccess,
     AdminGuard,
@@ -26,6 +31,7 @@ import { PrepareReviewService } from './prepare-review.service';
       provide: PrepareReviewRepository,
       useClass: PrismaPrepareReviewRepository,
     },
+    { provide: RescuesRepository, useClass: PrismaRescuesRepository },
     // The processor's read of the rule; the API never runs the silencing itself.
     { provide: AutoSilenceRepository, useClass: PrismaAutoSilenceRepository },
   ],

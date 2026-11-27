@@ -253,6 +253,159 @@ describe.skipIf(!url)('webhooks repository in PostgreSQL', () => {
     expect(await repo.loadPayloadInput(randomUUID())).toBeNull();
   });
 
+  /**
+   * Turns a seeded job into a post role of a new post job: the post's sources (a share of
+   * Olga's post by Sam) and its current post extraction, whose role `r1` states how to apply.
+   */
+  async function makePostRole(role: { jobId: string }): Promise<string> {
+    const post = await seedJob('a post');
+    const sources = {
+      sources: [
+        {
+          url: 'https://www.linkedin.com/feed/update/urn:li:activity:1',
+          author: {
+            key: 'profile:sam',
+            name: 'Sam Sharer',
+            profileUrl: 'https://www.linkedin.com/in/sam',
+          },
+          text: 'Look',
+          original: {
+            author: {
+              key: 'profile:olga',
+              name: 'Olga Original',
+              profileUrl: 'https://www.linkedin.com/in/olga',
+            },
+            text: 'We are hiring',
+          },
+        },
+      ],
+    };
+    const data = {
+      verdict: {
+        value: 'hiring',
+        reason: 'hiring',
+        quote: 'q',
+        confidence: 'sure',
+      },
+      roles: [
+        {
+          roleKey: 'r1',
+          howToApply: {
+            kinds: ['external_link'],
+            email: null,
+            links: ['https://acme.test/apply'],
+          },
+        },
+      ],
+    };
+    await db.execute(
+      db.raw.sql`UPDATE normalized_jobs SET kind = 'post',
+          "postingUrl" = 'https://www.linkedin.com/posts/olga-1',
+          "postSources" = ${JSON.stringify(sources)}::jsonb,
+          "currentExtractionId" = ${post.extractionId}::uuid
+        WHERE id = ${post.jobId}::uuid`
+        .affectedCount()
+        .build(),
+    );
+    await db.execute(
+      db.raw
+        .sql`UPDATE job_extractions SET "docType" = 'post', verdict = 'hiring',
+          "verdictReason" = 'hiring', "verdictConfidence" = 'sure',
+          data = ${JSON.stringify(data)}::jsonb
+        WHERE id = ${post.extractionId}::uuid`
+        .affectedCount()
+        .build(),
+    );
+    await db.execute(
+      db.raw
+        .sql`UPDATE normalized_jobs SET kind = 'post_role', "parentJobId" = ${post.jobId}::uuid,
+          "roleKey" = 'r1', "postingUrl" = 'https://www.linkedin.com/posts/olga-1'
+        WHERE id = ${role.jobId}::uuid`
+        .affectedCount()
+        .build(),
+    );
+    return post.jobId;
+  }
+
+  it('reads a post role delivery with its post', async () => {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    const job = await seedJob('Backend Engineer at Acme');
+    await makePostRole(job);
+    const matchId = await seedMatchRow(userId, profileId, job);
+    const webhookId = randomUUID();
+    const deliveryId = randomUUID();
+    await db.execute(
+      db.raw.sql`INSERT INTO webhooks (id, "userId", url)
+        VALUES (${webhookId}::uuid, ${userId}::uuid, 'https://hook.example.com/x')`
+        .affectedCount()
+        .build(),
+    );
+    await db.execute(
+      db.raw.sql`INSERT INTO webhook_deliveries
+          (id, "userId", "webhookId", kind, "profileId", "jobId", "matchId", "trigger", status)
+        VALUES (${deliveryId}::uuid, ${userId}::uuid, ${webhookId}::uuid, 'match',
+          ${profileId}::uuid, ${job.jobId}::uuid, ${matchId}::uuid, 'decision', 'pending')`
+        .affectedCount()
+        .build(),
+    );
+    const input = (await repo.loadPayloadInput(deliveryId))?.input;
+    expect(input?.job).toMatchObject({ id: job.jobId, kind: 'post_role' });
+    expect(input?.post).toEqual({
+      url: 'https://www.linkedin.com/posts/olga-1',
+      sources: [
+        expect.objectContaining({
+          author: expect.objectContaining({ name: 'Sam Sharer' }),
+        }),
+      ],
+      howToApply: {
+        kinds: ['external_link'],
+        email: null,
+        links: ['https://acme.test/apply'],
+      },
+    });
+  });
+
+  it('a listing delivery has kind job and no post', async () => {
+    const s = await seedMatch();
+    const webhookId = randomUUID();
+    const deliveryId = randomUUID();
+    await db.execute(
+      db.raw.sql`INSERT INTO webhooks (id, "userId", url)
+        VALUES (${webhookId}::uuid, ${s.userId}::uuid, 'https://hook.example.com/x')`
+        .affectedCount()
+        .build(),
+    );
+    await db.execute(
+      db.raw.sql`INSERT INTO webhook_deliveries
+          (id, "userId", "webhookId", kind, "profileId", "jobId", "matchId", "trigger", status)
+        VALUES (${deliveryId}::uuid, ${s.userId}::uuid, ${webhookId}::uuid, 'match',
+          ${s.profileId}::uuid, ${s.jobId}::uuid, ${s.matchId}::uuid, 'decision', 'pending')`
+        .affectedCount()
+        .build(),
+    );
+    const input = (await repo.loadPayloadInput(deliveryId))?.input;
+    expect(input?.job.kind).toBe('job');
+    expect(input?.post).toBeNull();
+  });
+
+  it('the test sample is a listing, never a post role decided later', async () => {
+    const s = await seedMatch();
+    const role = await seedJob('a role');
+    await makePostRole(role);
+    await seedMatchRow(s.userId, s.profileId, role);
+    await db.execute(
+      db.raw
+        .sql`UPDATE job_matches SET "decidedAt" = now() + interval '1 minute'
+        WHERE "jobId" = ${role.jobId}::uuid`
+        .affectedCount()
+        .build(),
+    );
+    const sample = await repo.latestQualifiedForUser(s.userId);
+    expect(sample?.match.id).toBe(s.matchId);
+    expect(sample?.post).toBeNull();
+  });
+
   it('samples the latest qualified match of a user', async () => {
     const s = await seedMatch();
     expect((await repo.latestQualifiedForUser(s.userId))?.match.id).toBe(

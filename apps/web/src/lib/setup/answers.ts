@@ -9,7 +9,7 @@ export const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** True when `value` is an absolute http(s) URL. */
-function isHttpUrl(value: string): boolean {
+export function isHttpUrl(value: string): boolean {
   try {
     const { protocol } = new URL(value);
     return protocol === 'http:' || protocol === 'https:';

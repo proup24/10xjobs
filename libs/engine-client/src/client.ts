@@ -61,6 +61,23 @@ export type VerdictView = {
   url: string;
   extractedAt: string;
 };
+/** One post rescue, for the owner's report (`GET /api/admin/rescues`). */
+export type RescueView = {
+  id: string;
+  createdAt: string;
+  undoneAt: string | null;
+  origin: 'junk' | 'disqualified';
+  note: string | null;
+  /** What the system said when the user rescued the post; shape depends on `origin`. */
+  snapshot: unknown;
+  job: {
+    id: string;
+    kind: string;
+    title: string | null;
+    postingUrl: string;
+  };
+  user: { id: string };
+};
 /** An author the automatic silencing rule would silence, with its evidence. */
 export type AutoSilenceCandidateView = {
   authorKey: string;
@@ -146,6 +163,10 @@ export interface EngineClient {
     before?: string;
     limit?: number;
   }): Promise<EngineResult<ReviewPage<VerdictView>>>;
+  /** Every user's post rescues, newest first, undone ones included. */
+  adminRescues(options?: {
+    limit?: number;
+  }): Promise<EngineResult<{ items: RescueView[] }>>;
   /** Who automatic silencing would silence now; already silenced authors are left out. */
   autoSilenceCandidates(): Promise<EngineResult<AutoSilenceCandidateView[]>>;
   silencedAuthors(): Promise<EngineResult<SilencedAuthorView[]>>;
@@ -229,6 +250,24 @@ function isVerdictView(v: unknown): v is VerdictView {
     isNullableString(v.postedAt) &&
     typeof v.url === 'string' &&
     typeof v.extractedAt === 'string'
+  );
+}
+
+function isRescueView(v: unknown): v is RescueView {
+  return (
+    isRecord(v) &&
+    typeof v.id === 'string' &&
+    typeof v.createdAt === 'string' &&
+    isNullableString(v.undoneAt) &&
+    (v.origin === 'junk' || v.origin === 'disqualified') &&
+    isNullableString(v.note) &&
+    isRecord(v.job) &&
+    typeof v.job.id === 'string' &&
+    typeof v.job.kind === 'string' &&
+    isNullableString(v.job.title) &&
+    typeof v.job.postingUrl === 'string' &&
+    isRecord(v.user) &&
+    typeof v.user.id === 'string'
   );
 }
 
@@ -736,6 +775,20 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
           })}`,
         },
         pageOf(isVerdictView),
+      ),
+    adminRescues: (options = {}) =>
+      admin(
+        'adminRescues',
+        {
+          method: 'GET',
+          path: `/admin/rescues${queryOf({ limit: options.limit })}`,
+        },
+        (data) =>
+          isRecord(data) &&
+          Array.isArray(data.items) &&
+          data.items.every(isRescueView)
+            ? { items: data.items }
+            : undefined,
       ),
     autoSilenceCandidates: () =>
       admin(

@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { AppNav, NAV_ITEMS } from './app-nav';
+import { AppNav, NAV_ITEMS, isActive } from './app-nav';
 import { UnsavedChangesProvider, useUnsavedChanges } from './unsaved-changes';
 
 const pathname = vi.hoisted(() => ({ value: '/' }));
@@ -139,5 +139,26 @@ describe('AppNav', () => {
     }
     expect(screen.queryByText('Discard changes?')).toBeNull();
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe('isActive', () => {
+  it('keeps Matches active on the social posts page', () => {
+    expect(isActive('/', '/posts')).toBe(true);
+  });
+
+  it('is unchanged elsewhere', () => {
+    expect(isActive('/', '/')).toBe(true);
+    expect(isActive('/', '/applications')).toBe(false);
+    expect(isActive('/', '/postsx')).toBe(false);
+    expect(isActive('/preferences', '/posts')).toBe(false);
+  });
+
+  it('marks the Matches link current at /posts', () => {
+    pathname.value = '/posts';
+    renderNav();
+    expect(
+      screen.getByRole('link', { name: 'Matches' }).getAttribute('aria-current'),
+    ).toBe('page');
   });
 });

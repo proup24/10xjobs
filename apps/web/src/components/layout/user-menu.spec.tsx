@@ -22,6 +22,10 @@ describe('UserMenu', () => {
       name: 'Admin: Prepare review',
     });
     expect(item.getAttribute('href')).toBe('/admin/prepare');
+    const rescues = await screen.findByRole('menuitem', {
+      name: 'Admin: Rescues',
+    });
+    expect(rescues.getAttribute('href')).toBe('/admin/rescues');
   });
 
   it('hides the admin item from anyone else', async () => {

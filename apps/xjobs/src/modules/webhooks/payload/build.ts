@@ -14,6 +14,8 @@ export interface PayloadInput {
   };
   job: {
     id: string;
+    /** `normalized_jobs.kind`: a listing, or a role named in a social post. */
+    kind: 'job' | 'post_role';
     title: string | null;
     companyName: string | null;
     companyUrl: string | null;
@@ -25,6 +27,15 @@ export interface PayloadInput {
   };
   /** The job's `job_facts.facts` document (raw, with codes); null when the job has no facts row. */
   facts: unknown;
+  /** A post role's post, as stored; null for a listing. */
+  post: {
+    /** The post job's `postingUrl`. */
+    url: string | null;
+    /** The post job's `postSources.sources`. */
+    sources: unknown;
+    /** The role's `howToApply` in its post's current post extraction; null when missing. */
+    howToApply: unknown;
+  } | null;
 }
 
 export interface PayloadContext {
@@ -53,6 +64,8 @@ export interface WebhookPayloadV1 {
   };
   job: {
     id: string;
+    /** Where the job was found: a job board listing, or a role named in a social post. */
+    source: 'job_board' | 'social_post';
     title: string | null;
     company: { name: string | null; url: string | null };
     postingUrl: string;
@@ -72,7 +85,24 @@ export interface WebhookPayloadV1 {
     languages: string[] | null;
     description: string | null;
   };
+  /** The social post a post role was found in; null for a listing. */
+  post: {
+    url: string | null;
+    /** Who wrote the post (a share's original author); null when unknown. */
+    author: PostPerson | null;
+    /** Who shared it, in the order the shares were seen. */
+    sharers: PostPerson[];
+    howToApply: { kinds: string[]; email: string | null; links: string[] };
+    /** Always false: a rescued post sends no webhook. */
+    rescued: false;
+  } | null;
   links: { match: string | null };
+}
+
+export interface PostPerson {
+  name: string | null;
+  /** Their LinkedIn profile or company page. */
+  url: string | null;
 }
 
 type Json = Record<string, unknown>;
@@ -85,6 +115,8 @@ const known = (v: unknown): string | null => {
   const s = str(v);
   return s === 'unstated' ? null : s;
 };
+const strings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => str(x) !== null) : [];
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? v : null;
 
@@ -170,6 +202,46 @@ function languages(facts: unknown): string[] | null {
   });
 }
 
+function person(v: unknown): PostPerson | null {
+  if (!isObject(v)) return null;
+  const p = { name: str(v.name), url: str(v.profileUrl) };
+  return p.name || p.url ? p : null;
+}
+
+/**
+ * The post's people, by the web app's rule (post details): each source is a plain post or a
+ * share of `original`. The author is the first known original's author (or plain post's own
+ * author); every share adds its sharer.
+ */
+function postOf(
+  post: NonNullable<PayloadInput['post']>,
+): WebhookPayloadV1['post'] {
+  let author: PostPerson | null = null;
+  const sharers: PostPerson[] = [];
+  for (const s of Array.isArray(post.sources) ? post.sources : []) {
+    if (!isObject(s)) continue;
+    if (isObject(s.original)) {
+      const sharer = person(s.author);
+      if (sharer) sharers.push(sharer);
+      author ??= person(s.original.author);
+    } else {
+      author ??= person(s.author);
+    }
+  }
+  const how = isObject(post.howToApply) ? post.howToApply : {};
+  return {
+    url: post.url,
+    author,
+    sharers,
+    howToApply: {
+      kinds: strings(how.kinds),
+      email: str(how.email),
+      links: strings(how.links),
+    },
+    rescued: false,
+  };
+}
+
 function build(
   event: WebhookPayloadV1['event'],
   input: PayloadInput,
@@ -209,6 +281,7 @@ function build(
     },
     job: {
       id: job.id,
+      source: job.kind === 'post_role' ? 'social_post' : 'job_board',
       title: job.title,
       company: { name: job.companyName, url: job.companyUrl },
       postingUrl: job.postingUrl,
@@ -223,9 +296,14 @@ function build(
       languages: languages(facts),
       description: description || null,
     },
+    post:
+      job.kind === 'post_role'
+        ? postOf(input.post ?? { url: null, sources: null, howToApply: null })
+        : null,
     links: {
+      // A post role opens on the Social posts page; a listing on the job board.
       match: ctx.webAppUrl
-        ? `${ctx.webAppUrl.replace(/\/+$/, '')}/?job=${job.id}`
+        ? `${ctx.webAppUrl.replace(/\/+$/, '')}${job.kind === 'post_role' ? '/posts' : '/'}?job=${job.id}`
         : null,
     },
   };
@@ -260,6 +338,7 @@ const EXAMPLE_INPUT: PayloadInput = {
   },
   job: {
     id: NIL,
+    kind: 'job',
     title: 'Senior Backend Engineer (example)',
     companyName: 'Example Co',
     companyUrl: 'https://example.com',
@@ -291,6 +370,7 @@ const EXAMPLE_INPUT: PayloadInput = {
       },
     ],
   },
+  post: null,
 };
 
 /** The `test` body: the user's latest qualified match as the sample, else a fixed example job. */

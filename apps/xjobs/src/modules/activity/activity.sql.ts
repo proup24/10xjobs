@@ -14,7 +14,9 @@ const TEXT = 'pg/text@1';
  * A user is paused when a match has waited in their Matches list at least
  * `hours` (a qualified match of a published profile, on an active, open job
  * seen in the last 7 days, with no decision, decided at or before
- * `at − hours`; the list of `match_details` and the web page) and none of the
+ * `at − hours`; the list of `match_details` and the web page; a post role
+ * counts unless it is Email pending or has a live rescue, of itself or of
+ * its post) and none of the
  * six activity signals falls in `(at − hours, at]`: a decision of any status,
  * a job view, a review choice, a webhook callback, a resume, or a
  * published profile's `publishedAt`. A waiting match implies a published
@@ -34,9 +36,17 @@ export function pausedUsersCte(raw: Raw, at: Date, hours: number): Cte {
                LEFT JOIN public.job_facts f ON f."jobId" = m."jobId"
               WHERE m."userId" = u.id
                 AND m.outcome = 'qualified'
-                -- Only listings: post role matches have no page yet, so they are not
-                -- waiting on the user. Slice 04a lifts this when the posts sub-page exists.
-                AND j.kind = 'job'
+                -- Listings and post roles both wait in the user's lists. A post role
+                -- that is Email pending waits on slice 05's sending, not on the user,
+                -- and a live rescue (of the role, or of its post from Junk) is the user's
+                -- own act, not a waiting match.
+                AND j.kind IN ('job', 'post_role')
+                AND NOT (j.kind = 'post_role'
+                         AND (public.post_email_pending(m."userId", m."jobId")
+                              OR EXISTS (SELECT 1 FROM public.post_rescues r
+                                          WHERE r."userId" = m."userId"
+                                            AND r."jobId" IN (j.id, j."parentJobId")
+                                            AND r."undoneAt" IS NULL)))
                 AND m."decidedAt" <= w."since"
                 AND j.status = 'active'
                 AND j."lastSeenAt" >= w."at" - interval '7 days'

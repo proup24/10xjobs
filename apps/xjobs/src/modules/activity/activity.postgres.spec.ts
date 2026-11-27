@@ -4,6 +4,7 @@ import type { DatabaseService } from 'src/database';
 import { createDatabaseClient, type DatabaseClient } from '@xjobs/database';
 import { EXTRACTION_SCHEMA_VERSION } from 'src/modules/processor/schema';
 import { fixtureDocument } from 'src/modules/processor/schema/fixture.testing';
+import { fixtureHiringPost } from 'src/modules/processor/schema/fixture-post.testing';
 import { PrismaActivityRepository } from './activity.repository';
 
 /**
@@ -48,7 +49,7 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
   beforeEach(async () => {
     await exec(
       db.raw
-        .sql`TRUNCATE job_views, match_reviews, webhook_callbacks, webhook_deliveries, webhooks, job_decisions, job_matches, profile_query_search_builders, query_search_builder, profiles, job_extractions, normalized_jobs CASCADE`,
+        .sql`TRUNCATE post_rescues, job_views, match_reviews, webhook_callbacks, webhook_deliveries, webhooks, job_decisions, job_matches, profile_query_search_builders, query_search_builder, profiles, job_extractions, normalized_jobs CASCADE`,
     );
   });
 
@@ -123,9 +124,12 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       expiresAt?: Date;
       /** A `post_role` job, under a `post` job made for it. */
       postRole?: boolean;
+      /** A post role whose hiring post states a contact email: Email pending for its matched user. */
+      emailPending?: boolean;
     } = {},
   ): Promise<Job> {
-    const parentJobId = over.postRole
+    const postRole = over.postRole || over.emailPending;
+    const parentJobId = postRole
       ? (
           await db.orm.public.NormalizedJob.create({
             jobKey: randomUUID(),
@@ -149,8 +153,13 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       : null;
     const job = await db.orm.public.NormalizedJob.create({
       jobKey: randomUUID(),
-      kind: over.postRole ? 'post_role' : 'job',
-      ...(parentJobId ? { parentJobId, roleKey: 'r1' } : {}),
+      kind: postRole ? 'post_role' : 'job',
+      ...(parentJobId
+        ? {
+            parentJobId,
+            roleKey: over.emailPending ? 'backend-engineer' : 'r1',
+          }
+        : {}),
       status: over.mergedIntoId ? 'merged' : 'active',
       mergedIntoId: over.mergedIntoId ?? null,
       title: 'Backend Engineer',
@@ -196,6 +205,33 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
       salaryPeriod: null,
       costUsd: '0',
     });
+    if (over.emailPending && parentJobId) {
+      const post = await db.orm.public.JobExtraction.create({
+        jobId: parentJobId,
+        docType: 'post',
+        inputHash: randomUUID(),
+        schemaVersion: 1,
+        promptHash: 'p',
+        decisionModel: 'd',
+        extractionModel: 'e',
+        data: fixtureHiringPost() as never,
+        needsReview: false,
+        worldwide: false,
+        regionCodes: [],
+        countryCodes: [],
+        cityIds: [],
+        techTags: [],
+        mainStackTags: [],
+        requiredTags: [],
+        niceTags: [],
+        costUsd: '0',
+        verdict: 'hiring',
+        verdictConfidence: 'sure',
+      } as never);
+      await db.orm.public.NormalizedJob.where({ id: parentJobId }).updateAll({
+        currentExtractionId: post.id,
+      });
+    }
     if (over.factsClosed !== undefined)
       await exec(
         db.raw.sql`INSERT INTO job_facts
@@ -382,14 +418,59 @@ describe.skipIf(!url)('activity in PostgreSQL', () => {
     expect((await repo.userState(u.userId, at, H)).paused).toBe(false);
   });
 
-  it('treats a user whose only qualified match is a post role as having no waiting match', async () => {
+  it('pauses a user whose only waiting qualified match is a post role with no email', async () => {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    const builderId = await seedBuilder();
+    await link(profileId, builderId);
+    const role = await seedJob({ postRole: true });
+    await seedMatch(userId, profileId, role, { decidedAt: hoursBefore(25) });
+    expect(await paused()).toEqual([builderId]);
+    expect((await repo.userState(userId, at, H)).paused).toBe(true);
+  });
+
+  it('does not pause a user whose only waiting match is Email pending', async () => {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    await link(profileId, await seedBuilder());
+    const role = await seedJob({ emailPending: true });
+    await seedMatch(userId, profileId, role, { decidedAt: hoursBefore(25) });
+    expect(await paused()).toEqual([]);
+    expect((await repo.userState(userId, at, H)).paused).toBe(false);
+  });
+
+  it('does not count a live rescue as a waiting match', async () => {
     const userId = await seedUser();
     const profileId = await seedProfile(userId);
     await link(profileId, await seedBuilder());
     const role = await seedJob({ postRole: true });
     await seedMatch(userId, profileId, role, { decidedAt: hoursBefore(25) });
+    await exec(
+      db.raw
+        .sql`INSERT INTO post_rescues (id, "userId", "jobId", origin, snapshot, "createdAt", "updatedAt")
+        VALUES (${randomUUID()}::uuid, ${userId}::uuid, ${role.jobId}::uuid, 'junk', '{}'::jsonb, now(), now())`,
+    );
     expect(await paused()).toEqual([]);
-    expect((await repo.userState(userId, at, H)).paused).toBe(false);
+  });
+
+  it('does not count a role whose post has a live Junk rescue as a waiting match', async () => {
+    const userId = await seedUser();
+    const profileId = await seedProfile(userId);
+    await link(profileId, await seedBuilder());
+    const role = await seedJob({ postRole: true });
+    await seedMatch(userId, profileId, role, { decidedAt: hoursBefore(25) });
+    const [{ parentJobId }] = await db.query(
+      db.raw
+        .sql`SELECT "parentJobId" FROM normalized_jobs WHERE id = ${role.jobId}::uuid`
+        .returnsRow({ parentJobId: 'pg/uuid@1' })
+        .build(),
+    );
+    await exec(
+      db.raw
+        .sql`INSERT INTO post_rescues (id, "userId", "jobId", origin, snapshot, "createdAt", "updatedAt")
+        VALUES (${randomUUID()}::uuid, ${userId}::uuid, ${parentJobId}::uuid, 'junk', '{}'::jsonb, now(), now())`,
+    );
+    expect(await paused()).toEqual([]);
   });
 
   it('does not pause an empty or fully decided list', async () => {

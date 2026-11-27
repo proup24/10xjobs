@@ -71,7 +71,7 @@ export abstract class WebhooksRepository {
   abstract loadPayloadInput(deliveryId: string): Promise<LoadedMatch | null>;
   /** The code to label lookups the check wording needs, cached for 10 minutes. */
   abstract loadLabels(): Promise<Labels>;
-  /** The user's most recently decided qualified match, for a test delivery's sample. */
+  /** The user's most recently decided qualified listing match, for a test delivery's sample. */
   abstract latestQualifiedForUser(userId: string): Promise<PayloadInput | null>;
   /**
    * In one transaction, with the webhook row locked: skips the row when the webhook is off,
@@ -143,14 +143,32 @@ const INT = 'pg/int4@1';
 
 const LABELS_TTL_MS = 10 * 60_000;
 
-/** The columns of one match, its profile, job, company and facts. `from`/`where` pick which. */
+/**
+ * The columns of one match, its profile, job, company and facts, and for a post role its post
+ * (`pj`) and the role's howToApply in the post's current post extraction (`pe`). `from`/`where`
+ * pick which; `inputJoins` joins c, f, pj and pe onto j.
+ */
 const inputColumns = (raw: Raw) =>
   raw.sql`m.id AS "matchId", m.checks, m.unverified, m."stackScore",
   p.id AS "profileId", p.position,
-  j.id AS "jobId", j.title, COALESCE(j."companyName", c.name) AS "companyName",
+  j.id AS "jobId", j.kind, j.title, COALESCE(j."companyName", c.name) AS "companyName",
   COALESCE(j."companyUrl", c.website, c."linkedinUrl") AS "companyUrl",
   j."postingUrl", j."applyUrl", j."postedAt", j."firstSeenAt", j."descriptionText",
-  f.facts`.returns(TEXT);
+  f.facts,
+  pj."postingUrl" AS "postUrl", pj."postSources"->'sources' AS "postSources",
+  (SELECT r.value->'howToApply'
+     FROM jsonb_array_elements(CASE WHEN jsonb_typeof(pe.data->'roles') = 'array'
+                                    THEN pe.data->'roles' ELSE '[]'::jsonb END) r(value)
+    WHERE r.value->>'roleKey' = j."roleKey"
+    LIMIT 1) AS "howToApply"`.returns(TEXT);
+
+const inputJoins = (raw: Raw) =>
+  raw.sql`LEFT JOIN companies c ON c.id = j."companyId"
+  LEFT JOIN job_facts f ON f."jobId" = j.id
+  LEFT JOIN normalized_jobs pj ON pj.id = j."parentJobId" AND j.kind = 'post_role'
+  LEFT JOIN job_extractions pe ON pe.id = pj."currentExtractionId" AND pe."docType" = 'post'`.returns(
+    TEXT,
+  );
 
 const INPUT_ROW = {
   matchId: UUID,
@@ -160,6 +178,7 @@ const INPUT_ROW = {
   profileId: UUID,
   position: TEXT,
   jobId: UUID,
+  kind: TEXT,
   title: TEXT,
   companyName: TEXT,
   companyUrl: TEXT,
@@ -169,6 +188,9 @@ const INPUT_ROW = {
   firstSeenAt: TIMESTAMPTZ,
   descriptionText: TEXT,
   facts: JSONB,
+  postUrl: TEXT,
+  postSources: JSONB,
+  howToApply: JSONB,
 } as const;
 
 type Row = Record<keyof typeof INPUT_ROW, unknown>;
@@ -185,6 +207,7 @@ function toInput(r: Row, trigger: 'decision' | 'review'): PayloadInput {
     },
     job: {
       id: r.jobId as string,
+      kind: r.kind === 'post_role' ? 'post_role' : 'job',
       title: (r.title as string | null) ?? null,
       companyName: (r.companyName as string | null) ?? null,
       companyUrl: (r.companyUrl as string | null) ?? null,
@@ -195,6 +218,14 @@ function toInput(r: Row, trigger: 'decision' | 'review'): PayloadInput {
       descriptionText: (r.descriptionText as string | null) ?? null,
     },
     facts: r.facts ?? null,
+    post:
+      r.kind === 'post_role'
+        ? {
+            url: (r.postUrl as string | null) ?? null,
+            sources: r.postSources ?? null,
+            howToApply: r.howToApply ?? null,
+          }
+        : null,
   };
 }
 
@@ -253,8 +284,7 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
               WHERE others."mergedIntoId" IS NULL AND others.id = (SELECT id FROM root))))
         JOIN profiles p ON p.id = m."profileId"
         JOIN normalized_jobs j ON j.id = m."jobId"
-        LEFT JOIN companies c ON c.id = j."companyId"
-        LEFT JOIN job_facts f ON f."jobId" = j.id`
+        ${inputJoins(raw)}`
         .returnsRow({ trigger: TEXT, outcome: TEXT, ...INPUT_ROW })
         .build(),
     );
@@ -273,9 +303,9 @@ export class PrismaWebhooksRepository extends WebhooksRepository {
         FROM job_matches m
         JOIN profiles p ON p.id = m."profileId"
         JOIN normalized_jobs j ON j.id = m."jobId"
-        LEFT JOIN companies c ON c.id = j."companyId"
-        LEFT JOIN job_facts f ON f."jobId" = j.id
-        WHERE m."userId" = ${userId}::uuid AND m.outcome = 'qualified'
+        ${inputJoins(raw)}
+        -- A test delivery samples a listing, never a post role.
+        WHERE m."userId" = ${userId}::uuid AND m.outcome = 'qualified' AND j.kind = 'job'
         ORDER BY m."decidedAt" DESC, m.id DESC
         LIMIT 1`
         .returnsRow(INPUT_ROW)

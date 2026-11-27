@@ -38,6 +38,7 @@ const ITEMS: ProfileListItem[] = [
     firstPlace: null,
     hasResume: true,
     state: 'published',
+    postSearch: false,
   },
   {
     id: B,
@@ -45,6 +46,7 @@ const ITEMS: ProfileListItem[] = [
     firstPlace: null,
     hasResume: false,
     state: 'published',
+    postSearch: false,
   },
 ];
 const LABELS = {
@@ -81,6 +83,9 @@ describe('PreferencesNav', () => {
     expect(within(nav()).getByRole('group', { name: 'Profiles' })).toBeTruthy();
     expect(link('Contacts').getAttribute('href')).toBe('/preferences/contacts');
     expect(link('Webhook').getAttribute('href')).toBe('/preferences/webhook');
+    expect(link('Blocked authors').getAttribute('href')).toBe(
+      '/preferences/blocked-authors',
+    );
     expect(link('Where you can work').getAttribute('href')).toBe(
       '/preferences/eligibility',
     );

@@ -446,6 +446,30 @@ describe('engine client admin review', () => {
     expect(await client.adminMe()).toEqual({ kind: 'unavailable' });
   });
 
+  it('adminRescues sends GET /admin/rescues with the limit and checks the shape', async () => {
+    const item = {
+      id: 'r1',
+      createdAt: '2026-11-27T10:00:00.000Z',
+      undoneAt: null,
+      origin: 'junk',
+      note: null,
+      snapshot: {},
+      job: { id: 'j', kind: 'post', title: null, postingUrl: 'https://x.y' },
+      user: { id: 'u' },
+    };
+    const { client, fetchMock } = setup(() => ok({ items: [item] }));
+    expect(await client.adminRescues({ limit: 20 })).toEqual({
+      kind: 'ok',
+      data: { items: [item] },
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/admin/rescues?limit=20');
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+    const bad = setup(() => ok({ items: [{ id: 1 }] }));
+    expect(await bad.client.adminRescues()).toEqual({ kind: 'unavailable' });
+  });
+
   it('prepareDrops sends the rule, cursor and limit as query params', async () => {
     const { client, fetchMock } = setup(() =>
       ok({ items: [drop], next: 'abc' }),

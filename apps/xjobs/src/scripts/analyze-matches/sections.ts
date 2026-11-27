@@ -9,10 +9,10 @@ type Raw = Tx['raw'];
 /**
  * Each query returns its rows as one jsonb array in `rows`. Section 0 counts
  * every row and section 1 splits jobs by kind. Sections 2 to 4 and 9 judge
- * listing matches: they read only match rows of job-board jobs
- * (`kind = 'job'`); post role rows are reported per kind by `db:match-shares`.
- * Sections 5 to 8 judge listing extractions: they read only listing rows
- * (`docType`) of job-board jobs, never post rows or post role jobs.
+ * matches of job-board jobs and post roles (`kind IN ('job', 'post_role')`),
+ * and sections 5 to 8 judge their listing extractions (`docType`); each splits
+ * its rows by `kind`, so listings and post roles are never mixed in a count.
+ * Post rows (`kind = 'post'`) belong to section 13.
  * Section 15 reads the turn record of listing and post calls alike.
  */
 export const SECTIONS: {
@@ -44,64 +44,64 @@ export const SECTIONS: {
         GROUP BY 1, 2, 3 ORDER BY 4 DESC) t`,
   },
   {
-    title: '2. Match outcomes (listings)',
+    title: '2. Match outcomes (listings and post roles)',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT m.outcome, m.unverified, count(*)
+        SELECT j.kind, m.outcome, m.unverified, count(*)
         FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId"
-        WHERE j.kind = 'job'
-        GROUP BY 1, 2 ORDER BY 1, 2) t`,
+        WHERE j.kind IN ('job', 'post_role')
+        GROUP BY 1, 2, 3 ORDER BY 1, 2, 3) t`,
   },
   {
     title:
-      '3. Qualified listing matches by check pattern (position / seniority / location / stack)',
+      '3. Qualified matches by check pattern (position / seniority / location / stack)',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT (SELECT string_agg(c->>'outcome', ' / ' ORDER BY o)
+        SELECT j.kind, (SELECT string_agg(c->>'outcome', ' / ' ORDER BY o)
                   FROM jsonb_array_elements(m.checks) WITH ORDINALITY x(c, o)) AS pattern,
           count(*)
         FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId"
-        WHERE m.outcome = 'qualified' AND j.kind = 'job'
-        GROUP BY 1 ORDER BY 2 DESC) t`,
+        WHERE m.outcome = 'qualified' AND j.kind IN ('job', 'post_role')
+        GROUP BY 1, 2 ORDER BY 1, 3 DESC) t`,
   },
   {
-    title: '4. Listing check reasons by rule and outcome',
+    title: '4. Check reasons by rule and outcome',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT c->>'rule' AS rule, c->>'outcome' AS outcome,
+        SELECT j.kind, c->>'rule' AS rule, c->>'outcome' AS outcome,
           left(regexp_replace(c->>'reason', '[:;].*$', ''), 70) AS reason, count(*)
         FROM job_matches m JOIN normalized_jobs j ON j.id = m."jobId",
           jsonb_array_elements(m.checks) c
-        WHERE j.kind = 'job'
-        GROUP BY 1, 2, 3 ORDER BY 1, 4 DESC) t`,
+        WHERE j.kind IN ('job', 'post_role')
+        GROUP BY 1, 2, 3, 4 ORDER BY 1, 2, 5 DESC) t`,
   },
   {
     title: '5. Current extractions: roleKind and isSoftwareEngineeringRole',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT coalesce(e."roleKind", '<null>') AS role_kind,
+        SELECT j.kind, coalesce(e."roleKind", '<null>') AS role_kind,
           e."isSoftwareEngineeringRole" AS is_swe, count(*)
         FROM job_extractions e JOIN normalized_jobs j ON j."currentExtractionId" = e.id
-        WHERE e.data <> '{}'::jsonb AND e."docType" = 'listing' AND j.kind = 'job'
-        GROUP BY 1, 2 ORDER BY 3 DESC) t`,
+        WHERE e.data <> '{}'::jsonb AND e."docType" = 'listing' AND j.kind IN ('job', 'post_role')
+        GROUP BY 1, 2, 3 ORDER BY 1, 4 DESC) t`,
   },
   {
     title: '6. Position fact: value, decidedBy, confidence, empty quote',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT coalesce(e.data->'position'->'value'->>'roleKind', '<null>') AS role_kind,
+        SELECT j.kind, coalesce(e.data->'position'->'value'->>'roleKind', '<null>') AS role_kind,
           e.data->'position'->>'decidedBy' AS decided_by,
           e.data->'position'->>'confidence' AS confidence,
           (e.data->'position'->>'quote' = '') AS empty_quote,
           count(*)
         FROM job_extractions e JOIN normalized_jobs j ON j."currentExtractionId" = e.id
-        WHERE e.data <> '{}'::jsonb AND e."docType" = 'listing' AND j.kind = 'job'
-        GROUP BY 1, 2, 3, 4 ORDER BY 5 DESC) t`,
+        WHERE e.data <> '{}'::jsonb AND e."docType" = 'listing' AND j.kind IN ('job', 'post_role')
+        GROUP BY 1, 2, 3, 4, 5 ORDER BY 1, 6 DESC) t`,
   },
   {
     title:
@@ -110,7 +110,7 @@ export const SECTIONS: {
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
         WITH r AS (
-          SELECT e.id,
+          SELECT e.id, j.kind AS job_kind,
             count(*) FILTER (WHERE q->>'kind' = 'main') AS main,
             count(*) FILTER (WHERE q->>'kind' = 'must') AS must,
             count(*) FILTER (WHERE q IS NOT NULL AND q->'technology'->>'code' IS NULL) AS uncoded,
@@ -120,43 +120,44 @@ export const SECTIONS: {
           LEFT JOIN LATERAL jsonb_array_elements(
             CASE WHEN jsonb_typeof(e.data->'techStack'->'value'->'requirements') = 'array'
                  THEN e.data->'techStack'->'value'->'requirements' ELSE '[]'::jsonb END) q ON true
-          WHERE e.data <> '{}'::jsonb AND e."docType" = 'listing' AND j.kind = 'job'
-          GROUP BY e.id)
-        SELECT CASE WHEN total = 0 THEN 'no requirements'
+          WHERE e.data <> '{}'::jsonb AND e."docType" = 'listing' AND j.kind IN ('job', 'post_role')
+          GROUP BY e.id, j.kind)
+        SELECT job_kind AS kind,
+          CASE WHEN total = 0 THEN 'no requirements'
                     WHEN main + must = 0 THEN 'only nice'
                     WHEN main = 0 THEN 'must but no main'
                     ELSE 'has main' END AS shape,
           count(*), round(avg(total), 1) AS avg_reqs, round(avg(uncoded), 1) AS avg_uncoded
-        FROM r GROUP BY 1 ORDER BY 2 DESC) t`,
+        FROM r GROUP BY 1, 2 ORDER BY 1, 3 DESC) t`,
   },
   {
     title: '8. Uncoded technologies seen most often (vocabulary gaps)',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT q->'technology'->>'text' AS text, q->>'kind' AS kind, count(*)
+        SELECT j.kind AS job_kind, q->'technology'->>'text' AS text, q->>'kind' AS kind, count(*)
         FROM job_extractions e
         JOIN normalized_jobs j ON j."currentExtractionId" = e.id,
           jsonb_array_elements(
             CASE WHEN jsonb_typeof(e.data->'techStack'->'value'->'requirements') = 'array'
                  THEN e.data->'techStack'->'value'->'requirements' ELSE '[]'::jsonb END) q
         WHERE q->'technology'->>'code' IS NULL
-          AND e."docType" = 'listing' AND j.kind = 'job'
-        GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 30) t`,
+          AND e."docType" = 'listing' AND j.kind IN ('job', 'post_role')
+        GROUP BY 1, 2, 3 ORDER BY 4 DESC LIMIT 30) t`,
   },
   {
-    title: '9. Qualified listing matches with BOTH position and stack unknown',
+    title: '9. Qualified matches with BOTH position and stack unknown',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
-        SELECT j.id, left(j.title, 50) AS title, left(j."companyName", 25) AS company,
+        SELECT j.kind, j.id, left(j.title, 50) AS title, left(j."companyName", 25) AS company,
           length(j."descriptionText") AS desc_len,
           e.data->'isSoftwareEngineeringRole'->>'value' AS is_swe,
           e."needsReview" AS needs_review
         FROM job_matches m
         JOIN normalized_jobs j ON j.id = m."jobId"
         JOIN job_extractions e ON e.id = m."extractionId"
-        WHERE m.outcome = 'qualified' AND j.kind = 'job'
+        WHERE m.outcome = 'qualified' AND j.kind IN ('job', 'post_role')
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(m.checks) c
                       WHERE c->>'rule' = 'position' AND c->>'outcome' = 'unknown')
           AND EXISTS (SELECT 1 FROM jsonb_array_elements(m.checks) c

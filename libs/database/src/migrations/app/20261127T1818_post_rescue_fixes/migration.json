@@ -1,0 +1,7 @@
+{
+  "from": "a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824",
+  "to": "a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824",
+  "providedInvariants": ["post-rescue-fixes", "post-webhooks-first-seen"],
+  "createdAt": "2026-11-27T18:20:51.470Z",
+  "migrationHash": "091d9e532287bf355ec50cf86849ef24ab64612839084b8bb97d92a3560752c4"
+}

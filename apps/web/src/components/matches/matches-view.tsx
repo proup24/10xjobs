@@ -2,13 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { toast } from 'sonner';
-import {
-  clearJobDecisionAction,
-  decideJobAction,
-  decideReviewAction,
-  reportMismatchAction,
-} from '@/app/(app)/actions';
+import { reportMismatchAction } from '@/app/(app)/actions';
 import type { Labels } from '@/lib/matches/checks';
 import {
   selectJobs,
@@ -23,17 +17,12 @@ import {
   viewStateHref,
   type ViewState,
 } from '@/lib/matches/view-state';
-import type { SaveResult } from '@/lib/setup/save-result';
 import { cn } from '@/lib/utils';
-import {
-  BackLink,
-  MatchDetail,
-  type Decide,
-  type DecideJob,
-} from './match-detail';
+import { BackLink, MatchDetail } from './match-detail';
 import { MatchEmpty } from './match-empty';
 import { MatchFilters } from './match-filters';
 import { MatchList } from './match-list';
+import { useJobDecisions } from './use-job-decisions';
 
 type Profile = { id: string; label: string; state: 'draft' | 'published' };
 
@@ -78,65 +67,9 @@ export function MatchesView({
     router.push(href({ ...state, ...next }));
   const review = state.list === 'review';
   const jobs = review ? reviewJobs : matchedJobs;
-  // A decided job leaves the review list: close it and read the lists again.
-  const decide: Decide = async (d) => {
-    const result = await decideReviewAction(d);
-    if (result.status === 'saved') {
-      router.push(href({ ...state, job: null }));
-      router.refresh();
-    }
-    return result;
-  };
-
-  const wide = () =>
-    typeof window.matchMedia !== 'function' ||
-    window.matchMedia('(min-width: 768px)').matches;
-  const refused = (result: SaveResult) =>
-    toast.error(
-      result.status === 'invalid' && result.errors._form
-        ? result.errors._form
-        : "Couldn't save. Try again.",
-    );
-  // A decided job leaves Matches: open the next one in the list (none on a phone, where
-  // an open job hides the list), read the lists again, and offer to take it back.
-  const decideJob =
-    (visibleJobs: MatchedJob[]): DecideJob =>
-    async (status, extra) => {
-      const jobId = state.job;
-      if (jobId === null) return false;
-      let result: SaveResult;
-      try {
-        result = await decideJobAction({ jobId, status, ...extra });
-      } catch {
-        result = { status: 'failed' };
-      }
-      if (result.status !== 'saved') {
-        refused(result);
-        return false;
-      }
-      const at = visibleJobs.findIndex((j) => j.jobId === jobId);
-      const next = wide()
-        ? ((visibleJobs[at + 1] ?? visibleJobs[at - 1])?.jobId ?? null)
-        : null;
-      router.push(href({ ...state, job: next }));
-      router.refresh();
-      toast.success('Moved to Applications', {
-        action: {
-          label: 'Undo',
-          onClick: async () => {
-            let undone: SaveResult;
-            try {
-              undone = await clearJobDecisionAction(jobId);
-            } catch {
-              undone = { status: 'failed' };
-            }
-            if (undone.status === 'saved') router.refresh();
-            else refused(undone);
-          },
-        },
-      });
-      return true;
-    };
+  const { decide, decideJob } = useJobDecisions(state.job, (job) =>
+    href({ ...state, job }),
+  );
 
   if (profiles.length === 0) {
     return (
@@ -243,7 +176,7 @@ export function MatchesView({
         userId={userId}
         backHref={backHref}
         onDecide={review ? decide : undefined}
-        onDecideJob={decideJob(visible)}
+        onDecideJob={decideJob(visible.map((j) => j.jobId))}
         onReport={reportMismatchAction}
         postings={postings}
       />
@@ -263,9 +196,14 @@ export function MatchesView({
           )}
         >
           <MatchFilters
+            lists={[
+              { value: 'matches', label: 'Matches', count: listCounts.matches },
+              { value: 'review', label: 'Review', count: listCounts.review },
+            ]}
             list={state.list}
-            listCounts={listCounts}
-            onList={(list) => go({ list, job: null })}
+            onList={(list) =>
+              go({ list: list === 'review' ? 'review' : 'matches', job: null })
+            }
             profileItems={profileItems}
             profile={state.profile}
             onProfile={(profile) => go({ profile })}

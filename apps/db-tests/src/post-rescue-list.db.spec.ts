@@ -1,11 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { admin } from './support/admin.js';
 import {
   blockAuthor,
   cleanupDetailedJobs,
+  enablePostSearch,
   postDetail,
   publishProfile,
   seedMatchOn,
   seedPost,
+  seedPostQuery,
+  seedPostRawItem,
   seedPostRole,
   seedProfile,
   unblockAuthor,
@@ -93,5 +97,68 @@ describe('post_rescue_list', () => {
       .insert({ userId: a.id, jobId: role.jobId, status: 'applied' });
     expect(error).toBeNull();
     expect((await listOf(a))[0].decisionStatus).toBe('applied');
+  });
+});
+
+describe('post_rescue_list after the rows behind a rescue change', () => {
+  const listOf = async (user: TestUser) => {
+    const { data, error } = await user.client.rpc('post_rescue_list');
+    expect(error).toBeNull();
+    return data ?? [];
+  };
+
+  it('a disqualified rescue keeps its profile once its rejected match is deleted', async () => {
+    const u = await createTestUser();
+    const profile = await seedProfile(u.id);
+    await publishProfile(profile);
+    const post = await seedPost({
+      verdict: 'hiring',
+      roles: [{ roleKey: 'role', email: null }],
+    });
+    const role = await seedPostRole(post, 'role');
+    await seedMatchOn(u.id, profile, role, { outcome: 'rejected' });
+    expect(
+      (await u.client.rpc('post_rescue', { p_job_id: role.jobId })).error,
+    ).toBeNull();
+    const { error } = await admin()
+      .from('job_matches')
+      .delete()
+      .eq('userId', u.id)
+      .eq('jobId', role.jobId);
+    expect(error).toBeNull();
+    expect(await listOf(u)).toEqual([
+      expect.objectContaining({ jobId: role.jobId, profileIds: [profile] }),
+    ]);
+  });
+
+  it('a junk rescue keeps the profiles that found it, and hides once a role of its post is listed', async () => {
+    const u = await createTestUser();
+    const profile = await seedProfile(u.id);
+    await publishProfile(profile);
+    await enablePostSearch(profile);
+    const post = await seedPost({ verdict: 'junk', reason: 'funnel' });
+    const queryId = await seedPostQuery(profile);
+    await seedPostRawItem(post.jobId, [queryId]);
+    expect(
+      (await u.client.rpc('post_rescue', { p_job_id: post.jobId })).error,
+    ).toBeNull();
+    // The query no longer links to the profile: the snapshot still names it.
+    const unlink = await admin()
+      .from('profile_query_search_builders')
+      .delete()
+      .eq('profileId', profile)
+      .eq('queryId', queryId);
+    expect(unlink.error).toBeNull();
+    expect(await listOf(u)).toEqual([
+      expect.objectContaining({
+        jobId: post.jobId,
+        origin: 'junk',
+        profileIds: [profile],
+      }),
+    ]);
+    // A re-extraction made a role of the post, and it matched: the role shows instead.
+    const role = await seedPostRole(post, 'role');
+    await seedMatchOn(u.id, profile, role, { outcome: 'qualified' });
+    expect(await listOf(u)).toEqual([]);
   });
 });

@@ -27,6 +27,18 @@ export function decisionLine(row: DecisionRow, now: Date): string {
     .join(' · ');
 }
 
+/** The row's title; a rescued Junk post (`kind = 'post'`) has none. */
+export function decisionTitle(row: DecisionRow): string {
+  return (
+    (row.title as string | null) ??
+    (row.kind === 'post' ? 'LinkedIn post' : 'Job')
+  );
+}
+
+/** True for a post role or a rescued Junk post. */
+export const isSocialPost = (row: DecisionRow) =>
+  row.kind === 'post_role' || row.kind === 'post';
+
 /** One decided job in the list: a link that opens it in the detail. */
 export function DecisionRowLink({
   row,
@@ -50,11 +62,12 @@ export function DecisionRowLink({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="min-w-0 font-medium">{row.title}</h3>
+        <h3 className="min-w-0 font-medium">{decisionTitle(row)}</h3>
         {row.closed && <Badge variant="secondary">Closed</Badge>}
       </div>
       {meta && <p className="text-muted-foreground">{meta}</p>}
       <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+        {isSocialPost(row) && <Badge variant="outline">Social post</Badge>}
         {channelBadges(row.channels ?? []).map((text) => (
           <Badge key={text} variant="outline">
             {text}

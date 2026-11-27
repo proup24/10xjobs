@@ -41,6 +41,10 @@ export function PreferencesNav({ items, labels, draftInProgress }: Props) {
     { href: `${BASE}/contacts`, label: SECTION_TITLES.contacts },
     { href: `${BASE}/webhook`, label: SECTION_TITLES.webhook },
     { href: `${BASE}/eligibility`, label: SECTION_TITLES.eligibility },
+    {
+      href: `${BASE}/blocked-authors`,
+      label: SECTION_TITLES.blockedAuthors,
+    },
   ].map((i) => ({ ...i, current: pathname === i.href }));
 
   const profiles: VerticalNavItem[] = items.map((p) => {

@@ -140,4 +140,24 @@ describe('post_details', () => {
     });
     expect(other.data).toBeNull();
   });
+
+  it('a junk rescue carries the verdict it was rescued from, past a re-extraction', async () => {
+    const rescued = await a.client.rpc('post_rescue', { p_job_id: junk.jobId });
+    expect(rescued.error).toBeNull();
+    const { error } = await admin()
+      .from('job_extractions')
+      .update({ verdict: 'hiring', verdictReason: 'hiring' })
+      .eq('id', junk.extractionId);
+    expect(error).toBeNull();
+    const { data } = await a.client.rpc('post_details', {
+      p_job_id: junk.jobId,
+    });
+    expect(data?.[0]).toMatchObject({
+      verdict: { value: 'hiring', reason: 'hiring' },
+      rescue: {
+        origin: 'junk',
+        verdict: { value: 'junk', reason: 'funnel', confidence: 'sure' },
+      },
+    });
+  });
 });

@@ -32,6 +32,7 @@ describe('loadMatch with any outcome', () => {
     await loadMatch(f.supabase, 'j1', null);
     expect(f.rpcs('match_details')[0].args).toEqual({
       p_job_id: 'j1',
+      p_kind: 'job',
       p_outcome: null,
     });
   });

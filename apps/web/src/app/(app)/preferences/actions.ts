@@ -8,6 +8,7 @@ import {
   deleteProfile,
   hrefAfterDelete,
 } from '@/lib/preferences/delete-profile';
+import { blockAuthor, unblockAuthor } from '@/lib/preferences/blocked-authors';
 import { loadProfileList } from '@/lib/preferences/profiles';
 import {
   saveContacts,
@@ -121,4 +122,25 @@ export async function setSearchSwitchAction(
   } catch {
     return 'failed';
   }
+}
+
+/** Blocks a LinkedIn author for the signed-in user, from a pasted link or a post's own key. */
+export async function blockAuthorAction(input: unknown): Promise<SaveResult> {
+  const result = await run((s, u) => blockAuthor(s, u, input));
+  if (result.status === 'saved') revalidateBlocked();
+  return result;
+}
+
+/** Unblocks one author by key. */
+export async function unblockAuthorAction(
+  authorKey: unknown,
+): Promise<SaveResult> {
+  const result = await run((s) => unblockAuthor(s, authorKey));
+  if (result.status === 'saved') revalidateBlocked();
+  return result;
+}
+
+function revalidateBlocked() {
+  revalidatePath('/preferences/blocked-authors');
+  revalidatePath('/posts');
 }

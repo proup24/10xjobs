@@ -180,7 +180,7 @@ describe.skipIf(!url)(
       );
     });
 
-    it('sections 5 to 8 read listings only, never post rows or role jobs', async () => {
+    it('sections 5 to 8 read listings and post role jobs split by kind, never post rows', async () => {
       await extraction(await job('job'), 'listing', fixtureDocument());
       const post = await job('post');
       await extraction(post, 'post', fixtureHiringPost());
@@ -191,12 +191,18 @@ describe.skipIf(!url)(
       };
       await extraction(await job('post_role', post), 'listing', role);
 
-      expect(total(await rows('5.'))).toBe(1);
-      expect(total(await rows('6.'))).toBe(1);
-      expect(total(await rows('7.'))).toBe(1);
-      expect((await rows('8.')).map((r) => r.text)).not.toContain(
-        'RoleOnlyTech',
-      );
+      const byKind = (r: Record<string, unknown>[]) =>
+        Object.fromEntries(
+          [...new Set(r.map((x) => x.kind ?? x.job_kind))].map((k) => [
+            k,
+            total(r.filter((x) => (x.kind ?? x.job_kind) === k)),
+          ]),
+        );
+      for (const n of ['5.', '6.', '7.'])
+        expect(byKind(await rows(n))).toEqual({ job: 1, post_role: 1 });
+      expect(
+        (await rows('8.')).find((r) => r.text === 'RoleOnlyTech'),
+      ).toMatchObject({ job_kind: 'post_role' });
     });
 
     it('section 13 counts post calls, verdicts, role jobs and stuck posts per UTC day', async () => {
