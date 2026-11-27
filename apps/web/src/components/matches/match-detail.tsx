@@ -85,7 +85,7 @@ const REVIEW_REPORT_FIELDS: Record<string, ReportField> = {
 
 /**
  * Why a job is in review: the rule that would have rejected it, the fact it was unsure
- * of with the description's words for it, and LinkedIn's value when the listing disagreed,
+ * of with the description's words for it, and the listing's value when the listing disagreed,
  * with "Report a mismatch" on that fact. Then the two decisions; Reject asks first.
  */
 function ReviewReason({
@@ -498,7 +498,7 @@ export function MatchDetail({
               {value?.text ?? NOT_STATED}
             </dd>
             {value?.source === 'linkedin' && (
-              <Badge variant="secondary">From LinkedIn</Badge>
+              <Badge variant="secondary">From the listing</Badge>
             )}
             {field && conflicts[field] && (
               <p className="text-muted-foreground">{conflicts[field]}</p>

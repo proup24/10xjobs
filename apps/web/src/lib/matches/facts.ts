@@ -84,7 +84,7 @@ function salaryRange(
     .join(' ');
 }
 
-/** The salary from the job's combined facts (the description's, else LinkedIn's). */
+/** The salary from the job's combined facts (the description's, else the listing's). */
 function factSalary(facts: unknown): string | null {
   const s = obj(obj(facts)?.salary);
   return salaryRange(

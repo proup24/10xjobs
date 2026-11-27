@@ -314,7 +314,7 @@ describe('MatchDetail', () => {
     expect(contract?.textContent).toBe('Not stated');
   });
 
-  it('shows "From LinkedIn" next to a LinkedIn fact only', () => {
+  it('shows "From the listing" next to a listing fact only', () => {
     renderDetail([
       matchRow({
         facts: {
@@ -323,14 +323,14 @@ describe('MatchDetail', () => {
         },
       }),
     ]);
-    expect(screen.getAllByText('From LinkedIn')).toHaveLength(1);
+    expect(screen.getAllByText('From the listing')).toHaveLength(1);
     const arrangement = screen.getByText('Arrangement').parentElement;
-    expect(arrangement?.textContent).toContain('From LinkedIn');
+    expect(arrangement?.textContent).toContain('From the listing');
     const role = screen.getByText('Role').parentElement;
-    expect(role?.textContent).not.toContain('From LinkedIn');
+    expect(role?.textContent).not.toContain('From the listing');
   });
 
-  it('shows "From LinkedIn" on places only when only the places came from LinkedIn', () => {
+  it('shows "From the listing" on places only when only the places came from the listing', () => {
     renderDetail([
       matchRow({
         facts: {
@@ -342,11 +342,11 @@ describe('MatchDetail', () => {
         },
       }),
     ]);
-    expect(screen.getAllByText('From LinkedIn')).toHaveLength(1);
+    expect(screen.getAllByText('From the listing')).toHaveLength(1);
     const places = screen.getByText('Europe (CET)').parentElement;
-    expect(places?.textContent).toContain('From LinkedIn');
+    expect(places?.textContent).toContain('From the listing');
     const arrangement = screen.getByText('Arrangement').parentElement;
-    expect(arrangement?.textContent).not.toContain('From LinkedIn');
+    expect(arrangement?.textContent).not.toContain('From the listing');
   });
 
   it('lists a conflict under its fact', () => {
@@ -372,7 +372,7 @@ describe('MatchDetail', () => {
     expect(screen.getByText('Role').nextElementSibling?.textContent).toBe(
       'Not stated',
     );
-    expect(screen.queryByText('From LinkedIn')).toBeNull();
+    expect(screen.queryByText('From the listing')).toBeNull();
   });
 
   it('shows the stated salary', () => {
