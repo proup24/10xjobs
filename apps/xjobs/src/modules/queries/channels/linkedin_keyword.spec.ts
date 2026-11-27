@@ -98,3 +98,33 @@ describe('linkedinKeywordFits', () => {
     expect(linkedinKeywordFits(['a'], [at + 'x'])).toBe(false);
   });
 });
+
+describe('the remote word', () => {
+  it('appends AND remote outside the groups', () => {
+    expect(linkedinKeyword(['engineer'], ['react'], { remote: true })).toBe(
+      '(engineer) AND (react) AND remote',
+    );
+    expect(linkedinKeyword(['engineer'], ['react'], { remote: false })).toBe(
+      '(engineer) AND (react)',
+    );
+  });
+
+  it('counts its characters and its term against the limits', () => {
+    const roles = ['engineer'];
+    // `(engineer) AND (` + `)` = 17 characters around the spellings.
+    const spelling = 'a'.repeat(LINKEDIN_KEYWORD_MAX_CHARS - 17);
+    expect(linkedinKeyword(roles, [spelling]).length).toBe(
+      LINKEDIN_KEYWORD_MAX_CHARS,
+    );
+    expect(linkedinKeywordFits(roles, [spelling])).toBe(true);
+    expect(linkedinKeywordFits(roles, [spelling], { remote: true })).toBe(
+      false,
+    );
+    const terms = Array.from(
+      { length: LINKEDIN_KEYWORD_MAX_TERMS - 1 },
+      (_, i) => `t${i}`,
+    );
+    expect(linkedinKeywordFits(roles, terms)).toBe(true);
+    expect(linkedinKeywordFits(roles, terms, { remote: true })).toBe(false);
+  });
+});

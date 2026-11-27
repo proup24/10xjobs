@@ -15,7 +15,7 @@ import {
 } from './mappers/cheap-scraper-input';
 import {
   linkedinGeoId,
-  mergedLinkedinKeyword,
+  linkedinBoardKeyword,
 } from './mappers/linkedin-job-board.mapper';
 
 /**
@@ -46,7 +46,7 @@ export class LinkedinJobBoardCheapCollector {
     return oneSearchInput(segment, (first) =>
       toLinkedinJobBoardInput(
         linkedinJobSearchUrl(
-          mergedLinkedinKeyword(segment.queries),
+          linkedinBoardKeyword(segment.queries),
           { ...first.params, geoId: linkedinGeoId(first.params) },
           3600,
         ),

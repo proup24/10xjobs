@@ -306,6 +306,28 @@ describe('LinkedIn job board segment', () => {
     expect(input.jobTitles).toEqual([mergedLinkedinKeyword(members)]);
   });
 
+  it('appends AND remote to a remote search, and only to it', async () => {
+    const member = (id: string, workType: string) => ({
+      id,
+      keyword: 'ignored',
+      params: { location: 'Germany', workType, ...role },
+    });
+    const { run, provider } = actor(() => []);
+    await board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, [member('qs-1', '2')]),
+    );
+    await board_(provider).collect(
+      segment(Channel.LINKEDIN_JOB_BOARD, [member('qs-2', '3')]),
+    );
+    const titles = run.mock.calls.map(
+      (call) => (call[1] as { jobTitles: string[] }).jobTitles,
+    );
+    expect(titles).toEqual([
+      ['(backend) AND (go) AND remote'],
+      ['(backend) AND (go)'],
+    ]);
+  });
+
   it('asks for 1000 rows with a $1.10 cap', async () => {
     const { run, provider } = actor(() => []);
     await board_(provider).collect(

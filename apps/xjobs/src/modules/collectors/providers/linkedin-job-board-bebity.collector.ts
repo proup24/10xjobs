@@ -11,7 +11,7 @@ import { ApifyActorProvider } from './apify/apify.provider';
 import { BEBITY_ACTOR, toBebityInput } from './mappers/bebity-input';
 import {
   linkedinGeoId,
-  mergedLinkedinKeyword,
+  linkedinBoardKeyword,
 } from './mappers/linkedin-job-board.mapper';
 
 /**
@@ -41,7 +41,7 @@ export class LinkedinJobBoardBebityCollector {
   private input(segment: SegmentSearch, rows: number): Record<string, unknown> {
     return oneSearchInput(segment, (first) =>
       toBebityInput(
-        mergedLinkedinKeyword(segment.queries),
+        linkedinBoardKeyword(segment.queries),
         { ...first.params, geoId: linkedinGeoId(first.params) },
         rows,
       ),

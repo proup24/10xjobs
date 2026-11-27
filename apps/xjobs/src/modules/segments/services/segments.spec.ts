@@ -798,3 +798,38 @@ describe('Indeed segments', () => {
     ]);
   });
 });
+
+describe('the remote word in LinkedIn job board chunks', () => {
+  // Two keyword units whose merged keyword fits with 5 characters to spare:
+  // `(backend) AND (` + `)` = 16, plus two spellings and ` OR ` = 4.
+  const spelling = (c: string) => c.repeat((319 - 16 - 4 - 5) / 2);
+  const pair = (workType: string) =>
+    ['a', 'b'].map((c) =>
+      builder({
+        type: workType === '2' ? Arrangement.remote : Arrangement.hybrid,
+        params: { roleWords: ['backend'], spellings: [spelling(c)], workType },
+      }),
+    );
+
+  it('cuts a remote group whose keyword fits only without the word', () => {
+    const plan = planSegments(pair('2'));
+    expect(plan.segments).toHaveLength(2);
+    expect(plan.oversized).toEqual([]);
+  });
+
+  it('keeps the same hybrid group in one chunk', () => {
+    expect(planSegments(pair('3')).segments).toHaveLength(1);
+  });
+
+  it('does not report a lone remote unit as oversized for the word alone', () => {
+    const lone = builder({
+      type: Arrangement.remote,
+      params: {
+        roleWords: ['backend'],
+        spellings: ['x'.repeat(319 - 16)],
+        workType: '2',
+      },
+    });
+    expect(planSegments([lone]).oversized).toEqual([]);
+  });
+});

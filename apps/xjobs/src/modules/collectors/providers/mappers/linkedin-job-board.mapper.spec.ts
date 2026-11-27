@@ -1,6 +1,7 @@
 import { linkedinKeyword } from 'src/modules/queries/channels/linkedin_keyword';
 import {
   harvestGroupKey,
+  linkedinBoardKeyword,
   linkedinGroupKey,
   mergedExperienceLevel,
   mergedLinkedinKeyword,
@@ -163,5 +164,30 @@ describe('mergedExperienceLevel', () => {
   });
   it('is undefined for no members', () => {
     expect(mergedExperienceLevel([])).toBeUndefined();
+  });
+});
+
+describe('linkedinBoardKeyword', () => {
+  const member = (workType: string | undefined, spellings = ['react']) => ({
+    params: { roleWords: ['engineer'], spellings, workType },
+  });
+
+  it('appends AND remote when every member searches remote', () => {
+    expect(linkedinBoardKeyword([member('2'), member('2', ['go'])])).toBe(
+      '(engineer) AND (go OR react) AND remote',
+    );
+  });
+
+  it('leaves hybrid, onsite and unfiltered searches as they are', () => {
+    for (const workType of ['1', '3', undefined]) {
+      expect(linkedinBoardKeyword([member(workType)])).toBe(
+        mergedLinkedinKeyword([member(workType)]),
+      );
+    }
+  });
+
+  it('sends the plain keyword when the word would pass the limit', () => {
+    const long = member('2', ['a'.repeat(300)]);
+    expect(linkedinBoardKeyword([long])).toBe(mergedLinkedinKeyword([long]));
   });
 });

@@ -3,6 +3,7 @@ import { Channel, isLinkedinJobBoard } from 'src/common/enums';
 import type { QuerySearchBuilderRow } from 'src/database';
 import {
   harvestGroupKey,
+  isRemoteSearch,
   linkedinGroupKey,
   linkedinMemberWords,
 } from 'src/modules/collectors/providers/mappers/linkedin-job-board.mapper';
@@ -147,6 +148,19 @@ function keywordFits(members: readonly QuerySearchBuilderRow[]): boolean {
   return linkedinKeywordFits(roleWords, spellings);
 }
 
+/**
+ * {@link keywordFits} with room for ` AND remote` on a remote LinkedIn job
+ * board chunk (`linkedinBoardKeyword`), so chunking cuts a group rather than
+ * drop the word. Other chunks are measured as before.
+ */
+function boardKeywordFits(members: readonly QuerySearchBuilderRow[]): boolean {
+  const queries = members.map((member) => ({ params: params(member) }));
+  if (!isRemoteSearch(queries)) return keywordFits(members);
+  const { roleWords, spellings } = linkedinMemberWords(queries);
+  if (roleWords.length === 0 || spellings.length === 0) return true;
+  return linkedinKeywordFits(roleWords, spellings, { remote: true });
+}
+
 /** Whether the post builders' merged words fit the operator and length limits. */
 function postsFit(members: readonly QuerySearchBuilderRow[]): boolean {
   return postKeywordFits(
@@ -238,7 +252,7 @@ export function planSegments(
     if (board) {
       const units = keywordUnits(channel, members);
       const even = evenChunks(units, parts.get(key) ?? 1);
-      chunks = even.flatMap((chunk) => fitChunks(chunk, keywordFits));
+      chunks = even.flatMap((chunk) => fitChunks(chunk, boardKeywordFits));
       if (chunks.length > even.length)
         plan.cuts.push({ key, members: members.length, chunks: chunks.length });
     } else if (channel === Channel.LINKEDIN_POSTS)

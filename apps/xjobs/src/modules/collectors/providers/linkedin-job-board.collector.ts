@@ -12,7 +12,7 @@ import {
   harvestGroupKey,
   type HarvestJobSearchInput,
   mergedExperienceLevel,
-  mergedLinkedinKeyword,
+  linkedinBoardKeyword,
   toHarvestJobSearchInput,
 } from './mappers/linkedin-job-board.mapper';
 
@@ -45,7 +45,7 @@ export class LinkedinJobBoardCollector {
       segment,
       (first) =>
         toHarvestJobSearchInput(
-          mergedLinkedinKeyword(segment.queries),
+          linkedinBoardKeyword(segment.queries),
           {
             ...first.params,
             experienceLevel: mergedExperienceLevel(segment.queries),
