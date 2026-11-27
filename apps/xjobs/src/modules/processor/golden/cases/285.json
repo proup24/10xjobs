@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["remote"],
+        "arrangements": [
+          "remote"
+        ],
         "places": [
           {
             "kind": "country",
@@ -72,6 +74,14 @@
         "domain": null,
         "years": null,
         "group": "g2"
+      },
+      {
+        "text": "RESTful API",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
@@ -95,9 +105,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -1,0 +1,46 @@
+{
+  "id": "01a1f3e8-0766-75fe-b5e4-785bf79abf70",
+  "input": {
+    "title": "Senior Fullstack Engineer (Remote)",
+    "description": "* Role Title: Senior Fullstack Engineer (Remote)\n * Role Type: Contractor (~15 hours per week)\n * Location: Global, fully remote\n\n\nWe are looking for highly skilled Full-Stack Software Engineers to contribute to an AI training project involving software development, technical problem-solving, debugging, system architecture, and code evaluation.\n\n\nThe work involves creating, solving, reviewing, and validating challenging software-engineering tasks across front-end and back-end systems and helping with translating full coding builds from one particular language into another.\n\n\nThis role requires meaningful hands-on experience across both front-end and back-end engineering. Candidates should be comfortable working throughout the application stack rather than specializing exclusively in one layer.\n\n\nWhat You’ll Work On\n\n1. Develop, modify, and debug front-end and back-end application components.\n\n2. Implement user-facing features and the services, APIs, and data models that support them.\n\n3. Trace requests and data across browsers, front-end applications, APIs, services, databases, and external integrations.\n\n4. Work inside unfamiliar repositories and understand existing application architecture.\n\n5. Diagnose failures involving application state, API contracts, authentication, persistence, networking, and deployment.\n\n6. Evaluate and improve code written in multiple programming languages.\n\n7. Review AI-generated solutions for correctness, completeness, performance, security, and maintainability.\n\n\nRequired Qualifications\n\n1. Strong professional experience developing production full-stack applications.\n\n2. Meaningful hands-on experience with both front-end and back-end engineering.\n\n3. Production experience with multiple programming languages.\n\n4. Strong knowledge of browser applications, APIs, application state, databases, and service integration.\n\n5. Experience understanding and contributing to the architecture of complete software systems.\n\n6. Ability to work effectively in unfamiliar codebases.\n\n7. Strong debugging and technical problem-solving skills.\n\n\nProcess\n\n1. Apply to the role and complete the screening questions.\n\n2. Complete an AI interview of approximately 30 minutes.\n\n3. Complete a technical assessment, if required.\n\n4. Complete the hiring manager review.\n\n\nCompensation Structure\n\nCompensation is output-based. Experts are paid per task that meets the project specifications. The time required to complete each task may vary depending on the expert’s experience and workflow.\n\n\nMinimum submission requirements apply. Experts must submit a minimum number of tasks per week.\n\n\nStart Timeline & Availability\n\n1. We typically fill roles within 48 hours and are looking for experts who are ready to begin immediately. If selected, you will be expected to start your first tasks within 24–48 hours of completing onboarding.\n\n\nWhat You’ll Do\n\n1. Develop, modify, and debug front-end and back-end application components.\n\n2. Implement user-facing features and the services, APIs, and data models that support them.\n\n3. Trace requests and data across browsers, front-end applications, APIs, services, databases, and external integrations.\n\n4. Work inside unfamiliar repositories and understand existing application architecture.\n\n5. Diagnose failures involving application state, API contracts, authentication, persistence, networking, and deployment.\n\n6. Evaluate and improve code written in multiple programming languages.\n\n\nApply Now!"
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": [
+          "remote"
+        ],
+        "places": [
+          {
+            "kind": "worldwide"
+          }
+        ],
+        "placeStrictness": "label"
+      }
+    ],
+    "roleKind": "ai_training",
+    "seniority": "senior",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "contract",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    }
+  }
+}

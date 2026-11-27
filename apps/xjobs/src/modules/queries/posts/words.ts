@@ -28,6 +28,7 @@ export const POST_POSITION_WORDS: Readonly<Record<string, readonly string[]>> =
     software_architect: ['software architect'],
     tech_lead: ['tech lead'],
     engineering_manager: ['engineering manager'],
+    ai_training: ['ai trainer', 'ai training'],
   };
 
 /** Spellings added for posts only; the job board must not change. */

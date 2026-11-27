@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "unstated"
+        ],
         "places": [],
         "placeStrictness": "unstated"
       }
@@ -35,9 +37,54 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "SQS",
+        "code": "sqs",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "RabbitMQ",
+        "code": "rabbitmq",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Kafka",
+        "code": "kafka",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "infrastructure as code",
+        "code": "iac",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -49,9 +96,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

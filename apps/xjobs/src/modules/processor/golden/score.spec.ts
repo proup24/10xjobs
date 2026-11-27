@@ -54,7 +54,6 @@ function matchingCase(id = 'c1'): GoldenCase {
       arrangement: reviewed('remote'),
       contractType: reviewed('full_time'),
       isSoftwareEngineeringRole: reviewed(true),
-      engagement: reviewed('employee'),
     },
   };
 }
@@ -67,11 +66,58 @@ describe('scoreCase', () => {
     expect(Object.keys(scores.facts).length).toBeGreaterThanOrEqual(12);
   });
 
+  it('engagement is not scored', () => {
+    const c = matchingCase();
+    // An old case file may still carry a reviewed engagement label.
+    (c.drafted as Record<string, unknown>).engagement = reviewed('contractor');
+    const scores = scoreCase(fixtureDocument(), c);
+    expect(scores.facts).not.toHaveProperty('engagement');
+    expect(summarize([scores]).facts).not.toHaveProperty('engagement');
+  });
+
   it('ignores a drafted value that is not reviewed', () => {
     const c = matchingCase();
     c.drafted.arrangement = { value: 'onsite', reviewed: false };
     const scores = scoreCase(fixtureDocument(), c);
     expect(scores.facts.arrangement).toBeUndefined();
+  });
+
+  it('keeps the answer next to each unreviewed draft, to confirm or review it', () => {
+    const c = matchingCase();
+    c.drafted.arrangement = { value: 'unstated', reviewed: false };
+    c.drafted.contractType = { value: 'full_time', reviewed: false };
+    c.drafted.requirements = { value: null, reviewed: false };
+    const doc = fixtureDocument();
+    doc.arrangement.value = null;
+    doc.contractType.quote = 'Full-time';
+    const { drafts } = scoreCase(doc, c);
+    // null and 'unstated' read alike, as in scoring.
+    expect(drafts.arrangement).toMatchObject({
+      label: 'unstated',
+      agrees: true,
+    });
+    expect(drafts.contractType).toEqual({
+      label: 'full_time',
+      got: 'full_time',
+      quote: 'Full-time',
+      confidence: 'sure',
+      agrees: true,
+    });
+    expect(drafts.isSoftwareEngineeringRole).toBeUndefined();
+    expect(drafts.requirements).toMatchObject({ agrees: null });
+    expect(drafts.requirements?.got).toEqual([
+      { text: 'Node', code: 'nodejs', kind: 'main', domain: null, years: null },
+      { text: 'SQL', code: 'sql', kind: 'must', domain: null, years: null },
+      { text: 'Rust', code: 'rust', kind: 'nice', domain: null, years: null },
+    ]);
+  });
+
+  it('marks a draft the answer disagrees with', () => {
+    const c = matchingCase();
+    c.drafted.isSoftwareEngineeringRole = { value: false, reviewed: false };
+    expect(
+      scoreCase(fixtureDocument(), c).drafts.isSoftwareEngineeringRole,
+    ).toMatchObject({ label: false, got: true, agrees: false });
   });
 
   it('flags a sure fact the golden value contradicts', () => {
@@ -292,6 +338,44 @@ describe('requirement scores', () => {
     expect(summarize([scoreCase(doc, c)]).requirements).toMatchObject({
       domainAccuracy: 0,
       yearsAccuracy: 0,
+    });
+  });
+
+  it('reads a null domain or years in a reviewed label as not labeled', () => {
+    const doc = fixtureDocument();
+    const [node, sql] = doc.techStack.value?.requirements ?? [];
+    Object.assign(node, { domain: 'backend', years: { min: 2, max: null } });
+    Object.assign(sql, { domain: 'data', years: { min: 5, max: null } });
+    const c = matchingCase();
+    c.drafted.requirements = { value: null, reviewed: true };
+    c.expected.requirements = [
+      req('Node', 'nodejs', 'main'),
+      req('SQL', 'sql', 'must'),
+    ];
+    expect(summarize([scoreCase(doc, c)]).requirements).toMatchObject({
+      domainAccuracy: null,
+      yearsAccuracy: null,
+    });
+  });
+
+  it('still scores a non-null domain or years in a reviewed label', () => {
+    const doc = fixtureDocument();
+    const [node, sql] = doc.techStack.value?.requirements ?? [];
+    Object.assign(node, { domain: 'backend', years: { min: 2, max: null } });
+    Object.assign(sql, { domain: 'data', years: { min: 5, max: null } });
+    const c = matchingCase();
+    c.drafted.requirements = { value: null, reviewed: true };
+    c.expected.requirements = [
+      req('Node', 'nodejs', 'main'),
+      { ...req('SQL', 'sql', 'must'), domain: 'backend' },
+      { ...req('Rust', 'rust', 'nice'), years: { min: 1, max: null } },
+    ];
+    const counts = scoreCase(doc, c).requirements;
+    expect(counts).toMatchObject({
+      domainRight: 0,
+      domainTotal: 1,
+      yearsRight: 0,
+      yearsTotal: 1,
     });
   });
 });

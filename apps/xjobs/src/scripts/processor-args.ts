@@ -16,6 +16,7 @@ export function parseReprocessArgs(
     if (arg === '--all-in-scope') filter.allInScope = true;
     else if (arg === '--null-status') filter.nullStatus = true;
     else if (arg === '--failed') filter.failed = true;
+    else if (arg === '--matched') filter.matched = true;
     else if (arg === '--job') {
       const id = argv[++i];
       if (id === undefined || id.startsWith('--'))
@@ -27,10 +28,11 @@ export function parseReprocessArgs(
     !filter.allInScope &&
     !filter.nullStatus &&
     !filter.failed &&
+    !filter.matched &&
     !filter.jobIds
   )
     throw new Error(
-      'pass at least one of --all-in-scope, --null-status, --failed, --job',
+      'pass at least one of --all-in-scope, --null-status, --failed, --matched, --job',
     );
   return filter;
 }

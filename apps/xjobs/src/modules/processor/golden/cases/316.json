@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "unstated"
+        ],
         "places": [
           {
             "kind": "worldwide"
@@ -21,7 +23,7 @@
         "placeStrictness": "mention"
       }
     ],
-    "roleKind": "fullstack_engineer",
+    "roleKind": "frontend_engineer",
     "seniority": "senior",
     "yearsRequired": {
       "min": 5,
@@ -61,9 +63,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

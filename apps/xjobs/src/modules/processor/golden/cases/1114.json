@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["remote", "hybrid"],
+        "arrangements": [
+          "remote"
+        ],
         "places": [
           {
             "kind": "city",
@@ -33,6 +35,110 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "LLM",
+        "code": "llm",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "agents",
+        "code": "agents",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "tool calling",
+        "code": "tool_calling",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "embeddings",
+        "code": "embeddings",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "semantic search",
+        "code": "vector_search",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "GitHub",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "vector databases",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Weaviate",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Pinecone",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "pgvector",
+        "code": "pgvector",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "FastAPI",
+        "code": "fastapi",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -47,9 +153,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

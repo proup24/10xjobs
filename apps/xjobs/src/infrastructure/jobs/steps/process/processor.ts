@@ -15,6 +15,7 @@ import {
 } from './queue.service';
 import type { AutoSilenceService } from 'src/modules/processor/services/auto-silence.service';
 import { ProcessorService } from 'src/modules/processor/services/processor.service';
+import type { PrefilterService } from 'src/modules/prefilter/services/prefilter.service';
 
 const logger = new Logger('ProcessJob');
 
@@ -33,6 +34,11 @@ export interface ProcessJobDeps {
   queue: Pick<ProcessQueue, 'enqueue'>;
   matchQueue: Pick<MatchQueue, 'enqueue'>;
   autoSilence: Pick<AutoSilenceService, 'run'>;
+  /** Skips the listings no published profile could take, before any claim. */
+  prefilter: Pick<
+    PrefilterService,
+    'skipPending' | 'skipJob' | 'recheckProfiles'
+  >;
   config: ProcessorConfig;
 }
 
@@ -48,6 +54,10 @@ export async function processProcessJob(
     const payload = jobPayload.safeParse(job.data);
     if (!payload.success)
       throw new UnrecoverableError('Invalid process-job payload');
+    // An ingest nudge reaches here before any sweep: check before the claim.
+    // A demand that cannot be read throws, so BullMQ retries and nothing is skipped.
+    if (await deps.prefilter.skipJob(payload.data.jobId))
+      return { outcome: 'skipped' };
     const outcome = await deps.service.process(payload.data.jobId);
     // Throwing lets BullMQ back off and retry.
     if (outcome === 'retry') throw new Error('retry');
@@ -87,11 +97,21 @@ export async function processProcessJob(
     const released = await deps.repo.releaseStale(
       new Date(now.getTime() - deps.config.claimTimeoutMs),
     );
+    // Skipping costs no model call, so it runs while paused or over budget too.
+    // It lists only listings that could be skipped, so the first batch of the
+    // claim order may pass unchecked; correctness past it rests on `skipJob`
+    // in PROCESS_JOB. A failure fails the sweep before any claim.
+    // First, jobs skipped in the last 24 hours go back when a profile changed.
+    await deps.prefilter.recheckProfiles(now);
+    const prefilter = await deps.prefilter.skipPending(
+      processSweepConfig.limit,
+    );
     // Paused after a key, credit or account error: jobs would only bounce.
-    if (deps.service.isPaused()) return { released, enqueued: 0 };
+    if (deps.service.isPaused())
+      return { released, skipped: prefilter.skipped, enqueued: 0 };
     const spent = await deps.repo.spendSince(startOfUtcDay(now));
     if (deps.config.dailyBudgetUsd > 0 && spent >= deps.config.dailyBudgetUsd)
-      return { released, enqueued: 0 };
+      return { released, skipped: prefilter.skipped, enqueued: 0 };
     // Posts go at their lower queue priority, so a listing queued after them
     // (by this sweep or a later ingest nudge) is still taken first. Posts get
     // the same limit, and none are listed while the daily post cap is
@@ -104,7 +124,11 @@ export async function processProcessJob(
       : await deps.repo.listPendingPosts(processSweepConfig.limit);
     for (const jobId of listings) await deps.queue.enqueue(jobId);
     for (const jobId of posts) await deps.queue.enqueue(jobId, 'post');
-    return { released, enqueued: listings.length + posts.length };
+    return {
+      released,
+      skipped: prefilter.skipped,
+      enqueued: listings.length + posts.length,
+    };
   }
   if (job.name === AUTO_SILENCE_JOB) return deps.autoSilence.run();
   throw new UnrecoverableError(`Unsupported job: ${job.name}`);

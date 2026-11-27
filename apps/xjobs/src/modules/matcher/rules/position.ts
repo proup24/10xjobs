@@ -5,11 +5,11 @@ import { restsOn, type Check, type MatchProfile } from './types';
 /**
  * Role kinds a lead-level seniority lets a `tech_lead` profile pass: the software
  * engineering kinds the profile positions name. `other` (not engineering work) and
- * `engineering_manager` (people management, not leading engineers by building) are left
- * out, and `unstated` is not a kind. `tech_lead` itself passes by the exact-kind rule.
+ * `engineering_manager` (people management, not leading engineers by building) and
+ * `ai_training` (gig work, matched only by its own position) are left out, and `unstated` is not a kind. `tech_lead` itself passes by the exact-kind rule.
  */
 const LEAD_PASS_KINDS: ReadonlySet<string> = new Set(
-  Object.keys(POSITION_TITLES).filter((k) => k !== 'engineering_manager'),
+  Object.keys(POSITION_TITLES).filter((k) => k !== 'engineering_manager' && k !== 'ai_training'),
 );
 
 /**

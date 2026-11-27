@@ -58,11 +58,16 @@ export class ModelRequestError extends Error {
   }
 }
 
-/** Unparseable JSON or `finish_reason: 'length'`. Goes to the schema-fix retry. */
+/**
+ * Unparseable JSON, output the schema rejects, or a call that ran out of
+ * turns. Goes to the schema-fix retry, which sends back `retryErrors` when
+ * set (empty: no feedback), otherwise the message.
+ */
 export class ModelOutputError extends Error {
   constructor(
     message: string,
     readonly meta?: Partial<ModelCallMeta>,
+    readonly retryErrors?: string[],
   ) {
     super(message);
     this.name = 'ModelOutputError';

@@ -144,6 +144,47 @@ describe('ClaudeExtractionModel', () => {
     expect(error.meta?.latencyMs).toBe(42);
   });
 
+  it('records what each request did on the meta', async () => {
+    const { model } = setup({ stdout: fixture('success') });
+    const { meta } = await model.generate(input, req);
+    expect(meta.turns).toEqual({
+      numTurns: 2,
+      subtype: 'success',
+      requests: 1,
+      textReplies: 0,
+      enforceNudges: 0,
+      toolCalls: 1,
+      rejections: [],
+    });
+  });
+
+  it('a max-turns end after a rejection names it and feeds only it back', async () => {
+    const { model } = setup({ stdout: fixture('schema-mismatch') });
+    const error = await model.generate(input, req).catch((e) => e);
+    const rejection =
+      'Output does not match required schema: /code: must NOT have fewer than 5 characters (got 2)';
+    expect(error).toBeInstanceOf(ModelOutputError);
+    expect(error.message).toBe(
+      `max turns after 1 request; last rejection: ${rejection}`,
+    );
+    expect(error.retryErrors).toEqual([rejection]);
+    expect(error.meta?.turns).toMatchObject({
+      subtype: 'error_max_turns',
+      rejections: [rejection],
+    });
+  });
+
+  it('a max-turns end with no StructuredOutput call says so and feeds nothing back', async () => {
+    const { model } = setup({ stdout: fixture('no-structured-output') });
+    const error = await model.generate(input, req).catch((e) => e);
+    expect(error).toBeInstanceOf(ModelOutputError);
+    expect(error.message).toBe(
+      'max turns: no StructuredOutput call in 1 request',
+    );
+    expect(error.retryErrors).toEqual([]);
+    expect(error.meta?.turns).toMatchObject({ textReplies: 1, enforceNudges: 1 });
+  });
+
   it('maps a request error to ModelRequestError', async () => {
     const line = JSON.stringify({
       type: 'result',

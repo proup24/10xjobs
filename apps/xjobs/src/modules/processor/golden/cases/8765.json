@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["hybrid"],
+        "arrangements": [
+          "hybrid"
+        ],
         "places": [
           {
             "kind": "city",
@@ -18,7 +20,9 @@
         "placeStrictness": "label"
       },
       {
-        "arrangements": ["remote"],
+        "arrangements": [
+          "remote"
+        ],
         "places": [
           {
             "kind": "country",
@@ -52,7 +56,7 @@
       {
         "text": "React",
         "code": "react",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g2"
@@ -60,10 +64,58 @@
       {
         "text": "Next.js",
         "code": "nextjs",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g2"
+      },
+      {
+        "text": "LLMs",
+        "code": "llm",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "embeddings",
+        "code": "embeddings",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "vector databases",
+        "code": "vector_search",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "retrieval-augmented generation",
+        "code": "rag",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "Pinecone",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "agents",
+        "code": "agents",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
@@ -73,6 +125,10 @@
       },
       {
         "id": "g2",
+        "min": 1
+      },
+      {
+        "id": "g3",
         "min": 1
       }
     ],
@@ -87,9 +143,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

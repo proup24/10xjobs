@@ -3,9 +3,12 @@
  * again. Run after a prompt, schema or model change:
  *
  *   pnpm --filter @xjobs/xjobs db:reprocess -- --null-status
- *   ... --failed | --all-in-scope | --job <id> [--job <id> ...]
+ *   ... --failed | --matched | --all-in-scope | --job <id> [--job <id> ...]
  *
- * Out-of-scope jobs are never touched. Opens the client directly, like
+ * `--matched` sends the jobs with a qualified or review decision on their current extraction (current matcher version).
+ *
+ * Out-of-scope and archived jobs are never touched, nor `--all-in-scope` the
+ * jobs the prefilter skipped (never processed; `--job` sends one back to `pending`, where the next sweep skips it again if it still fails the check). Opens the client directly, like
  * `renormalize-jobs.ts`.
  */
 import { Logger } from '@nestjs/common';
@@ -23,9 +26,10 @@ async function main(): Promise<void> {
   );
   try {
     const repo = new PrismaProcessorRepository({ db } as DatabaseService);
-    const { marked, skippedArchived } = await repo.markPending(filter);
+    const { marked, skippedArchived, leftSkipped } =
+      await repo.markPending(filter);
     logger.log(
-      `Marked ${marked} jobs pending; skipped ${skippedArchived} archived`,
+      `Marked ${marked} jobs pending; skipped ${skippedArchived} archived; left ${leftSkipped} the prefilter skipped`,
     );
   } finally {
     await db.close();
