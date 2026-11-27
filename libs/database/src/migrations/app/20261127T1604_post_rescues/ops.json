@@ -16,9 +16,7 @@
       {
         "description": "ensure table \"post_rescues\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"post_rescues\""
-        ],
+        "params": ["\"public\".\"post_rescues\""],
         "expectation": {
           "expects": "absent",
           "object": "table \"post_rescues\""
@@ -36,11 +34,7 @@
       {
         "description": "verify table \"post_rescues\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
-        "params": [
-          "\"public\".\"post_rescues\"",
-          "r",
-          "p"
-        ],
+        "params": ["\"public\".\"post_rescues\"", "r", "p"],
         "expectation": {
           "expects": "present",
           "object": "table \"post_rescues\""
@@ -65,11 +59,7 @@
       {
         "description": "ensure column \"id\" exists",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
-        "params": [
-          "public",
-          "blocked_authors",
-          "id"
-        ],
+        "params": ["public", "blocked_authors", "id"],
         "expectation": {
           "expects": "present",
           "object": "column \"id\" on \"blocked_authors\""
@@ -101,9 +91,7 @@
       {
         "description": "ensure index \"post_rescues_createdAt_idx_9575dbd7\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"post_rescues_createdAt_idx_9575dbd7\""
-        ],
+        "params": ["\"public\".\"post_rescues_createdAt_idx_9575dbd7\""],
         "expectation": {
           "expects": "absent",
           "object": "index \"post_rescues_createdAt_idx_9575dbd7\""
@@ -149,9 +137,7 @@
       {
         "description": "ensure index \"post_rescues_jobId_idx_623c8f77\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"post_rescues_jobId_idx_623c8f77\""
-        ],
+        "params": ["\"public\".\"post_rescues_jobId_idx_623c8f77\""],
         "expectation": {
           "expects": "absent",
           "object": "index \"post_rescues_jobId_idx_623c8f77\""
@@ -197,9 +183,7 @@
       {
         "description": "ensure index \"post_rescues_live_user_job_800e0fe1\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"post_rescues_live_user_job_800e0fe1\""
-        ],
+        "params": ["\"public\".\"post_rescues_live_user_job_800e0fe1\""],
         "expectation": {
           "expects": "absent",
           "object": "index \"post_rescues_live_user_job_800e0fe1\""
@@ -245,9 +229,7 @@
       {
         "description": "ensure index \"post_rescues_userId_idx_a489d58a\" does not exist",
         "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
-        "params": [
-          "\"public\".\"post_rescues_userId_idx_a489d58a\""
-        ],
+        "params": ["\"public\".\"post_rescues_userId_idx_a489d58a\""],
         "expectation": {
           "expects": "absent",
           "object": "index \"post_rescues_userId_idx_a489d58a\""
@@ -396,10 +378,7 @@
       {
         "description": "check RLS is not already enabled on \"post_rescues\"",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
-        "params": [
-          "public",
-          "post_rescues"
-        ]
+        "params": ["public", "post_rescues"]
       }
     ],
     "execute": [
@@ -412,10 +391,7 @@
       {
         "description": "verify row-level security is enabled on \"post_rescues\"",
         "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
-        "params": [
-          "public",
-          "post_rescues"
-        ]
+        "params": ["public", "post_rescues"]
       }
     ]
   },

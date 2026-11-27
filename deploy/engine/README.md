@@ -14,7 +14,7 @@ Docker Compose project `xjobs-engine`, five services (`compose.yaml`):
 
 CI deploys on merge to `main`: CI, then `Dev database`, then `Deploy engine` (`.github/workflows/deploy-engine.yml`). It skips green while the `ENGINE_SSH_HOST` secret is unset. An automatic deploy also skips green when the server already runs a newer commit, so two quick merges that finish out of order never roll it back.
 
-Automatic deploys happen only when the `xjobs` Nx project changed since the commit of the last run whose `deploy` job succeeded, which the run name carries. A docs-only or web-only merge leaves the server untouched. A manual dispatch always deploys. The lookup reads the 30 most recent successful runs, so after 30 runs in a row with no engine deploy, the next run deploys anyway.
+Automatic deploys happen only when the `xjobs` Nx project changed since the commit of the last run whose `deploy` job succeeded, which the run name carries. A docs-only or web-only merge leaves the server untouched. A manual dispatch always deploys. The lookup reads the 50 most recent runs, so after 50 runs in a row with no engine deploy, the next run deploys anyway.
 
 Each deploy of a new image recreates `api` and `worker`, so the API is briefly down (a short outage). The worker restarts, unless it was stopped before the deploy (section 8c). If the new image is broken, the API stays down until a rollback (section 9) runs. A failed image pull leaves the running deploy and its files untouched.
 

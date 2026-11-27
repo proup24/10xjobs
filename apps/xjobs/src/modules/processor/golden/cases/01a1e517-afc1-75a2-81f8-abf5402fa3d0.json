@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["hybrid"],
+        "arrangements": [
+          "hybrid"
+        ],
         "places": [
           {
             "kind": "city",
@@ -118,6 +120,22 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "IBM i / AS400",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "REST APIs",
+        "code": "rest",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -143,19 +161,15 @@
     },
     "contractType": {
       "value": "full_time",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
-    },
-    "engagement": {
-      "value": "employee",
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

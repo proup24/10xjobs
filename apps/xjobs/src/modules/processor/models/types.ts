@@ -1,4 +1,5 @@
 import type { z } from 'zod';
+import type { CallTurns } from './claude/turns';
 import type { PostDetail } from '../../ingest/normalize/record';
 
 export interface PostingInput {
@@ -26,6 +27,8 @@ export interface ModelCallMeta {
   cachedInputTokens: number;
   costUsd: number;
   latencyMs: number;
+  /** What the call's model requests did (`claude -p` only). */
+  turns?: CallTurns | null;
 }
 
 /** One generation request: the whole document, closed fields included. */

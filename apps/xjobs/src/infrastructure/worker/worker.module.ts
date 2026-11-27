@@ -14,6 +14,7 @@ import { RedisSettingsModule } from 'src/infrastructure/redis/settings.module';
 import { FactsModule } from 'src/modules/facts';
 import { IngestModule } from 'src/modules/ingest';
 import { MatcherModule } from 'src/modules/matcher';
+import { PrefilterModule } from 'src/modules/prefilter';
 import { ProcessorModule } from 'src/modules/processor';
 import { RatesModule } from 'src/modules/rates';
 import { StorageModule } from 'src/modules/storage';
@@ -47,6 +48,7 @@ import { WorkerService } from './worker.service';
     JobsModule,
     IngestModule,
     ProcessorModule,
+    PrefilterModule,
     FactsModule,
     MatcherModule,
     RatesModule,

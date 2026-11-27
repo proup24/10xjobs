@@ -1510,11 +1510,11 @@ describe('CollectionService Indeed budget and windows', () => {
     expect(collectsNow(INDEED, [])).toBe(true);
   });
 
-  it('collects hourly 09-21 Morocco time on weekdays, a day back, up to 72 hours', () => {
+  it('collects every 3 hours 09-21 Morocco time on weekdays, a day back, up to 72 hours', () => {
     expect(channelJobsConfig[INDEED]).toMatchObject({
       queueName: 'collect-indeed',
       enabled: true,
-      schedule: { pattern: '0 9-21 * * 1-5', timezone: 'Africa/Casablanca' },
+      schedule: { pattern: '0 9-21/3 * * 1-5', timezone: 'Africa/Casablanca' },
       window: { initialHours: 24, overlapMinutes: 0, maximumHours: 72 },
       resumeHours: 24,
       concurrency: 1,

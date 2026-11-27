@@ -1,0 +1,42 @@
+{
+  "id": "01a207a4-a485-7009-ba23-4d2e6221c34a",
+  "input": {
+    "title": "Software Engineer",
+    "description": "An established healthcare technology business is looking for an experienced software engineering lead to join the team. The role focuses on developing innovative technical concepts and supporting a dynamic development team within an agile environment. The successful candidate will drive high standards of quality and efficiency while ensuring that critical information systems remain robust and performant.\n\n\nWhat you'll be doing\n\n• Lead and coach development teams to ensure high quality and adherence to technical standards\n\n• Translate complex business requirements into scalable technical concepts and architectures\n\n• Conduct thorough architecture and code reviews to promote continuous improvement and innovation\n\n• Proactively identify system vulnerabilities and develop targeted solutions to enhance performance\n\n• Collaborate with technical and business stakeholders to optimize user experience and project goals\n\n\nWhat we're looking for\n\n• Degree in Computer Science, Software Engineering, or a related technical field\n\n• Extensive experience in a leadership role within a software development environment\n\n• Proven track record in software architecture and modern development methodologies\n\n• Strong analytical thinking with a creative approach to technical problem-solving\n\n• Excellent interpersonal and communication skills to foster a positive team dynamic\n\n\nWhat's on offer\n\n• Professional development and mentorship opportunities\n\n• A collaborative environment focused on meaningful technology solutions\n\n• Access to modern tools and innovative development practices\n\n• Flexible working culture within a purpose-driven organization\n\n\nApply via Hyra to be considered for this opportunity."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": [
+          "unstated"
+        ],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "tech_lead",
+    "seniority": "lead",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [],
+    "groups": [],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    }
+  }
+}

@@ -7,18 +7,26 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "unstated"
+        ],
         "places": [
           {
-            "kind": "country",
-            "code": "CZ"
+            "kind": "city",
+            "name": "Prague",
+            "countryCode": "CZ"
+          },
+          {
+            "kind": "city",
+            "name": "Brno",
+            "countryCode": "CZ"
           },
           {
             "kind": "region",
             "code": "EU"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "label"
       }
     ],
     "roleKind": "frontend_engineer",
@@ -44,6 +52,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -58,9 +74,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

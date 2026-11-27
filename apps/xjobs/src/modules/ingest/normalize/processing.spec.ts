@@ -67,6 +67,49 @@ describe('nextProcessing', () => {
     ).toBe(archived);
   });
 
+  it('a skipped job seen on a newer observation goes back to pending as reopened', () => {
+    expect(
+      nextProcessing({
+        created: false,
+        previousLastSeenAt: new Date(seen.getTime() - 60_000),
+        observedAt: seen,
+        current: { status: 'skipped', reason: 'new', requestedAt: null },
+        rebuild: false,
+        sightingOnly: false,
+      }),
+    ).toEqual({ status: 'pending', reason: 'reopened', requestedAt: seen });
+  });
+
+  it('a skipped job on a replay stays skipped', () => {
+    const skipped: ProcessingState = {
+      status: 'skipped',
+      reason: 'new',
+      requestedAt: null,
+    };
+    for (const previousLastSeenAt of [after(1), seen]) {
+      expect(
+        nextProcessing({
+          created: false,
+          previousLastSeenAt,
+          observedAt: seen,
+          current: skipped,
+          rebuild: false,
+          sightingOnly: false,
+        }),
+      ).toBe(skipped);
+    }
+    expect(
+      nextProcessing({
+        created: false,
+        previousLastSeenAt: seen,
+        observedAt: after(1),
+        current: skipped,
+        rebuild: true,
+        sightingOnly: false,
+      }),
+    ).toBe(skipped);
+  });
+
   it('sends a new job to Process', () => {
     expect(
       nextProcessing({
