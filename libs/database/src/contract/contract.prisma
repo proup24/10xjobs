@@ -710,6 +710,8 @@ model NormalizedJob {
   @@check(expression: sql`(kind = 'post_role') = ("parentJobId" IS NOT NULL)`, name: "normalized_jobs_post_role_parent")
   @@unique([parentJobId, roleKey])
   @@index([firstSeenAt], where: sql`kind = 'post' AND "processingStatus" = 'pending'`, name: "normalized_jobs_pending_posts")
+  // post_junk_list reads processed post jobs by when they were first seen.
+  @@index([firstSeenAt], where: sql`kind = 'post' AND "processingStatus" = 'processed'`, name: "normalized_jobs_processed_posts")
   @@check(expression: sql`status IN ('active', 'merged')`, name: "normalized_jobs_status")
   @@check(expression: sql`(status = 'merged') = ("mergedIntoId" IS NOT NULL)`, name: "normalized_jobs_merged_into")
   @@check(expression: sql`"processingStatus" IS NULL OR "processingStatus" IN ('pending', 'processing', 'processed', 'failed', 'archived')`, name: "normalized_jobs_processing_status")

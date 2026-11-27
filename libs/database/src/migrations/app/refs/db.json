@@ -1,5 +1,5 @@
 {
-  "hash": "5299fb8fc35c27b60dfa6c603b48c8f630d6657c3b48e80e47a4d33132349dc5",
+  "hash": "f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -41,6 +41,8 @@
     "role-link-keys-index",
     "job-link-group",
     "blocked-authors-lower-key",
-    "post-rescue-rpcs"
+    "post-rescue-rpcs",
+    "post-reads",
+    "post-rescue-junk"
   ]
 }

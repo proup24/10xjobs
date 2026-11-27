@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5299fb8fc35c27b60dfa6c603b48c8f630d6657c3b48e80e47a4d33132349dc5'>;
+  StorageHashBase<'f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7'>;
 export type ExecutionHash =
   ExecutionHashBase<'43f96e9ea4c3242b3e60bf904369955db4873127cd090ad393c291c8a54db296'>;
 export type ProfileHash =
@@ -4259,6 +4259,13 @@ type ContractBase = Omit<
                   readonly prefix: 'normalized_jobs_pending_posts';
                   readonly columns: readonly ['firstSeenAt'];
                   readonly where: "kind = 'post' AND \"processingStatus\" = 'pending'";
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'normalized_jobs_processed_posts_a37ab94e';
+                  readonly prefix: 'normalized_jobs_processed_posts';
+                  readonly columns: readonly ['firstSeenAt'];
+                  readonly where: "kind = 'post' AND \"processingStatus\" = 'processed'";
                   readonly unique: false;
                 },
                 {

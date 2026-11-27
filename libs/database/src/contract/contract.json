@@ -12809,6 +12809,15 @@
                 },
                 {
                   "columns": [
+                    "firstSeenAt"
+                  ],
+                  "name": "normalized_jobs_processed_posts_a37ab94e",
+                  "prefix": "normalized_jobs_processed_posts",
+                  "unique": false,
+                  "where": "kind = 'post' AND \"processingStatus\" = 'processed'"
+                },
+                {
+                  "columns": [
                     "processingStatus",
                     "processingRequestedAt"
                   ],
@@ -16265,7 +16274,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5299fb8fc35c27b60dfa6c603b48c8f630d6657c3b48e80e47a4d33132349dc5"
+    "storageHash": "f0d8e37dbfdce68f789a15567b397f2b6f782992b56b931c1acdd311e0dea8a7"
   },
   "execution": {
     "executionHash": "43f96e9ea4c3242b3e60bf904369955db4873127cd090ad393c291c8a54db296",
