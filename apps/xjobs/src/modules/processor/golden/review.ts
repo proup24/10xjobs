@@ -4,7 +4,7 @@
  * `processor:golden-review` script reads and writes the files.
  */
 import type { GoldenCase, LabelKey } from './golden';
-import type { ListingReportFile } from './score';
+import type { DraftCheck, ListingReportFile } from './score';
 
 export type ReviewReason =
   /** The eval's value differs from a label that counts (`expected` or a reviewed draft). */
@@ -30,6 +30,39 @@ type ReportPart = Pick<ListingReportFile, 'misses' | 'scores'>;
 const byCase = (a: string, b: string): number =>
   a.localeCompare(b, undefined, { numeric: true });
 
+const requirementKey = (r: unknown): string | null => {
+  if (!r || typeof r !== 'object') return null;
+  const { text, code, kind } = r as Record<string, unknown>;
+  if (typeof text !== 'string') return null;
+  return JSON.stringify([
+    text.trim().toLowerCase(),
+    code ?? null,
+    kind ?? null,
+  ]);
+};
+
+/**
+ * A `requirements` draft agrees when both sides hold the same requirements on
+ * text (trimmed, any case), code and kind. Order, domain, years and group are
+ * not compared: the labels do not carry them.
+ */
+function requirementsAgree(check: DraftCheck | undefined): boolean {
+  if (!check || !Array.isArray(check.label) || !Array.isArray(check.got))
+    return false;
+  const keys = (list: unknown[]) => list.map(requirementKey).sort();
+  const want = keys(check.label);
+  const got = keys(check.got);
+  return (
+    !want.includes(null) &&
+    !got.includes(null) &&
+    want.length === got.length &&
+    want.every((k, i) => k === got[i])
+  );
+}
+
+const draftAgrees = (key: string, check: DraftCheck | undefined): boolean =>
+  key === 'requirements' ? requirementsAgree(check) : check?.agrees === true;
+
 /** Every item a human must read, ordered by case, then field. */
 export function reviewItems(
   report: ReportPart,
@@ -51,7 +84,7 @@ export function reviewItems(
     for (const [field, d] of Object.entries(c.drafted)) {
       if (!d || d.reviewed) continue;
       const check = score?.drafts[field as keyof typeof c.drafted];
-      if (check?.agrees === true) continue;
+      if (draftAgrees(field, check)) continue;
       items.push({
         caseId: c.id,
         title: title.get(c.id) ?? '',
@@ -74,7 +107,7 @@ export function agreements(
 ): { caseId: string; key: LabelKey }[] {
   return report.scores.flatMap((s) =>
     Object.entries(s.drafts).flatMap(([key, d]) =>
-      d?.agrees === true ? [{ caseId: s.caseId, key: key as LabelKey }] : [],
+      draftAgrees(key, d) ? [{ caseId: s.caseId, key: key as LabelKey }] : [],
     ),
   );
 }

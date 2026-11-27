@@ -34,6 +34,15 @@ const score = (caseId: string, drafts: FactScores['drafts']): FactScores => ({
 
 const draft = (value: unknown, reviewed = false) => ({ value, reviewed });
 
+const req = (text: string, code: string | null, kind: string) => ({
+  text,
+  code,
+  kind,
+  group: null,
+  domain: null,
+  years: null,
+});
+
 const cases = [
   goldenCase('10', {
     arrangement: draft('remote'),
@@ -64,7 +73,7 @@ const report: Pick<ListingReportFile, 'misses' | 'scores'> = {
     score('10', {
       arrangement: check('remote', 'remote', true),
       contractType: check('full_time', 'contract', false),
-      requirements: check([], [], null),
+      requirements: check([req('Go', 'go', 'must')], [], null),
     }),
     score('9', { isSoftwareEngineeringRole: check(true, true, true) }),
   ],
@@ -95,6 +104,57 @@ describe('reviewItems', () => {
     );
     expect(fields).not.toContain('10.arrangement');
     expect(fields).not.toContain('9.isSoftwareEngineeringRole');
+  });
+});
+
+describe('requirements drafts', () => {
+  const label = [
+    req('TypeScript', 'typescript', 'must'),
+    req('Go', 'go', 'nice'),
+  ];
+  const withGot = (got: unknown) => ({
+    cases: [goldenCase('20', { requirements: draft(null) })],
+    report: {
+      misses: [],
+      scores: [score('20', { requirements: check(label, got, null) })],
+    } as Pick<ListingReportFile, 'misses' | 'scores'>,
+  });
+
+  it('agrees on text, code and kind, ignoring order, domain, years and group', () => {
+    const { cases: c, report: r } = withGot([
+      { text: ' go ', code: 'go', kind: 'nice', domain: 'backend', years: 3 },
+      {
+        text: 'typescript',
+        code: 'typescript',
+        kind: 'must',
+        domain: null,
+        years: null,
+      },
+    ]);
+    expect(reviewItems(r, c)).toEqual([]);
+    expect(agreements(r)).toEqual([{ caseId: '20', key: 'requirements' }]);
+  });
+
+  it.each([
+    [
+      'kind',
+      [
+        { text: 'TypeScript', code: 'typescript', kind: 'nice' },
+        { text: 'Go', code: 'go', kind: 'nice' },
+      ],
+    ],
+    [
+      'code',
+      [
+        { text: 'TypeScript', code: 'ts', kind: 'must' },
+        { text: 'Go', code: 'go', kind: 'nice' },
+      ],
+    ],
+    ['count', [{ text: 'Go', code: 'go', kind: 'nice' }]],
+  ])('is still listed when %s differs', (_name, got) => {
+    const { cases: c, report: r } = withGot(got);
+    expect(reviewItems(r, c).map((i) => i.field)).toEqual(['requirements']);
+    expect(agreements(r)).toEqual([]);
   });
 });
 
