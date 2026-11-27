@@ -33,6 +33,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "Playwright",
+        "code": "playwright",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -61,7 +69,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -77,6 +77,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "LLM",
+        "code": "llm",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],

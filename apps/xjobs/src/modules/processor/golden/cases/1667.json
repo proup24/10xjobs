@@ -71,6 +71,30 @@
         "domain": null,
         "years": null,
         "group": "g2"
+      },
+      {
+        "text": "SQL",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React Native",
+        "code": "react_native",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
@@ -103,7 +127,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

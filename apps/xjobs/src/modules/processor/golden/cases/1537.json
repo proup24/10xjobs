@@ -47,7 +47,7 @@
         "kind": "main",
         "domain": null,
         "years": null,
-        "group": null
+        "group": "g1"
       },
       {
         "text": "React",
@@ -56,9 +56,58 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "JavaScript ES6",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Cursor",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "ChatGPT",
+        "code": "openai",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Copilot",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "functional programming",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
@@ -79,7 +128,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

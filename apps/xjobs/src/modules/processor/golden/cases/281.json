@@ -57,9 +57,166 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "Next.js",
+        "code": "nextjs",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "REST APIs",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Redux Toolkit / RTK Query",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "MUI",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React Hook Form",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Yup",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Claude Code",
+        "code": "claude_code",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "OpenAI Codex",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "OAuth 2.0 / OpenID Connect",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CI/CD",
+        "code": "ci_cd",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "HL7",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "FHIR",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Google Cloud",
+        "code": "gcp",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Jira",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Xray",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -85,7 +242,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -50,6 +50,126 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Postgres",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "NestJS",
+        "code": "nestjs",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Vite",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Next.js",
+        "code": "nextjs",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "RESTful APIs",
+        "code": "rest",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "microservices",
+        "code": "microservices",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Jest",
+        "code": "jest",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Mocha",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Chai",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Storybook",
+        "code": "design_systems",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React Testing Library",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Cypress",
+        "code": "cypress",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -73,7 +193,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

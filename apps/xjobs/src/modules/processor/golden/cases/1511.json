@@ -35,7 +35,7 @@
       {
         "text": "Python",
         "code": "python",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g1"
@@ -43,23 +43,139 @@
       {
         "text": "TypeScript",
         "code": "typescript",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g1"
       },
       {
-        "text": "other modern languages",
-        "code": null,
-        "kind": "main",
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g1"
+      },
+      {
+        "text": "Go",
+        "code": "go",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Java",
+        "code": "java",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "GCP",
+        "code": "gcp",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CI/CD",
+        "code": "ci_cd",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Spark",
+        "code": "spark",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kafka",
+        "code": "kafka",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Airflow",
+        "code": "airflow",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Terraform",
+        "code": "terraform",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Pulumi",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "microservices",
+        "code": "microservices",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
       {
         "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
         "min": 1
       }
     ],
@@ -83,7 +199,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

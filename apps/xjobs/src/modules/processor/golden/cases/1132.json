@@ -50,11 +50,87 @@
         "domain": null,
         "years": null,
         "group": "g1"
+      },
+      {
+        "text": "LLM",
+        "code": "llm",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "agent frameworks",
+        "code": "agents",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "MCP",
+        "code": "mcp",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "A2A",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "RAG",
+        "code": "rag",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "vector databases",
+        "code": "vector_search",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "evaluation frameworks",
+        "code": "evals",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "prompt engineering",
+        "code": "prompt_engineering",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
       {
         "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
         "min": 1
       }
     ],
@@ -78,7 +154,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

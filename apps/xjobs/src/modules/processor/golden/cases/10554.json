@@ -27,7 +27,7 @@
       {
         "text": "TypeScript",
         "code": "typescript",
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
@@ -35,7 +35,7 @@
       {
         "text": "React",
         "code": "react",
-        "kind": "main",
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
@@ -67,7 +67,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

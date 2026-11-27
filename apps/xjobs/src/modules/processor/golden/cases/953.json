@@ -46,13 +46,146 @@
       {
         "text": "Vue.js",
         "code": "vue",
-        "kind": "main",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "RESTful API",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "OAuth 2.0",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "JWT",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "SQL",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "NoSQL",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CI/CD",
+        "code": "ci_cd",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "GCP",
+        "code": "gcp",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "infrastructure-as-code",
+        "code": "iac",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Salesforce",
+        "code": "salesforce",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Apex",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Lightning Web Components",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Visualforce",
+        "code": null,
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
@@ -73,7 +206,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

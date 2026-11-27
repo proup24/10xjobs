@@ -36,15 +36,124 @@
         "group": null
       },
       {
-        "text": "TypeScript/JavaScript",
+        "text": "TypeScript",
         "code": "typescript",
         "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Vue",
+        "code": "vue",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Svelte",
+        "code": "svelte",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "REST APIs",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "SQLite",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Electron",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CI/CD",
+        "code": "ci_cd",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "cloud platforms",
+        "code": null,
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      },
+      {
+        "id": "g3",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
@@ -65,7 +174,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

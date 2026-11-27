@@ -60,9 +60,86 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Postgres",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "RAG",
+        "code": "rag",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "vector search",
+        "code": "vector_search",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "MCP",
+        "code": "mcp",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "tool calling",
+        "code": "tool_calling",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "evals",
+        "code": "evals",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Claude Code",
+        "code": "claude_code",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Cursor",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
@@ -83,7 +160,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

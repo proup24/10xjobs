@@ -34,6 +34,22 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "SQL Database",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "REST API",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -57,7 +73,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

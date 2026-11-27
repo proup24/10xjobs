@@ -63,6 +63,38 @@
         "domain": null,
         "years": null,
         "group": "g2"
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "SQL",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "NoSQL",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "microservices",
+        "code": "microservices",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
@@ -100,7 +132,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

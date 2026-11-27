@@ -46,6 +46,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -74,7 +82,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

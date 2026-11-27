@@ -23,7 +23,32 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "requirements": [],
+    "requirements": [
+      {
+        "text": "REST-based web services",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Postman",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
     "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",
@@ -50,7 +75,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

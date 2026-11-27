@@ -59,11 +59,75 @@
         "domain": null,
         "years": null,
         "group": "g1"
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kafka",
+        "code": "kafka",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Redis",
+        "code": "redis",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "Cloudflare",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
       {
         "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      },
+      {
+        "id": "g3",
         "min": 1
       }
     ],

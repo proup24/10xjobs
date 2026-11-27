@@ -47,12 +47,28 @@
         "domain": null,
         "years": null,
         "group": "g1"
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Linux",
+        "code": "linux",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
       {
         "id": "g1",
-        "min": 1
+        "min": 2
       }
     ],
     "requiredLanguages": [],
@@ -75,7 +91,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

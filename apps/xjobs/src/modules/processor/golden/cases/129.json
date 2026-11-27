@@ -50,6 +50,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -70,7 +78,7 @@
     },
     "contractType": {
       "value": "contract",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
@@ -78,7 +86,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -18,8 +18,222 @@
     "seniority": "senior",
     "yearsRequired": null,
     "contractMonths": 12,
-    "requirements": [],
-    "groups": [],
+    "requirements": [
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Terraform",
+        "code": "terraform",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "GitHub Actions",
+        "code": "github_actions",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Helm",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Google Cloud",
+        "code": "gcp",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Prometheus",
+        "code": "prometheus",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Grafana",
+        "code": "grafana",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Nginx",
+        "code": "nginx",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Traefik",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Envoy",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Redis",
+        "code": "redis",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Varnish",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Claude Code",
+        "code": "claude_code",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "Copilot",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "Codex",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "MCP",
+        "code": "mcp",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Git/GitHub",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Scaleway",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "OpenTelemetry",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "VictoriaMetrics",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "PHP",
+        "code": "php",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Symfony",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      },
+      {
+        "id": "g3",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -49,7 +263,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

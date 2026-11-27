@@ -48,9 +48,58 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Drizzle",
+        "code": "drizzle",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Prisma",
+        "code": "prisma",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Playwright",
+        "code": "playwright",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Cypress",
+        "code": "cypress",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -80,7 +129,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

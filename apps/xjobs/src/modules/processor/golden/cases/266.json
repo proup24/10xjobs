@@ -28,7 +28,7 @@
         "kind": "main",
         "domain": null,
         "years": null,
-        "group": null
+        "group": "g1"
       },
       {
         "text": "Node.js",
@@ -45,9 +45,54 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Express.js",
+        "code": "express",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Cursor",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Atlassian Forge",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Jira",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -73,7 +118,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

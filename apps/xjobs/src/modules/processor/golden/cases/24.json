@@ -14,7 +14,7 @@
         "placeStrictness": "unstated"
       }
     ],
-    "roleKind": "unstated",
+    "roleKind": "fullstack_engineer",
     "seniority": "mid",
     "yearsRequired": {
       "min": 3,
@@ -42,6 +42,70 @@
         "text": "Spring Boot",
         "code": "spring",
         "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "REST API",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Defect Dojo",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Firebase Cloud Messaging",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Gradle",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "GitLab CI",
+        "code": "gitlab_ci",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Renovate",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "MQTT",
+        "code": null,
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
@@ -73,7 +137,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -66,6 +66,62 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "TypeScript",
+        "code": "typescript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "MySQL",
+        "code": "mysql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Git",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "GitHub",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Fastify",
+        "code": "fastify",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Vite",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
@@ -100,7 +156,7 @@
     },
     "contractType": {
       "value": "contract",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
@@ -108,7 +164,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -43,9 +43,206 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "REST",
+        "code": "rest",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "GraphQL",
+        "code": "graphql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Lambda",
+        "code": "aws_lambda",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "SQS",
+        "code": "sqs",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "EventBridge",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "S3",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "API Gateway",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "PostgreSQL",
+        "code": "postgresql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "SQL Server",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "MCP",
+        "code": "mcp",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "A2A",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "tool calling",
+        "code": "tool_calling",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g3"
+      },
+      {
+        "text": "CI/CD",
+        "code": "ci_cd",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "LLM",
+        "code": "llm",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "LangGraph",
+        "code": "langgraph",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CrewAI",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Strands Agents",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Redshift",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Parquet",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "GCP",
+        "code": "gcp",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      },
+      {
+        "id": "g3",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -76,7 +273,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

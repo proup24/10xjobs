@@ -50,9 +50,94 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "React Native",
+        "code": "react_native",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "HTML",
+        "code": "html",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CSS",
+        "code": "css",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Docker",
+        "code": "docker",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Redis",
+        "code": "redis",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Datadog",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "GitHub Actions",
+        "code": "github_actions",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "CircleCI",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [],
     "sponsorship": "unstated",
     "salary": null,
@@ -73,7 +158,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

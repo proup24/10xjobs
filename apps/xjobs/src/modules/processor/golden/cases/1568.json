@@ -30,7 +30,7 @@
       {
         "text": "JavaScript",
         "code": "javascript",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g1"
@@ -38,7 +38,7 @@
       {
         "text": "Python",
         "code": "python",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g1"
@@ -46,15 +46,59 @@
       {
         "text": "Java",
         "code": "java",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": "g1"
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Node.js",
+        "code": "nodejs",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Django",
+        "code": "django",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "SQL",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "NoSQL",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [
       {
         "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
         "min": 1
       }
     ],
@@ -78,7 +122,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

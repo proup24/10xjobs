@@ -39,7 +39,7 @@
       {
         "text": "HTML",
         "code": "html",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": null
@@ -47,7 +47,47 @@
       {
         "text": "CSS",
         "code": "css",
-        "kind": "main",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Cloudflare Workers",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Durable Objects",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Python",
+        "code": "python",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "SQL",
+        "code": "sql",
+        "kind": "nice",
         "domain": null,
         "years": null,
         "group": null
@@ -79,7 +119,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

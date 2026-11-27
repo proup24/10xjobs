@@ -69,6 +69,30 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "AI SDK",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "tool calling",
+        "code": "tool_calling",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Vercel",
+        "code": "vercel",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -93,11 +117,11 @@
     },
     "isSoftwareEngineeringRole": {
       "value": false,
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }
