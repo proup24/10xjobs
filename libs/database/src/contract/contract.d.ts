@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06'>;
+  StorageHashBase<'668c4a1752b51f2e7aa44792a829918d5251da7b7d8c2ccad6fdeb544f3d9a9f'>;
 export type ExecutionHash =
   ExecutionHashBase<'dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7'>;
 export type ProfileHash =
@@ -1113,6 +1113,7 @@ export namespace Models {
     providerRequestId: FieldOutputTypes['public']['ProcessingAttempt']['providerRequestId'];
     quoteFailures: FieldOutputTypes['public']['ProcessingAttempt']['quoteFailures'];
     step: FieldOutputTypes['public']['ProcessingAttempt']['step'];
+    turns: FieldOutputTypes['public']['ProcessingAttempt']['turns'];
     extraction: public_JobExtraction | null;
     job: public_NormalizedJob | null;
     readonly [RelationKeys]?: 'extraction' | 'job';
@@ -4499,6 +4500,12 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly turns: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
               };
@@ -9596,6 +9603,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly turns: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
             };
             readonly relations: {
               readonly extraction: {
@@ -9644,6 +9655,7 @@ type ContractBase = Omit<
                 readonly providerRequestId: { readonly column: 'providerRequestId' };
                 readonly quoteFailures: { readonly column: 'quoteFailures' };
                 readonly step: { readonly column: 'step' };
+                readonly turns: { readonly column: 'turns' };
               };
             };
           };

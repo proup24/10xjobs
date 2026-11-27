@@ -1101,6 +1101,9 @@ model ProcessingAttempt {
   outcome           String
   error             String?
   quoteFailures     Int                  @default(0)
+  // What the claude -p call's model requests did (requests, text replies, enforce nudges,
+  // StructuredOutput calls, rejection texts, result subtype); null before slice 03 task 12.
+  turns             Jsonb?
   createdAt         TimestamptzJsDate(3) @default(now())
 
   @@check(expression: sql`step IN ('decision', 'extraction', 'extraction_retry', 'generation', 'generation_retry', 'verification')`, name: "processing_attempts_step")

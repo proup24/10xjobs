@@ -1,0 +1,62 @@
+[
+  {
+    "id": "column.public.processing_attempts.turns",
+    "label": "Add column \"turns\" to \"processing_attempts\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "turns",
+        "table": "processing_attempts"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"turns\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "processing_attempts",
+          "turns"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "column \"turns\" on \"processing_attempts\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"turns\"",
+        "sql": "ALTER TABLE \"public\".\"processing_attempts\" ADD COLUMN \"turns\" jsonb"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"turns\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "processing_attempts",
+          "turns"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"turns\" on \"processing_attempts\""
+        }
+      },
+      {
+        "description": "verify column \"turns\" has type \"jsonb\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "processing_attempts",
+          "turns",
+          "jsonb"
+        ]
+      }
+    ]
+  }
+]

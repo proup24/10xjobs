@@ -4905,6 +4905,13 @@
                   "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
+              },
+              "turns": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -4993,6 +5000,9 @@
                 },
                 "step": {
                   "column": "step"
+                },
+                "turns": {
+                  "column": "turns"
                 }
               },
               "namespaceId": "public",
@@ -12891,6 +12901,11 @@
                   "codecId": "pg/text@1",
                   "dataType": "pg/text",
                   "nullable": false
+                },
+                "turns": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -15930,7 +15945,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06"
+    "storageHash": "668c4a1752b51f2e7aa44792a829918d5251da7b7d8c2ccad6fdeb544f3d9a9f"
   },
   "execution": {
     "executionHash": "dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7",
