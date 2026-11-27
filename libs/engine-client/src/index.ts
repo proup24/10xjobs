@@ -10,6 +10,7 @@ export type {
   HeldPostView,
   PostSearchView,
   PublishedProfile,
+  RescueView,
   ReviewPage,
   SearchesStateView,
   SearchSwitchKey,
