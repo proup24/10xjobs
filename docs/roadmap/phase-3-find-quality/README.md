@@ -24,7 +24,7 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 | 01  | [LinkedIn source data](01-linkedin-source-data.md)                             | Harvest | Done (PR 52)                                                                          |
 | 02  | [Listing facts](02-listing-facts.md)                                           | Enrich  | Done (PRs 53–60)                                                                      |
 | 02b | [Models on Claude](02b-claude-models.md) (interim)                             | Enrich  | Done (PRs 62–65)                                                                      |
-| 03  | [Processor quality](03-processor-quality.md)                                   | Enrich  | Next; brief revised 2026-11-17                                                        |
+| 03  | [Processor quality](03-processor-quality.md)                                   | Enrich  | Built (PRs 150, 151, 154, 155, 156); dev checks in 13; Tasks 13–14 open               |
 | 04  | [Search precision](04-search-precision.md)                                     | Harvest | Done (PRs 66–70)                                                                      |
 | 05  | [Posting language for close languages](05-posting-language-close-languages.md) | Enrich  | Done (PR 84)                                                                          |
 | 06  | [One job per apply link](06-one-job-per-apply-link.md)                         | Harvest | Done (PR 86)                                                                          |
@@ -34,6 +34,7 @@ Same as Phases 1 and 2: each slice is a short brief covering the problem, the op
 | 10  | [Search yield](10-search-yield.md)                                             | Harvest | Findings; not yet discussed                                                           |
 | 11  | [Monday checks](11-monday-checks.md)                                           | Ops     | Checks run 2026-11-24; slice 09 check 3 open                                          |
 | 12  | [Activity signals for paused searches](12-activity-signals.md)                 | Harvest | Built (PRs 133, 141); verified on dev 2026-11-26                                      |
+| 13  | [Slice 03 rollout checks](13-slice-03-rollout-checks.md)                       | Ops     | Planned; first weekday after the deploys                                              |
 
 ## Follow-ups from slice 02
 
