@@ -23,6 +23,7 @@ import {
   matchRow,
 } from '@/components/matches/test-fixtures';
 import { rescuePostAction, undoRescueAction } from '@/app/(app)/actions';
+import { unblockAuthorAction } from '@/app/(app)/preferences/actions';
 import { PostsView } from './posts-view';
 
 vi.mock('next/navigation', () => ({
@@ -35,6 +36,10 @@ vi.mock('@/app/(app)/actions', () => ({
   reportMismatchAction: vi.fn(),
   rescuePostAction: vi.fn(),
   undoRescueAction: vi.fn(),
+}));
+vi.mock('@/app/(app)/preferences/actions', () => ({
+  blockAuthorAction: vi.fn(),
+  unblockAuthorAction: vi.fn(),
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -341,6 +346,30 @@ describe('PostsView', () => {
         },
       );
       expect(screen.queryByRole('button', { name: 'Rescue' })).toBeNull();
+    });
+
+    it('offers Unblock on a blockedAuthor row and calls the action', async () => {
+      vi.mocked(unblockAuthorAction).mockResolvedValue({ status: 'saved' });
+      renderView(
+        { list: 'disqualified', job: 'd1' },
+        {
+          selected: disq({
+            checks: [
+              {
+                rule: 'blockedAuthor',
+                outcome: 'fail',
+                jobValue: ['profile:jane'],
+                reason: 'you blocked Jane Doe',
+              },
+            ],
+          }),
+          details: detailsOf({ jobId: 'd1' }),
+        },
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Unblock Jane Doe' }));
+      await waitFor(() =>
+        expect(unblockAuthorAction).toHaveBeenCalledWith('profile:jane'),
+      );
     });
 
     it('offers no Rescue on a role the user moved out of Review', () => {

@@ -1,9 +1,14 @@
+import { BlockAuthorButton } from './block-author-button';
 import { Badge } from '@/components/ui/badge';
 import { TextLink } from '@/components/ui/text';
 import { timeAgo } from '@/lib/matches/freshness';
 import type { PostDetails } from '@/lib/posts/load';
 
-type Person = { name: string | null; profileUrl: string | null };
+type Person = {
+  name: string | null;
+  profileUrl: string | null;
+  authorKey: string | null;
+};
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -14,7 +19,11 @@ const strings = (v: unknown): string[] =>
 
 function person(v: unknown): Person | null {
   if (!isObject(v)) return null;
-  const p = { name: str(v.name), profileUrl: str(v.profileUrl) };
+  const p = {
+    name: str(v.name),
+    profileUrl: str(v.profileUrl),
+    authorKey: str(v.key),
+  };
   return p.name || p.profileUrl ? p : null;
 }
 
@@ -77,11 +86,24 @@ function Section({
 
 function PersonLink({ p }: { p: Person | null }) {
   const name = p?.name ?? 'LinkedIn member';
-  if (!p?.profileUrl) return <span>{name}</span>;
-  return (
+  const who = p?.profileUrl ? (
     <TextLink href={p.profileUrl} target="_blank" rel="noopener noreferrer">
       {name}
     </TextLink>
+  ) : (
+    <span>{name}</span>
+  );
+  // The matcher skips authors without a key, so there is nothing to block.
+  if (!p?.authorKey) return who;
+  return (
+    <span className="flex flex-wrap items-center gap-2">
+      {who}
+      <BlockAuthorButton
+        authorKey={p.authorKey}
+        name={name}
+        profileUrl={p.profileUrl}
+      />
+    </span>
   );
 }
 

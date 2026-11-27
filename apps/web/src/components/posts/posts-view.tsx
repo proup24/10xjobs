@@ -27,6 +27,7 @@ import {
   type PostsViewState,
 } from '@/lib/posts/view-state';
 import { cn } from '@/lib/utils';
+import { UnblockAuthorButton } from './block-author-button';
 import { PostDetail } from './post-detail';
 import { PostRow } from './post-row';
 import { PostSection } from './post-section';
@@ -62,10 +63,46 @@ const hasFailed = (checks: unknown, rule: string) =>
       c && typeof c === 'object' && c.rule === rule && c.outcome === 'fail',
   );
 
+const asStrings = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+
+/**
+ * An Unblock button per blocked author behind the post's rejection. The blockedAuthor check
+ * holds the matched keys in `jobValue` and `you blocked <names, comma separated>` as its
+ * reason; the names pair with the keys when their counts agree, else the key stands in.
+ */
+function UnblockControls({ rows }: { rows: MatchRow[] }) {
+  const authors = new Map<string, string>();
+  for (const row of rows) {
+    if (!Array.isArray(row.checks)) continue;
+    for (const c of row.checks) {
+      if (!c || typeof c !== 'object' || Array.isArray(c)) continue;
+      if (c.rule !== 'blockedAuthor' || c.outcome !== 'fail') continue;
+      const keys = asStrings(c.jobValue);
+      const reason = typeof c.reason === 'string' ? c.reason : '';
+      const names = reason.replace(/^you blocked /, '').split(', ');
+      keys.forEach((key, i) => {
+        if (!authors.has(key))
+          authors.set(
+            key,
+            (keys.length === names.length ? names[i] : null) || key,
+          );
+      });
+    }
+  }
+  return (
+    <>
+      {[...authors].map(([key, name]) => (
+        <UnblockAuthorButton key={key} authorKey={key} name={name} />
+      ))}
+    </>
+  );
+}
+
 /**
  * The open post's rescue button: Undo rescue on a rescued post with no decision; Rescue on a
- * Junk post or a Disqualified role. None on a role rejected for a blocked author (Unblock
- * comes instead), nor on one the user moved out of Review (`post_rescue` refuses it: its raw
+ * Junk post or a Disqualified role. On a role rejected for a blocked author, Unblock comes
+ * instead (it names the author from the check, so the list rows carry no checks), nor on one the user moved out of Review (`post_rescue` refuses it: its raw
  * outcome is still review).
  */
 function rescueControl(f: {
@@ -87,7 +124,8 @@ function rescueControl(f: {
     return <RescueControls jobId={jobId} mode="rescue" closeHref={closeHref} />;
   if (f.list !== 'disqualified' || f.rows.length === 0) return null;
   if (f.rows.some((r) => r.reviewChoice != null)) return null;
-  if (f.rows.some((r) => hasFailed(r.checks, 'blockedAuthor'))) return null;
+  if (f.rows.some((r) => hasFailed(r.checks, 'blockedAuthor')))
+    return <UnblockControls rows={f.rows} />;
   return <RescueControls jobId={jobId} mode="rescue" closeHref={closeHref} />;
 }
 
