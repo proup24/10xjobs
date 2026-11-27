@@ -324,8 +324,8 @@ describe('engine client post search', () => {
 
 describe('engine client search switches', () => {
   const views = [
-    { key: 'posts', enabled: false, searches: 2 },
-    { key: 'indeed', enabled: true, searches: 3 },
+    { key: 'posts', enabled: false, searches: 2, pausedUntil: null },
+    { key: 'indeed', enabled: true, searches: 3, pausedUntil: null },
   ];
 
   it('searchSwitches returns the list', async () => {
@@ -342,6 +342,40 @@ describe('engine client search switches', () => {
     const headers = new Headers(init?.headers);
     expect(headers.get('x-engine-key')).toBe(KEY);
     expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('searchSwitches keeps a pausedUntil instant', async () => {
+    const paused = [{ ...views[0], pausedUntil: '2026-11-28T00:00:00.000Z' }];
+    const { client } = setup(() =>
+      json(200, { status: 'success', data: paused }),
+    );
+    expect(await client.searchSwitches(PID)).toEqual({
+      kind: 'ok',
+      data: paused,
+    });
+  });
+
+  it('searchSwitches reads an item without pausedUntil as null', async () => {
+    const { client } = setup(() =>
+      json(200, {
+        status: 'success',
+        data: [{ key: 'posts', enabled: true, searches: 2 }],
+      }),
+    );
+    expect(await client.searchSwitches(PID)).toEqual({
+      kind: 'ok',
+      data: [{ key: 'posts', enabled: true, searches: 2, pausedUntil: null }],
+    });
+  });
+
+  it('searchSwitches rejects a non-string pausedUntil', async () => {
+    const { client } = setup(() =>
+      json(200, {
+        status: 'success',
+        data: [{ key: 'posts', enabled: true, searches: 2, pausedUntil: 5 }],
+      }),
+    );
+    expect(await client.searchSwitches(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('searchSwitches maps a malformed list to unavailable', async () => {

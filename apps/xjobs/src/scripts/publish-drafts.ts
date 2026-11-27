@@ -125,6 +125,8 @@ async function main(): Promise<void> {
       profiles,
       new QuerySearchService(new PrismaQuerySearchRepository(database)),
       unusedStorage,
+      // publish never reads the posts budget; only the switch view does.
+      undefined as never,
     );
     const { published, failed, outcomes } = await publishDrafts(
       {

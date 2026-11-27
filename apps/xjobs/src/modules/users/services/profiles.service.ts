@@ -20,6 +20,7 @@ import {
   type SearchSwitch,
   type SearchSwitchKey,
 } from 'src/modules/queries';
+import { PostsBudgetService, type PostsBudgetDay } from 'src/modules/segments';
 import { StorageService } from 'src/modules/storage';
 import { ProfilesRepository } from '../repositories/profiles.repository';
 import { describeError } from 'src/utils';
@@ -213,6 +214,7 @@ function notPublishedConflict(): ConflictException {
 
 const regenerateLogger = new Logger('Regenerate');
 const deleteLogger = new Logger('DeleteProfile');
+const switchLogger = new Logger('SearchSwitches');
 
 /** The web app's resume bucket and folder layout (`apps/web/src/lib/resume/key.ts`). */
 export const RESUMES_BUCKET = 'resumes';
@@ -308,6 +310,7 @@ export class ProfilesService {
     private readonly profiles: ProfilesRepository,
     private readonly querySearch: QuerySearchService,
     private readonly storage: StorageService,
+    private readonly postsBudget: PostsBudgetService,
     @Inject(SEARCH_SWITCHES_TOKEN)
     private readonly switches: readonly SearchSwitch[] = SEARCH_SWITCHES,
   ) {}
@@ -435,7 +438,8 @@ export class ProfilesService {
     const available = this.switches.filter((sw) => sw.available);
     if (available.length === 0) return [];
     const input = await this.searchInput(profile);
-    return available.map((sw) => switchView(sw, profile, input));
+    const budget = await this.budgetFor(available, profile);
+    return available.map((sw) => switchView(sw, profile, input, budget));
   }
 
   /**
@@ -477,7 +481,7 @@ export class ProfilesService {
         throw error;
       }
     }
-    return switchView(sw, profile, input);
+    return switchView(sw, profile, input, await this.budgetFor([sw], profile));
   }
 
   /**
@@ -490,7 +494,12 @@ export class ProfilesService {
   ): Promise<PostSearchView> {
     const profile = await this.getOrThrow(userId, profileId);
     const posts = this.postsSwitch();
-    const view = switchView(posts, profile, await this.searchInput(profile));
+    const view = switchView(
+      posts,
+      profile,
+      await this.searchInput(profile),
+      null,
+    );
     return toPostSearchView(posts, view);
   }
 
@@ -507,6 +516,26 @@ export class ProfilesService {
       enabled,
     );
     return toPostSearchView(this.postsSwitch(), view);
+  }
+
+  /**
+   * Today's posts budget, read once, only when an available posts switch is
+   * on; a failed read answers null (not paused) rather than failing the view.
+   */
+  private async budgetFor(
+    switches: readonly SearchSwitch[],
+    profile: ProfileWithSkills,
+  ): Promise<PostsBudgetDay | null> {
+    const posts = switches.find((sw) => sw.key === 'posts' && sw.available);
+    if (!posts || !profile[posts.column]) return null;
+    try {
+      return await this.postsBudget.today(new Date());
+    } catch (error) {
+      switchLogger.warn(
+        `Posts budget read failed profile=${profile.id}: ${describeError(error)}`,
+      );
+      return null;
+    }
   }
 
   private postsSwitch(): SearchSwitch {
@@ -526,11 +555,17 @@ function switchView(
   sw: SearchSwitch,
   profile: ProfileWithSkills,
   input: QuerySearchProfileInput,
+  budget: PostsBudgetDay | null,
 ): SearchSwitchView {
+  const enabled = profile[sw.column];
   return {
     key: sw.key,
-    enabled: profile[sw.column],
+    enabled,
     searches: sw.recipes(input).length,
+    pausedUntil:
+      sw.key === 'posts' && enabled && budget?.reached
+        ? budget.nextDayStart.toISOString()
+        : null,
   };
 }
 

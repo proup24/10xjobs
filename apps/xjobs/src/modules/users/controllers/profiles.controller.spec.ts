@@ -49,8 +49,8 @@ describe('ProfilesController', () => {
   });
 
   it('lists and sets search switches for the token user', async () => {
-    const list = [{ key: 'posts', enabled: false, searches: 4 }];
-    const view = { key: 'posts', enabled: true, searches: 4 };
+    const list = [{ key: 'posts', enabled: false, searches: 4, pausedUntil: null }];
+    const view = { key: 'posts', enabled: true, searches: 4, pausedUntil: null };
     const searchSwitches = vi.fn().mockResolvedValue(list);
     const setSearchSwitch = vi.fn().mockResolvedValue(view);
     const controller = new ProfilesController({

@@ -93,6 +93,8 @@ export type SearchSwitchView = {
   enabled: boolean;
   /** How many searches the switch would add for this profile. */
   searches: number;
+  /** When paused for the day's posts budget, the instant post searches resume. */
+  pausedUntil: string | null;
 };
 
 /** The post search switch as the old `/post-search` routes answer it; slice 04b deletes them. */

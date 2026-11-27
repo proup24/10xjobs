@@ -26,7 +26,10 @@ export class ProfileResponseDto implements ProfileView {
   @ApiProperty({ format: 'uuid' })
   userId!: string;
 
-  @ApiProperty({ example: 'backend_engineer', description: 'A role_kinds code' })
+  @ApiProperty({
+    example: 'backend_engineer',
+    description: 'A role_kinds code',
+  })
   position!: string;
 
   @ApiProperty({ type: [SpokenLanguageDto] })

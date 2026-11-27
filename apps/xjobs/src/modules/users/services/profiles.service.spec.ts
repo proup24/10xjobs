@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Logger,
   ConflictException,
   NotFoundException,
   ServiceUnavailableException,
@@ -25,6 +26,7 @@ import { FakeProfilesRepository, FakeUsersRepository } from '../testing/fakes';
 import { UsersService } from './users.service';
 import { Channel } from 'src/common/enums';
 import { SEARCH_SWITCHES } from 'src/modules/queries';
+import type { PostsBudgetDay, PostsBudgetService } from 'src/modules/segments';
 import type { ProfileInput, SkillInput } from '../types';
 
 const profileInput: ProfileInput = {
@@ -59,7 +61,23 @@ const skill = (
   importance,
 });
 
+const NEXT_DAY = new Date('2026-11-28T00:00:00.000Z');
+
+function fakeBudget(reached = false) {
+  const today = vi.fn(
+    async (): Promise<PostsBudgetDay> => ({
+      dayStart: new Date('2026-11-27T00:00:00.000Z'),
+      nextDayStart: NEXT_DAY,
+      limitUsd: 3,
+      spentMicroUsd: reached ? 3_000_000 : 0,
+      reached,
+    }),
+  );
+  return { today, service: { today } as unknown as PostsBudgetService };
+}
+
 describe('ProfilesService', () => {
+  let budget = fakeBudget();
   let userRows: FakeUsersRepository;
   let profiles: FakeProfilesRepository;
   let querySearches: FakeQuerySearchRepository;
@@ -69,6 +87,7 @@ describe('ProfilesService', () => {
   let otherUserId: string;
 
   beforeEach(async () => {
+    budget = fakeBudget();
     userRows = new FakeUsersRepository();
     const users = new UsersService(userRows);
     profiles = new FakeProfilesRepository();
@@ -79,6 +98,7 @@ describe('ProfilesService', () => {
       profiles,
       new QuerySearchService(querySearches),
       storage,
+      budget.service,
     );
     // The real publish makes the profile row the swap locks; mirror it here.
     const publish = profiles.publish.bind(profiles);
@@ -753,16 +773,108 @@ describe('ProfilesService', () => {
           profiles,
           new QuerySearchService(querySearches),
           storage,
+          budget.service,
           SEARCH_SWITCHES.map((sw) =>
             sw.key === 'posts' ? { ...sw, available: true } : sw,
           ),
         );
       });
 
+      describe('pausedUntil', () => {
+        const turnOn = async (id: string) =>
+          profiles.setSwitch(userId, id, 'postSearch', true);
+
+        it('is the next day start while posts is on and the budget is reached', async () => {
+          budget = fakeBudget(true);
+          open = openWith(budget);
+          const { id } = await createOwner();
+          await turnOn(id);
+          const [view] = await open.searchSwitches(userId, id);
+          expect(view.pausedUntil).toBe(NEXT_DAY.toISOString());
+        });
+
+        it('is null while the budget is not reached', async () => {
+          const { id } = await createOwner();
+          await turnOn(id);
+          const [view] = await open.searchSwitches(userId, id);
+          expect(view.pausedUntil).toBeNull();
+        });
+
+        it('is null and reads no budget while posts is off', async () => {
+          budget = fakeBudget(true);
+          open = openWith(budget);
+          const { id } = await createOwner();
+          const [view] = await open.searchSwitches(userId, id);
+          expect(view.pausedUntil).toBeNull();
+          expect(budget.today).not.toHaveBeenCalled();
+        });
+
+        it('is null for an available indeed switch that is on', async () => {
+          budget = fakeBudget(true);
+          const both = new ProfilesService(
+            new UsersService(userRows),
+            profiles,
+            new QuerySearchService(querySearches),
+            storage,
+            budget.service,
+            SEARCH_SWITCHES.map((sw) => ({ ...sw, available: true })),
+          );
+          const { id } = await createOwner();
+          await profiles.setSwitch(userId, id, 'indeedSearch', true);
+          const views = await both.searchSwitches(userId, id);
+          const indeed = views.find((view) => view.key === 'indeed');
+          expect(indeed).toMatchObject({ enabled: true, pausedUntil: null });
+          expect(budget.today).not.toHaveBeenCalled();
+        });
+
+        it('setSearchSwitch turning posts on while reached returns it', async () => {
+          budget = fakeBudget(true);
+          open = openWith(budget);
+          const { id } = await createOwner();
+          await expect(
+            open.setSearchSwitch(userId, id, 'posts', true),
+          ).resolves.toMatchObject({
+            enabled: true,
+            pausedUntil: NEXT_DAY.toISOString(),
+          });
+          expect(budget.today).toHaveBeenCalledTimes(1);
+        });
+
+        it('answers null and warns when the budget read fails', async () => {
+          const failing = fakeBudget(true);
+          failing.today.mockRejectedValue(new Error('db down'));
+          open = openWith(failing);
+          const warn = vi
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+          try {
+            const { id } = await createOwner();
+            await turnOn(id);
+            const [view] = await open.searchSwitches(userId, id);
+            expect(view.pausedUntil).toBeNull();
+            expect(warn).toHaveBeenCalledTimes(1);
+          } finally {
+            warn.mockRestore();
+          }
+        });
+      });
+
+      const openWith = (b: ReturnType<typeof fakeBudget>) =>
+        new ProfilesService(
+          new UsersService(userRows),
+          profiles,
+          new QuerySearchService(querySearches),
+          storage,
+          b.service,
+          SEARCH_SWITCHES.map((sw) =>
+            sw.key === 'posts' ? { ...sw, available: true } : sw,
+          ),
+        );
+
       it('lists only available switches, in registry order', async () => {
         const { id } = await createOwner();
         await expect(open.searchSwitches(userId, id)).resolves.toEqual([
-          { key: 'posts', enabled: false, searches: 4 },
+          { key: 'posts', enabled: false, searches: 4, pausedUntil: null },
         ]);
       });
 
@@ -794,7 +906,12 @@ describe('ProfilesService', () => {
         const { id } = await profiles.add(otherUserId, ownerInput, ownerSkills);
         await expect(
           open.setSearchSwitch(otherUserId, id, 'posts', true),
-        ).resolves.toEqual({ key: 'posts', enabled: true, searches: 4 });
+        ).resolves.toEqual({
+          key: 'posts',
+          enabled: true,
+          searches: 4,
+          pausedUntil: null,
+        });
         expect((await profiles.findById(otherUserId, id))?.postSearch).toBe(
           true,
         );
@@ -815,12 +932,12 @@ describe('ProfilesService', () => {
         expect(linkedPosts(id)).toHaveLength(0);
         await expect(
           open.setSearchSwitch(userId, id, 'posts', true),
-        ).resolves.toEqual({ key: 'posts', enabled: true, searches: 4 });
+        ).resolves.toEqual({ key: 'posts', enabled: true, searches: 4, pausedUntil: null });
         expect(linkedPosts(id)).toHaveLength(4);
         const before = querySearches.links.length;
         await expect(
           open.setSearchSwitch(userId, id, 'posts', false),
-        ).resolves.toEqual({ key: 'posts', enabled: false, searches: 4 });
+        ).resolves.toEqual({ key: 'posts', enabled: false, searches: 4, pausedUntil: null });
         expect(linkedPosts(id)).toHaveLength(0);
         expect(querySearches.links.length).toBe(before - 4);
         expect(
@@ -870,6 +987,7 @@ describe('ProfilesService', () => {
           profiles,
           new QuerySearchService(querySearches),
           storage,
+          budget.service,
           switches,
         );
 
@@ -888,7 +1006,7 @@ describe('ProfilesService', () => {
           await noChannel.setSearchSwitch(userId, id, 'indeed', true);
           await expect(
             noChannel.setSearchSwitch(userId, id, 'indeed', false),
-          ).resolves.toEqual({ key: 'indeed', enabled: false, searches: 0 });
+          ).resolves.toEqual({ key: 'indeed', enabled: false, searches: 0, pausedUntil: null });
           expect(detach).not.toHaveBeenCalled();
         } finally {
           detach.mockRestore();
@@ -942,7 +1060,7 @@ describe('ProfilesService', () => {
           [skill('nodejs', 8)],
         );
         await expect(open.searchSwitches(userId, english.id)).resolves.toEqual([
-          { key: 'posts', enabled: false, searches: 0 },
+          { key: 'posts', enabled: false, searches: 0, pausedUntil: null },
         ]);
       });
     });

@@ -23,6 +23,7 @@ const view = (over = {}) => ({
   key: 'posts' as const,
   enabled: false,
   searches: 2,
+  pausedUntil: null as string | null,
   ...over,
 });
 

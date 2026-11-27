@@ -14,6 +14,8 @@ export type SearchSwitchView = {
   key: SearchSwitchKey;
   enabled: boolean;
   searches: number;
+  /** When paused for the day's posts budget, the instant post searches resume. */
+  pausedUntil: string | null;
 };
 
 /** The signed-in user's searches: paused, and when they were last active. */
@@ -491,13 +493,20 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     );
   }
 
+  /**
+   * The web deploys apart from the engine: an item with no `pausedUntil`
+   * (an older engine) is accepted and set to null in place.
+   */
   function isSearchSwitchView(data: unknown): data is SearchSwitchView {
-    return (
-      isRecord(data) &&
-      (data.key === 'posts' || data.key === 'indeed') &&
-      typeof data.enabled === 'boolean' &&
-      typeof data.searches === 'number'
-    );
+    if (
+      !isRecord(data) ||
+      !(data.key === 'posts' || data.key === 'indeed') ||
+      typeof data.enabled !== 'boolean' ||
+      typeof data.searches !== 'number'
+    )
+      return false;
+    if (data.pausedUntil === undefined) data.pausedUntil = null;
+    return data.pausedUntil === null || typeof data.pausedUntil === 'string';
   }
 
   function isSearchSwitchList(data: unknown): data is SearchSwitchView[] {
