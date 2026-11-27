@@ -144,8 +144,8 @@
       "reviewed": true
     },
     "contractType": {
-      "value": "unstated",
-      "reviewed": false
+      "value": "full_time",
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
