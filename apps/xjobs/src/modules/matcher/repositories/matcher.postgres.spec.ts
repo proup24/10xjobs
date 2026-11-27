@@ -1051,6 +1051,25 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       expect(second.decidedAt).toEqual(first.decidedAt);
     });
 
+    // The post webhooks' cutoff (post_webhooks_since) reads job_matches."createdAt": a rematch
+    // re-decides rows in place, so a role decided before the cutoff never looks new.
+    it('re-deciding an existing row keeps its id and createdAt', async () => {
+      const p = await profile();
+      const j = await job();
+      await repo.upsertMatches([row(p, j, { outcome: 'rejected' })]);
+      const first = (await matchRow(p.id, j.id))!;
+      await new Promise((r) => setTimeout(r, 20));
+      await repo.upsertMatches([row(p, j, { outcome: 'qualified' })]);
+      await repo.upsertMatches([row(p, j, { outcome: 'qualified' })]);
+      const second = (await matchRow(p.id, j.id))!;
+      expect(second.outcome).toBe('qualified');
+      expect(second.id).toBe(first.id);
+      expect(second.createdAt).toEqual(first.createdAt);
+      expect(second.updatedAt.getTime()).toBeGreaterThan(
+        first.updatedAt.getTime(),
+      );
+    });
+
     it('accepts an empty list', async () => {
       expect(await repo.upsertMatches([])).toEqual({ deliveryIds: [] });
     });

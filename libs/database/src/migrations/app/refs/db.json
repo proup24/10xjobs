@@ -43,6 +43,7 @@
     "blocked-authors-lower-key",
     "post-rescue-rpcs",
     "post-reads",
-    "post-rescue-junk"
+    "post-rescue-junk",
+    "post-webhooks"
   ]
 }

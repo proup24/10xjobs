@@ -1,0 +1,28 @@
+[
+  {
+    "id": "functions.post_webhooks",
+    "invariantId": "post-webhooks",
+    "label": "post_webhooks_since; webhook_enqueue_match sends post roles, held while Email pending",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "webhook_deliveries"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create post_webhooks_since",
+        "sql": "DO $do$\nBEGIN\n  IF to_regprocedure('public.post_webhooks_since()') IS NULL THEN\n    EXECUTE format($f$CREATE FUNCTION public.post_webhooks_since()\n RETURNS timestamp with time zone\n LANGUAGE sql\n IMMUTABLE SECURITY DEFINER\n SET search_path TO ''\nAS $body$SELECT %L::timestamptz$body$$f$, now());\n  END IF;\nEND\n$do$;\nREVOKE EXECUTE ON FUNCTION public.post_webhooks_since() FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "replace webhook_enqueue_match: post roles",
+        "sql": "CREATE OR REPLACE FUNCTION public.webhook_enqueue_match(p_match_id uuid, p_trigger text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_profile uuid;\n  v_root uuid;\n  v_next uuid;\n  v_id uuid;\nBEGIN\n  SELECT m.\"profileId\", m.\"jobId\" INTO v_profile, v_root\n    FROM job_matches m JOIN normalized_jobs j ON j.id = m.\"jobId\"\n   WHERE m.id = p_match_id;\n  IF NOT FOUND THEN\n    RETURN NULL;\n  END IF;\n  -- The root of the job's merge chain: follow mergedIntoId to a job with none, at most 10 steps.\n  FOR i IN 1..10 LOOP\n    SELECT \"mergedIntoId\" INTO v_next FROM normalized_jobs WHERE id = v_root;\n    EXIT WHEN v_next IS NULL;\n    v_root := v_next;\n  END LOOP;\n  -- Serialise calls for the same (profile, root job) until commit; the next statement takes\n  -- a fresh snapshot, so a waiter sees the delivery the holder committed.\n  PERFORM pg_advisory_xact_lock(hashtextextended('webhook:' || v_profile || ':' || v_root, 0));\n  -- One pending delivery when the user's webhook is on, the job was first seen since both the\n  -- profile was published and the webhook was turned on, and the profile has no match delivery\n  -- on a job with the same merge root (this job, a job merged into it, its merge target, a\n  -- merge sibling, or anything further along the same chain).\n  INSERT INTO webhook_deliveries (\"userId\", \"webhookId\", kind, \"profileId\", \"jobId\", \"matchId\", trigger, status, attempts, \"nextAttemptAt\")\n  SELECT m.\"userId\", w.id, 'match', m.\"profileId\", m.\"jobId\", m.id, p_trigger, 'pending', 0, now()\n  FROM job_matches m\n  JOIN webhooks w ON w.\"userId\" = m.\"userId\" AND w.enabled\n  JOIN profiles p ON p.id = m.\"profileId\" AND p.state = 'published'\n  JOIN normalized_jobs j ON j.id = m.\"jobId\"\n  WHERE m.id = p_match_id\n    -- A post role goes only when it was first decided after the cutoff (no backfill), is not\n    -- Email pending (slice 05 creates its delivery when the send settles), was not rescued, and\n    -- has no decision on its linked group (the user already acted on it).\n    AND (j.kind = 'job'\n         OR (j.kind = 'post_role'\n             AND m.\"createdAt\" >= public.post_webhooks_since()\n             AND NOT public.post_email_pending(m.\"userId\", j.id)\n             AND NOT EXISTS (SELECT 1 FROM public.post_rescues r\n                              WHERE r.\"userId\" = m.\"userId\" AND r.\"jobId\" = j.id\n                                AND r.\"undoneAt\" IS NULL)\n             AND public.group_decision_status(m.\"userId\", j.id) IS NULL))\n    AND j.\"firstSeenAt\" >= p.\"publishedAt\" AND j.\"firstSeenAt\" >= w.\"enabledSince\"\n    AND NOT EXISTS (\n      -- Each delivered job's chain, the same 10 steps; the last step (no next) is its root.\n      WITH RECURSIVE chain (job, next, depth) AS (\n        SELECT dj.id, dj.\"mergedIntoId\", 0\n          FROM webhook_deliveries d JOIN normalized_jobs dj ON dj.id = d.\"jobId\"\n         WHERE d.kind = 'match' AND d.\"profileId\" = v_profile\n        UNION ALL\n        SELECT n.id, n.\"mergedIntoId\", c.depth + 1\n          FROM chain c JOIN normalized_jobs n ON n.id = c.next\n         WHERE c.depth < 10)\n      SELECT 1 FROM chain WHERE chain.next IS NULL AND chain.job = v_root)\n  ON CONFLICT DO NOTHING\n  RETURNING id INTO v_id;\n  RETURN v_id;\nEND $function$;\nREVOKE EXECUTE ON FUNCTION public.webhook_enqueue_match(uuid, text) FROM PUBLIC, anon, authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

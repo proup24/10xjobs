@@ -2747,6 +2747,10 @@ export type Database = {
       };
       post_rescue_undo: { Args: { p_job_id: string }; Returns: undefined };
       post_role_contact_email: { Args: { p_job: string }; Returns: string };
+      post_webhooks_since: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
       replace_profile_skills: {
         Args: { p_profile_id: string; p_skills: Json };
         Returns: undefined;

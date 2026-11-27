@@ -55,6 +55,7 @@ export class MemoryWebhooksRepository extends WebhooksRepository {
   outcomes = new Map<string, LoadedMatch['outcome']>();
   /** Each merged job's merge root, by job id; a job missing here is its own root. */
   roots = new Map<string, string>();
+  /** Each user's test sample, by user id: like `latestQualifiedForUser`, a listing (job.kind 'job'). */
   samples = new Map<string, PayloadInput>();
   webhooks = new Map<string, MemoryWebhook>();
   deliveries = new Map<string, MemoryDelivery>();
