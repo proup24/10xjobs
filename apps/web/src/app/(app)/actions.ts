@@ -1,8 +1,10 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { clearDecision, saveDecision } from '@/lib/applications/decide';
 import { saveReport } from '@/lib/matches/report';
 import { saveReview } from '@/lib/matches/review';
+import { saveRescue, undoRescue } from '@/lib/posts/rescue';
 import { FAILED, type SaveResult } from '@/lib/setup/save-result';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
@@ -52,4 +54,27 @@ export async function clearJobDecisionAction(
   const { data } = await supabase.auth.getClaims();
   if (!data?.claims.sub) return FAILED;
   return clearDecision(supabase, jobId);
+}
+
+/**
+ * Moves a Junk or Disqualified post into the signed-in user's Matches. The database reads
+ * the user from the session; no user id is sent.
+ */
+export async function rescuePostAction(input: unknown): Promise<SaveResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims.sub) return FAILED;
+  const result = await saveRescue(supabase, input);
+  if (result.status === 'saved') revalidatePath('/posts');
+  return result;
+}
+
+/** Takes the signed-in user's rescue back. */
+export async function undoRescueAction(jobId: unknown): Promise<SaveResult> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims.sub) return FAILED;
+  const result = await undoRescue(supabase, jobId);
+  if (result.status === 'saved') revalidatePath('/posts');
+  return result;
 }

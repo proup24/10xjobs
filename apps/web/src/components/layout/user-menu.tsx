@@ -15,9 +15,14 @@ import {
 function AdminItem({ admin }: { admin: Promise<boolean> }) {
   if (!use(admin)) return null;
   return (
-    <DropdownMenuItem render={<Link href="/admin/prepare" />}>
-      Admin: Prepare review
-    </DropdownMenuItem>
+    <>
+      <DropdownMenuItem render={<Link href="/admin/prepare" />}>
+        Admin: Prepare review
+      </DropdownMenuItem>
+      <DropdownMenuItem render={<Link href="/admin/rescues" />}>
+        Admin: Rescues
+      </DropdownMenuItem>
+    </>
   );
 }
 
