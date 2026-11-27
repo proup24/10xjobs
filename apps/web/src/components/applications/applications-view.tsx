@@ -40,7 +40,7 @@ import type { MatchRow } from '@/lib/matches/group';
 import type { JobPosting } from '@/lib/matches/postings';
 import type { SaveResult } from '@/lib/setup/save-result';
 import { cn } from '@/lib/utils';
-import { DecisionRowLink, dismissReason } from './decision-row';
+import { DecisionRowLink, decisionTitle, dismissReason } from './decision-row';
 
 const STATUS_LABELS: Record<AppStatus, string> = {
   applied: 'Applied',
@@ -98,15 +98,19 @@ function JobHeader({
       <BackLink href={backHref} label={BACK_LABEL} />
       <header className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 className="min-w-0 text-title-3 break-words">{row.title}</h2>
+          <h2 className="min-w-0 text-title-3 break-words">
+            {decisionTitle(row)}
+          </h2>
           <MergedBadge postings={postings} />
         </div>
-        <p>
-          {row.companyName}
-          {row.location && (
-            <span className="text-muted-foreground"> · {row.location}</span>
-          )}
-        </p>
+        {(row.companyName || row.location) && (
+          <p>
+            {row.companyName}
+            {row.location && (
+              <span className="text-muted-foreground"> · {row.location}</span>
+            )}
+          </p>
+        )}
       </header>
       <JobPostings postings={postings} now={now} />
       <PostLinks

@@ -1,4 +1,8 @@
 import Link from 'next/link';
+import {
+  POST_VERDICT_REASON_LABELS,
+  POST_VERDICT_REASONS,
+} from '@xjobs/database/enums';
 import { Badge } from '@/components/ui/badge';
 import { stackScoreText } from '@/components/matches/match-row';
 import { arrangementLine } from '@/lib/matches/facts';
@@ -25,6 +29,19 @@ export const VERDICTS: Record<string, string> = {
   not_hiring: 'Not hiring',
   junk: 'Junk',
 };
+
+/** A reason code as short words; any other text as it is. */
+export function reasonText(reason: string): string {
+  const code = POST_VERDICT_REASONS.find((r) => r === reason);
+  return code ? POST_VERDICT_REASON_LABELS[code] : reason;
+}
+
+/** The badge for a verdict the engine was not sure of; null for a sure one. */
+export function NotSure({ confidence }: { confidence: unknown }) {
+  return confidence === 'unsure' ? (
+    <Badge variant="outline">Not sure</Badge>
+  ) : null;
+}
 
 /** One post in a social posts tab: `MatchRowLink`'s layout plus the post's badges and reason. */
 export function PostRow({
@@ -88,7 +105,8 @@ export function PostRow({
           <Badge variant="outline">
             {VERDICTS[item.junk.verdict] ?? item.junk.verdict}
           </Badge>
-          <span>{item.junk.reason}</span>
+          <NotSure confidence={item.junk.confidence} />
+          {item.junk.reason && <span>{reasonText(item.junk.reason)}</span>}
         </p>
       )}
       {reason && <p className="text-muted-foreground">{reason}</p>}

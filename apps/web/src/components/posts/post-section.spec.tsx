@@ -194,6 +194,66 @@ describe('Block author', () => {
     );
   });
 
+  it('links only http(s) URLs: a javascript: link or profile is plain text', () => {
+    const src = {
+      ...shareSource,
+      original: null,
+      author: {
+        ...person('Eve Evil', 'eve'),
+        profileUrl: 'javascript:alert(1)',
+      },
+    };
+    render(
+      <PostSection
+        details={details({
+          sources: [src],
+          linked: [],
+          howToApply: {
+            kinds: ['external_link'],
+            email: null,
+            links: ['javascript:alert(2)', 'https://acme.test/careers/go'],
+          },
+        })}
+        now={new Date(NOW)}
+      />,
+    );
+    expect(screen.queryByRole('link', { name: 'Eve Evil' })).toBeNull();
+    expect(screen.getByText('Eve Evil')).toBeTruthy();
+    expect(
+      screen.queryByRole('link', { name: 'javascript:alert(2)' }),
+    ).toBeNull();
+    expect(screen.getByText('javascript:alert(2)')).toBeTruthy();
+    expect(
+      screen
+        .getByRole('link', { name: 'https://acme.test/careers/go' })
+        .getAttribute('href'),
+    ).toBe('https://acme.test/careers/go');
+  });
+
+  it('blocks a nameless author with no name, not the placeholder', async () => {
+    vi.mocked(blockAuthorAction).mockResolvedValue({ status: 'saved' });
+    const src = {
+      ...shareSource,
+      original: null,
+      author: { ...person('x', 'nameless'), name: null },
+    };
+    render(
+      <PostSection
+        details={details({ sources: [src], linked: [] })}
+        now={new Date(NOW)}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Block LinkedIn member' }),
+    );
+    const dialog = within(screen.getByRole('alertdialog'));
+    fireEvent.click(dialog.getByRole('button', { name: 'Block' }));
+    await waitFor(() => expect(blockAuthorAction).toHaveBeenCalled());
+    const [input] = vi.mocked(blockAuthorAction).mock.calls.at(-1) ?? [];
+    expect(input).toMatchObject({ authorKey: 'profile:nameless' });
+    expect((input as { name?: unknown }).name ?? null).toBeNull();
+  });
+
   it('offers no Block for an author without a key', () => {
     const src = {
       ...shareSource,
@@ -238,6 +298,7 @@ describe('PostDetail', () => {
     );
     const article = within(screen.getByRole('article'));
     expect(article.getByText('Junk · course_or_event')).toBeTruthy();
+    expect(article.queryByText('Not sure')).toBeNull();
     expect(article.getByText('Great team, have a look')).toBeTruthy();
     expect(
       article.getByRole('link', { name: 'Open post' }).getAttribute('href'),
@@ -264,5 +325,47 @@ describe('PostDetail', () => {
       />,
     );
     expect(screen.getByText('Not hiring · job_seeker')).toBeTruthy();
+  });
+
+  it('shows a known reason code as words, and an unsure verdict as Not sure', () => {
+    render(
+      <PostDetail
+        details={details({
+          kind: 'post',
+          verdict: {
+            value: 'junk',
+            reason: 'many_roles_across_companies',
+            confidence: 'unsure',
+            quote: '',
+          },
+        })}
+        now={new Date(NOW)}
+        userId="u1"
+        backHref="/posts?list=junk"
+      />,
+    );
+    expect(screen.getByText('Junk · Many roles across companies')).toBeTruthy();
+    expect(screen.getByText('Not sure')).toBeTruthy();
+  });
+
+  it('shows a rescued Junk post with the verdict it was rescued from', () => {
+    render(
+      <PostDetail
+        details={details({
+          kind: 'post',
+          verdict: { value: 'hiring', reason: 'hiring', confidence: 'sure' },
+          rescue: {
+            origin: 'junk',
+            createdAt: hoursAgo(1),
+            note: null,
+            verdict: { value: 'junk', reason: 'funnel', confidence: 'sure' },
+          },
+        })}
+        now={new Date(NOW)}
+        userId="u1"
+        backHref="/posts"
+      />,
+    );
+    expect(screen.getByText('Junk · Sells to job seekers')).toBeTruthy();
   });
 });

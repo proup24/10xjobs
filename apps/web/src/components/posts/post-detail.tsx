@@ -1,15 +1,36 @@
-import { BackLink, PostLinks } from '@/components/matches/match-detail';
+import {
+  BackLink,
+  JobDecision,
+  PostLinks,
+  type DecideJob,
+} from '@/components/matches/match-detail';
 import type { PostDetails } from '@/lib/posts/load';
-import { VERDICTS } from './post-row';
+import { NotSure, VERDICTS, reasonText } from './post-row';
 import { PostSection, postParts } from './post-section';
+
+const asObject = (v: unknown): Record<string, unknown> | null =>
+  typeof v === 'object' && v !== null && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
 
 /** "Junk · <reason>" or "Not hiring · <reason>"; null for a hiring post or no verdict. */
 export function verdictLine(verdict: unknown): string | null {
-  if (typeof verdict !== 'object' || verdict === null) return null;
-  const { value, reason } = verdict as { value?: unknown; reason?: unknown };
-  const label = typeof value === 'string' ? VERDICTS[value] : undefined;
+  const v = asObject(verdict);
+  if (!v) return null;
+  const label = typeof v.value === 'string' ? VERDICTS[v.value] : undefined;
   if (!label) return null;
-  return typeof reason === 'string' && reason ? `${label} · ${reason}` : label;
+  return typeof v.reason === 'string' && v.reason
+    ? `${label} · ${reasonText(v.reason)}`
+    : label;
+}
+
+/**
+ * The verdict to show: for a rescued Junk post, the one it was rescued from (the rescue's
+ * snapshot), whatever a later extraction says; else the post's current one.
+ */
+export function shownVerdict(details: PostDetails): unknown {
+  const rescued = asObject(asObject(details.rescue)?.verdict);
+  return rescued ?? details.verdict;
 }
 
 /**
@@ -22,6 +43,7 @@ export function PostDetail({
   userId,
   backHref,
   actions,
+  onDecideJob,
 }: {
   details: PostDetails;
   now: Date;
@@ -29,9 +51,12 @@ export function PostDetail({
   backHref: string;
   /** The page's own actions on the post (Rescue, Undo rescue). */
   actions?: React.ReactNode;
+  /** Marks a rescued post applied, not for me or expired; the buttons show only with it. */
+  onDecideJob?: DecideJob;
 }) {
   const { author } = postParts(details.sources);
-  const verdict = verdictLine(details.verdict);
+  const shown = shownVerdict(details);
+  const verdict = verdictLine(shown);
   return (
     <article className="flex min-w-0 flex-col gap-6">
       <BackLink href={backHref} />
@@ -39,7 +64,12 @@ export function PostDetail({
         <h2 className="min-w-0 text-title-3 break-words">
           {author?.name ? `Post by ${author.name}` : 'LinkedIn post'}
         </h2>
-        {verdict && <p className="text-muted-foreground">{verdict}</p>}
+        {verdict && (
+          <p className="flex flex-wrap items-center gap-1.5 text-muted-foreground">
+            <span>{verdict}</span>
+            <NotSure confidence={asObject(shown)?.confidence} />
+          </p>
+        )}
       </header>
       <PostLinks
         postingUrl={details.postingUrl ?? null}
@@ -47,6 +77,7 @@ export function PostDetail({
         userId={userId}
         jobId={details.jobId}
       />
+      {onDecideJob && <JobDecision onDecideJob={onDecideJob} />}
       {actions}
       <PostSection details={details} now={now} />
     </article>

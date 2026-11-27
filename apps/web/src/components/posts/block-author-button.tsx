@@ -25,13 +25,15 @@ export function BlockAuthorButton({
   profileUrl,
 }: {
   authorKey: string;
-  name: string;
+  /** The author's name; null when the post names none (the button says "LinkedIn member"). */
+  name: string | null;
   profileUrl: string | null;
 }) {
   const router = useRouter();
+  const shown = name ?? 'LinkedIn member';
   return (
     <ConfirmDialog
-      title={`Block ${name}?`}
+      title={`Block ${shown}?`}
       description="Their posts move to Disqualified within a few minutes, and are never emailed."
       confirmLabel="Block"
       onConfirm={async () => {
@@ -39,7 +41,7 @@ export function BlockAuthorButton({
         try {
           result = await blockAuthorAction({
             authorKey,
-            name,
+            ...(name ? { name } : {}),
             ...(profileUrl ? { profileUrl } : {}),
           });
         } catch {
@@ -47,12 +49,12 @@ export function BlockAuthorButton({
           return;
         }
         if (result.status === 'saved') {
-          toast.success(`Blocked ${name}`);
+          toast.success(`Blocked ${shown}`);
           router.refresh();
         } else failed(result);
       }}
       trigger={
-        <Button variant="outline" size="sm" aria-label={`Block ${name}`}>
+        <Button variant="outline" size="sm" aria-label={`Block ${shown}`}>
           Block
         </Button>
       }

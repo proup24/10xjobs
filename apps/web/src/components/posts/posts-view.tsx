@@ -276,10 +276,21 @@ export function PostsView({
         closeHref: backHref,
       })
     : null;
+  // A live rescue with no decision is decided like any match, match rows or none (a Junk
+  // rescue has none).
+  const openRescue = state.job
+    ? rescues.find((r) => r.jobId === state.job)
+    : undefined;
+  const decidableRescue =
+    state.list === 'matches' &&
+    Boolean(details?.rescue) &&
+    openRescue !== undefined &&
+    openRescue.decisionStatus == null;
   let detail: React.ReactNode;
   if (state.job === null) detail = <MatchEmpty kind="pick" />;
   else if (detailRows.length === 0)
-    // A Junk post or a junk rescue has no match row: the post alone, with its verdict.
+    // A Junk post or a junk rescue has no match row: the post alone, with its verdict (and,
+    // on a rescue, the decision buttons).
     detail = details ? (
       <PostDetail
         key={state.job}
@@ -288,6 +299,9 @@ export function PostsView({
         userId={userId}
         backHref={backHref}
         actions={rescue}
+        onDecideJob={
+          decidableRescue ? decideJob(visible.map((i) => i.jobId)) : undefined
+        }
       />
     ) : (
       <div className="flex flex-col gap-6">

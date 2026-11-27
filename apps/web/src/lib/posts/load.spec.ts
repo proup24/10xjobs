@@ -115,6 +115,20 @@ describe('groupJunk', () => {
     expect(items[1].postedAt).toEqual(new Date('2026-11-01T00:00:00Z'));
   });
 
+  it('sorts by when the post was first seen, not when it was posted', () => {
+    const items = groupJunk([
+      {
+        ...(row('old-post', '2026-11-01T00:00:00Z', []) as object),
+        firstSeenAt: '2026-11-10T00:00:00Z',
+      } as never,
+      {
+        ...(row('new-post', '2026-11-08T00:00:00Z', []) as object),
+        firstSeenAt: '2026-11-09T00:00:00Z',
+      } as never,
+    ]);
+    expect(items.map((i) => i.jobId)).toEqual(['old-post', 'new-post']);
+  });
+
   it('handles null postedAt (falls back to firstSeenAt) and null profileIds', () => {
     const r = { ...(row('n', '2026-11-05T00:00:00Z', []) as object) } as never;
     const items = groupJunk([

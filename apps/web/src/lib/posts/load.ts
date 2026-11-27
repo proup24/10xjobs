@@ -95,7 +95,14 @@ function mergeProfiles(into: string[], more: string[] | null | undefined) {
   for (const p of more ?? []) if (p && !into.includes(p)) into.push(p);
 }
 
-/** Junk rows to one item per job (profiles merged); newest posted first, then by job id. */
+function newestSeenFirst(a: PostListItem, b: PostListItem): number {
+  return (
+    b.firstSeenAt.getTime() - a.firstSeenAt.getTime() ||
+    (a.jobId < b.jobId ? -1 : a.jobId > b.jobId ? 1 : 0)
+  );
+}
+
+/** Junk rows to one item per job (profiles merged); newest first by when the post was first seen, then by job id. */
 export function groupJunk(rows: JunkRow[]): PostListItem[] {
   const byJob = new Map<string, PostListItem>();
   for (const r of rows) {
@@ -122,7 +129,7 @@ export function groupJunk(rows: JunkRow[]): PostListItem[] {
       decidedAt: null,
     });
   }
-  return [...byJob.values()].sort(newestFirst);
+  return [...byJob.values()].sort(newestSeenFirst);
 }
 
 /** Rescue rows to one item per job; newest first. */

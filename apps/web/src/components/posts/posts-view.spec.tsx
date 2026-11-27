@@ -22,7 +22,11 @@ import {
   labels,
   matchRow,
 } from '@/components/matches/test-fixtures';
-import { rescuePostAction, undoRescueAction } from '@/app/(app)/actions';
+import {
+  decideJobAction,
+  rescuePostAction,
+  undoRescueAction,
+} from '@/app/(app)/actions';
 import { unblockAuthorAction } from '@/app/(app)/preferences/actions';
 import { PostsView } from './posts-view';
 
@@ -136,15 +140,20 @@ const EXTRAS: Record<string, PostExtras> = {
 
 function renderView(
   initial: Partial<PostsViewState> = {},
-  open: { selected?: MatchRow[] | null; details?: PostDetails | null } = {},
+  open: {
+    selected?: MatchRow[] | null;
+    details?: PostDetails | null;
+    rescues?: RescueRow[];
+    junk?: JunkRow[];
+  } = {},
 ) {
   render(
     <PostsView
       qualified={groupByJob(QUALIFIED)}
       review={groupByJob(REVIEW)}
       rejected={groupByJob(REJECTED)}
-      junk={JUNK}
-      rescues={RESCUES}
+      junk={open.junk ?? JUNK}
+      rescues={open.rescues ?? RESCUES}
       extras={EXTRAS}
       failedReasons={{
         r1: { [P1]: 'job seniority junior is below yours' },
@@ -210,6 +219,26 @@ describe('PostsView', () => {
     expect(
       within(row).getByText('the author is looking for a job'),
     ).toBeTruthy();
+  });
+
+  it('shows a known reason code as words and an unsure verdict as Not sure on Junk', () => {
+    renderView(
+      { list: 'junk' },
+      {
+        junk: [
+          {
+            ...JUNK[0],
+            verdict: 'junk',
+            reason: 'many_roles_across_companies',
+            confidence: 'unsure',
+          },
+        ],
+      },
+    );
+    const [row] = rowsOf('Junk');
+    expect(within(row).getByText('Junk')).toBeTruthy();
+    expect(within(row).getByText('Many roles across companies')).toBeTruthy();
+    expect(within(row).getByText('Not sure')).toBeTruthy();
   });
 
   it('shows the review rows on Review', () => {
@@ -381,6 +410,57 @@ describe('PostsView', () => {
         },
       );
       expect(screen.queryByRole('button', { name: 'Rescue' })).toBeNull();
+    });
+
+    it('decides a Junk rescue, which has no match row, like any match', async () => {
+      vi.mocked(decideJobAction).mockResolvedValue({ status: 'saved' });
+      const rescues = [
+        ...RESCUES,
+        {
+          jobId: 'jr1',
+          kind: 'post',
+          origin: 'junk',
+          profileIds: [P1],
+          title: null,
+          companyName: null,
+          postingUrl: 'https://www.linkedin.com/posts/jr1',
+          postedAt: hoursAgo(3),
+          firstSeenAt: hoursAgo(3),
+          authorName: 'Jane Doe',
+          decisionStatus: null,
+        },
+      ] as unknown as RescueRow[];
+      renderView(
+        { list: 'matches', job: 'jr1' },
+        {
+          selected: [],
+          rescues,
+          details: detailsOf({
+            jobId: 'jr1',
+            kind: 'post',
+            postJobId: 'jr1',
+            howToApply: null,
+            rescue: {
+              origin: 'junk',
+              createdAt: hoursAgo(1),
+              note: null,
+              verdict: { value: 'junk', reason: 'funnel', confidence: 'sure' },
+            },
+          }),
+        },
+      );
+      const article = within(screen.getByRole('article'));
+      expect(article.getByText('Junk · Sells to job seekers')).toBeTruthy();
+      expect(article.getByRole('button', { name: 'Undo rescue' })).toBeTruthy();
+      expect(article.getByRole('button', { name: 'Not for me' })).toBeTruthy();
+      expect(article.getByRole('button', { name: 'Expired' })).toBeTruthy();
+      fireEvent.click(article.getByRole('button', { name: 'Applied' }));
+      await waitFor(() =>
+        expect(decideJobAction).toHaveBeenCalledWith({
+          jobId: 'jr1',
+          status: 'applied',
+        }),
+      );
     });
 
     it('shows Undo rescue on a rescued post without a decision', async () => {

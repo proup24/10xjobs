@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { TextLink } from '@/components/ui/text';
 import { timeAgo } from '@/lib/matches/freshness';
 import type { PostDetails } from '@/lib/posts/load';
+import { isHttpUrl } from '@/lib/setup/answers';
 
 type Person = {
   name: string | null;
@@ -86,13 +87,15 @@ function Section({
 
 function PersonLink({ p }: { p: Person | null }) {
   const name = p?.name ?? 'LinkedIn member';
-  const who = p?.profileUrl ? (
-    <TextLink href={p.profileUrl} target="_blank" rel="noopener noreferrer">
-      {name}
-    </TextLink>
-  ) : (
-    <span>{name}</span>
-  );
+  // Scraped: only an http(s) URL becomes a link (never `javascript:` or `data:`).
+  const who =
+    p?.profileUrl && isHttpUrl(p.profileUrl) ? (
+      <TextLink href={p.profileUrl} target="_blank" rel="noopener noreferrer">
+        {name}
+      </TextLink>
+    ) : (
+      <span>{name}</span>
+    );
   // The matcher skips authors without a key, so there is nothing to block.
   if (!p?.authorKey) return who;
   return (
@@ -100,7 +103,7 @@ function PersonLink({ p }: { p: Person | null }) {
       {who}
       <BlockAuthorButton
         authorKey={p.authorKey}
-        name={name}
+        name={p.name}
         profileUrl={p.profileUrl}
       />
     </span>
@@ -131,9 +134,13 @@ function HowToApply({
           )}
           {links.map((l) => (
             <li key={l} className="min-w-0 break-all">
-              <TextLink href={l} target="_blank" rel="noopener noreferrer">
-                {l}
-              </TextLink>
+              {isHttpUrl(l) ? (
+                <TextLink href={l} target="_blank" rel="noopener noreferrer">
+                  {l}
+                </TextLink>
+              ) : (
+                <span>{l}</span>
+              )}
             </li>
           ))}
           {dm && <li>DM, comment or connect with the author</li>}

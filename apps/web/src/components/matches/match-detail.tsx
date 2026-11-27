@@ -263,7 +263,7 @@ export type DecideJob = (
  * "Applied", "Not for me" and "Expired" on a match. Applied and Expired decide at once
  * and share one saving state; Not for me asks for an optional reason first.
  */
-function JobDecision({ onDecideJob }: { onDecideJob: DecideJob }) {
+export function JobDecision({ onDecideJob }: { onDecideJob: DecideJob }) {
   const [saving, setSaving] = useState<'applied' | 'expired' | null>(null);
   const [asking, setAsking] = useState(false);
   const pending = saving !== null;

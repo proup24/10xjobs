@@ -193,6 +193,36 @@ describe('ApplicationsView list', () => {
     expect(within(listing).queryByText('Social post')).toBeNull();
   });
 
+  it('names a rescued Junk post, which has no title, and marks it a social post', () => {
+    renderView({
+      decisions: [
+        decision({
+          jobId: 'jp1',
+          title: null,
+          companyName: null,
+          location: null,
+          kind: 'post',
+          channels: ['LINKEDIN_POSTS'],
+          postingUrl: 'https://www.linkedin.com/posts/jp1',
+          hasMatch: false,
+        }),
+      ],
+      initial: { job: 'jp1' },
+      selected: [],
+    });
+    const [row] = within(list('Applied')).getAllByRole('link');
+    expect(
+      within(row).getByRole('heading', { name: 'LinkedIn post', level: 3 }),
+    ).toBeTruthy();
+    expect(within(row).getByText('Social post')).toBeTruthy();
+    expect(
+      screen.getByRole('heading', { name: 'LinkedIn post', level: 2 }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('link', { name: 'Open post' }).getAttribute('href'),
+    ).toBe('https://www.linkedin.com/posts/jp1');
+  });
+
   it('shows Closed on a closed job', () => {
     renderView({
       decisions: [

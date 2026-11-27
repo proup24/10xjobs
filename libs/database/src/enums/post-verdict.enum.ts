@@ -37,3 +37,17 @@ export type PostVerdictReason =
 export const POST_VERDICT_REASONS: readonly PostVerdictReason[] = [
   ...new Set<PostVerdictReason>([...NOT_HIRING_REASONS, ...JUNK_REASONS]),
 ];
+
+/** Short words for each reason code, for the users' Junk tab. */
+export const POST_VERDICT_REASON_LABELS: Record<PostVerdictReason, string> = {
+  open_to_work: 'Open to work',
+  advice_or_commentary: 'Advice or commentary',
+  course_or_training_ad: 'Course or training ad',
+  job_digest: 'Job digest',
+  role_filled: 'Role filled',
+  no_clear_employer: 'No clear employer',
+  many_roles_across_companies: 'Many roles across companies',
+  funnel: 'Sells to job seekers',
+  messaging_group: 'Join a group to apply',
+  other: 'Other',
+};
