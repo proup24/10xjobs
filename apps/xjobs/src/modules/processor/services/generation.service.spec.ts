@@ -2,11 +2,15 @@ import { Logger } from '@nestjs/common';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import type { ProcessorConfig } from '../config/processor.config';
-import { ExtractionInvalidError } from '../models/errors';
+import { ExtractionInvalidError, ModelOutputError } from '../models/errors';
 import type { PostingInput } from '../models/types';
 import { systemPrompt } from '../prompts/prompt';
 import type { Vocabulary } from '../repositories/vocab.repository';
-import { FakeExtractionModel, MemoryVocabRepository } from '../testing/fakes';
+import {
+  FakeExtractionModel,
+  MemoryVocabRepository,
+  sequence,
+} from '../testing/fakes';
 import { DESCRIPTION, generatorOutput } from '../testing/generator-output';
 import { AttemptLog } from './attempt-log';
 import { FactAssembler } from './fact-assembler.service';
@@ -92,6 +96,62 @@ describe('GenerationService', () => {
       true,
     );
     expect(log.entries()[0].quoteFailures).toBe(2);
+  });
+
+  it('retries a max-turns end with its last rejection, not the turn-limit message', async () => {
+    const model = new FakeExtractionModel(
+      sequence<unknown>(
+        new ModelOutputError(
+          'max turns after 3 requests; last rejection: /word: must be string',
+          undefined,
+          ['/word: must be string'],
+        ),
+        { word: 'ok' },
+      ),
+      EXT,
+    );
+
+    const result = await service(model).generateWith(
+      echoSpec,
+      input,
+      vocabulary,
+      log,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(model.calls[1].req.retryErrors).toEqual(['/word: must be string']);
+    expect(log.entries()[0].error).toBe(
+      'max turns after 3 requests; last rejection: /word: must be string',
+    );
+  });
+
+  it('retries a max-turns end with no rejection without error feedback', async () => {
+    const model = new FakeExtractionModel(
+      sequence<unknown>(
+        new ModelOutputError(
+          'max turns: no StructuredOutput call in 3 requests',
+          undefined,
+          [],
+        ),
+        { word: 'ok' },
+      ),
+      EXT,
+    );
+
+    const result = await service(model).generateWith(
+      echoSpec,
+      input,
+      vocabulary,
+      log,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(model.calls).toHaveLength(2);
+    expect(model.calls[1].req.retryErrors).toBeUndefined();
+    expect(steps()).toEqual([
+      ['generation', 'invalid'],
+      ['generation_retry', 'ok'],
+    ]);
   });
 
   it("retries the spec's assembler error with its message, then fails", async () => {

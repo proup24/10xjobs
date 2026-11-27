@@ -157,6 +157,9 @@ describe('turnsSummary and maxTurnsReason', () => {
   });
 
   it('names the last rejection, or the missing StructuredOutput call', () => {
+    expect(
+      maxTurnsReason({ ...base, requests: 1, toolCalls: 0, textReplies: 1 }),
+    ).toBe('max turns: no StructuredOutput call in 1 request');
     expect(maxTurnsReason({ ...base, rejections: ['a', 'b'] })).toBe(
       'max turns after 3 requests; last rejection: b',
     );

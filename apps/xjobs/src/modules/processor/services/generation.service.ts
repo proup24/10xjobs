@@ -100,13 +100,17 @@ export class GenerationService {
     let errors: string[] = [];
     for (let attempt = 1; attempt <= this.config.generationTries; attempt++) {
       const current = attempt === 1 ? 'generation' : 'generation_retry';
-      const retryErrors = attempt === 1 ? undefined : errors;
+      const retryErrors =
+        attempt === 1 || errors.length === 0 ? undefined : errors;
       log.calling(
         current,
         model,
         [
           `${kb(input.description)} posting${input.truncated ? ' (truncated)' : ''}`,
-          retryErrors && `retrying ${retryErrors.length} errors`,
+          attempt > 1 &&
+            (retryErrors
+              ? `retrying ${retryErrors.length} errors`
+              : 'retrying without feedback'),
           `try ${attempt} of ${this.config.generationTries}`,
         ]
           .filter(Boolean)
@@ -125,7 +129,7 @@ export class GenerationService {
           throw error;
         }
         log.invalid(current, model, error.meta, error.message);
-        errors = [error.message];
+        errors = error.retryErrors ?? [error.message];
         continue;
       }
       // The model already checked the schema; parsed again for the types.

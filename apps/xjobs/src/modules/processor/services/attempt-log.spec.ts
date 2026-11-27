@@ -43,6 +43,29 @@ describe('AttemptLog', () => {
     );
   });
 
+  it('logs and records what the requests of the call did', () => {
+    const turns = {
+      numTurns: 4,
+      subtype: 'success',
+      requests: 3,
+      textReplies: 1,
+      enforceNudges: 1,
+      toolCalls: 2,
+      rejections: ['/a: must be string'],
+    };
+    const run = new AttemptLog(JOB);
+    run.ok('generation', meta.model, { ...meta, turns });
+    run.invalid('generation_retry', meta.model, { ...meta, turns }, 'bad');
+    run.ok('generation_retry', meta.model, meta);
+    expect(log).toHaveBeenCalledWith(
+      `[job ${JOB}] generation ok in 3.5s · 1200 in / 300 out tokens · $0.012300 · requests 3 · text 1 · nudges 1 · rejected 1`,
+    );
+    expect(warn).toHaveBeenCalledWith(
+      `[job ${JOB}] generation_retry invalid in 3.5s · $0.012300 · requests 3 · text 1 · nudges 1 · rejected 1: bad`,
+    );
+    expect(run.entries().map((e) => e.turns)).toEqual([turns, turns, null]);
+  });
+
   it('warns on an invalid answer and on a failed call, with the reason', () => {
     const run = new AttemptLog(JOB);
     run.invalid('extraction', meta.model, meta, 'openings.0: required');

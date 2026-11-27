@@ -6,6 +6,7 @@ import {
   type LimitObservation,
   parseStream,
 } from './claude/stream';
+import { type CallTurns, maxTurnsReason, parseTurns } from './claude/turns';
 import {
   ClaudeAuthError,
   ModelOutputError,
@@ -60,7 +61,8 @@ export class ClaudeExtractionModel extends ExtractionModel {
 
     const parsed = parseStream(run.stdout);
     this.onLimits(parsed.limits);
-    const meta = this.meta(parsed.result, run.latencyMs);
+    const turns = parseTurns(run.stdout);
+    const meta = this.meta(parsed.result, run.latencyMs, turns);
     const failure = classify(parsed, run);
     if (failure) {
       switch (failure.kind) {
@@ -77,6 +79,16 @@ export class ClaudeExtractionModel extends ExtractionModel {
         case 'request':
           throw new ModelRequestError(failure.reason, meta);
         case 'output':
+          if (parsed.result?.terminalReason === 'max_turns') {
+            // "Reached maximum number of turns" gives the retry nothing to
+            // fix: say why, and send back only the last rejection, if any.
+            const last = turns.rejections.at(-1);
+            throw new ModelOutputError(
+              maxTurnsReason(turns) ?? failure.reason,
+              meta,
+              last === undefined ? [] : [last],
+            );
+          }
           throw new ModelOutputError(failure.reason, meta);
       }
     }
@@ -90,7 +102,11 @@ export class ClaudeExtractionModel extends ExtractionModel {
     return { output: checked.data, meta };
   }
 
-  private meta(result: ClaudeResult | null, latencyMs: number): ModelCallMeta {
+  private meta(
+    result: ClaudeResult | null,
+    latencyMs: number,
+    turns: CallTurns,
+  ): ModelCallMeta {
     return {
       model: result?.model ?? this.model,
       providerRequestId: result?.sessionId ?? null,
@@ -99,6 +115,7 @@ export class ClaudeExtractionModel extends ExtractionModel {
       cachedInputTokens: result?.usage.cachedInput ?? 0,
       costUsd: result?.costUsd ?? 0,
       latencyMs,
+      turns,
     };
   }
 }

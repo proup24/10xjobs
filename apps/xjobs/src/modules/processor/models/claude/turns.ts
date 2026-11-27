@@ -125,10 +125,11 @@ export function turnsSummary(t: CallTurns): string {
  * text, or that no `StructuredOutput` call was made. Null when neither holds.
  */
 export function maxTurnsReason(t: CallTurns): string | null {
+  const requests = `${t.requests} request${t.requests === 1 ? '' : 's'}`;
   const last = t.rejections.at(-1);
   if (last !== undefined)
-    return `max turns after ${t.requests} requests; last rejection: ${last}`;
+    return `max turns after ${requests}; last rejection: ${last}`;
   if (t.toolCalls === 0)
-    return `max turns: no StructuredOutput call in ${t.requests} requests`;
+    return `max turns: no StructuredOutput call in ${requests}`;
   return null;
 }
