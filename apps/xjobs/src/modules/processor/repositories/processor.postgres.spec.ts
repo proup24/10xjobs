@@ -720,6 +720,28 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(rows.map((r) => r.docType).sort()).toEqual(['listing', 'post']);
     });
 
+    it("stores an attempt's turn record, and null without one", async () => {
+      const id = await job();
+      const turns = {
+        numTurns: 4,
+        subtype: 'error_max_turns',
+        requests: 3,
+        textReplies: 1,
+        enforceNudges: 1,
+        toolCalls: 2,
+        rejections: ['Output does not match required schema: /a: bad'],
+      };
+      await repo.recordAttempts([
+        attempt({ jobId: id, step: 'generation', turns }),
+        attempt({ jobId: id, step: 'generation_retry' }),
+      ]);
+      const rows = await db.orm.public.ProcessingAttempt.where({
+        jobId: id,
+      }).all();
+      const by = Object.fromEntries(rows.map((r) => [r.step, r.turns]));
+      expect(by).toEqual({ generation: turns, generation_retry: null });
+    });
+
     it('stores every field of an attempt', async () => {
       const id = await job();
       const extractionId = await repo.saveExtraction(extraction(id));

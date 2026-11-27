@@ -1431,6 +1431,7 @@ export type Database = {
           providerRequestId: string | null;
           quoteFailures: number;
           step: string;
+          turns: Json | null;
         };
         ComputedFields: never;
         Insert: {
@@ -1451,6 +1452,7 @@ export type Database = {
           providerRequestId?: string | null;
           quoteFailures?: number;
           step: string;
+          turns?: Json | null;
         };
         Update: {
           cachedInputTokens?: number;
@@ -1470,6 +1472,7 @@ export type Database = {
           providerRequestId?: string | null;
           quoteFailures?: number;
           step?: string;
+          turns?: Json | null;
         };
         Relationships: [
           {
