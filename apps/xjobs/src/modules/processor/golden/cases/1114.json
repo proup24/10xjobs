@@ -8,8 +8,7 @@
     "openings": [
       {
         "arrangements": [
-          "remote",
-          "hybrid"
+          "remote"
         ],
         "places": [
           {
@@ -155,7 +154,7 @@
   },
   "drafted": {
     "arrangement": {
-      "value": "hybrid",
+      "value": "remote",
       "reviewed": true
     },
     "contractType": {
