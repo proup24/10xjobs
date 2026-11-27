@@ -31,6 +31,8 @@ const undecided = (j: MatchedJob) =>
  * - Disqualified: rejected jobs, newest decision first.
  * - Junk: the junk rows.
  * A rescued job shows only in Matches (or nowhere once decided): it leaves every other tab.
+ * A live Junk rescue wins over the roles a later re-extraction makes of its post: those roles
+ * (`coveredJobIds`) show in no tab, whatever their outcome, until the rescue is undone.
  * Blocked authors' rescues are already left out by `post_rescue_list`.
  */
 export function buildPostLists(input: {
@@ -42,6 +44,8 @@ export function buildPostLists(input: {
 }): PostLists {
   const rescues = rescueItems(input.rescues);
   const rescued = new Set(rescues.map((r) => r.jobId));
+  for (const r of input.rescues)
+    for (const id of r.coveredJobIds ?? []) rescued.add(id);
   const notRescued = (i: PostListItem) => !rescued.has(i.jobId);
 
   const byJob = new Map<string, MatchedJob>();

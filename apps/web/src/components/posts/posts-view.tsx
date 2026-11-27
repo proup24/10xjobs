@@ -101,7 +101,7 @@ function UnblockControls({ rows }: { rows: MatchRow[] }) {
 
 /**
  * The open post's rescue button: Undo rescue on a rescued post with no decision; Rescue on a
- * Junk post or a Disqualified role. On a role rejected for a blocked author, Unblock comes
+ * Junk post or a Disqualified role (not one a Junk rescue of its post covers). On a role rejected for a blocked author, Unblock comes
  * instead (it names the author from the check, so the list rows carry no checks), nor on one the user moved out of Review (`post_rescue` refuses it: its raw
  * outcome is still review).
  */
@@ -120,6 +120,8 @@ function rescueControl(f: {
       f.rows.every((r) => r.decisionStatus == null) ? (
       <RescueControls jobId={jobId} mode="undo" closeHref={closeHref} />
     ) : null;
+  // A role a live Junk rescue of its post covers is already rescued (`post_rescue` refuses it).
+  if (f.rescues.some((r) => r.coveredJobIds?.includes(jobId))) return null;
   if (f.list === 'junk' && f.details && f.rows.length === 0)
     return <RescueControls jobId={jobId} mode="rescue" closeHref={closeHref} />;
   if (f.list !== 'disqualified' || f.rows.length === 0) return null;

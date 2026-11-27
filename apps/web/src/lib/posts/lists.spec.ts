@@ -15,7 +15,13 @@ const NOW = new Date('2026-11-10T21:00:00.000Z');
 const ago = (h: number) => new Date(NOW.getTime() - h * 3600_000).toISOString();
 const role = (over: Parameters<typeof matchRow>[0]) =>
   matchRow({ kind: 'post_role', ...over });
-const empty = { qualified: [], review: [], rejected: [], junk: [], rescues: [] };
+const empty = {
+  qualified: [],
+  review: [],
+  rejected: [],
+  junk: [],
+  rescues: [],
+};
 
 describe('buildPostLists', () => {
   it('drops decided matches and chosen reviews', () => {
@@ -59,6 +65,52 @@ describe('buildPostLists', () => {
       ['11111111-1111-4111-8111-111111111111', 'p9'].sort(),
     );
     expect(l.disqualified).toEqual([]);
+  });
+
+  describe('a Junk rescue wins over the roles a later re-extraction makes of its post', () => {
+    const junkRescue = (decisionStatus: string | null) =>
+      ({
+        jobId: 'post',
+        kind: 'post',
+        origin: 'junk',
+        profileIds: ['p9'],
+        postedAt: ago(1),
+        firstSeenAt: ago(1),
+        decisionStatus,
+        coveredJobIds: ['r-rej', 'r-rev', 'r-q'],
+      }) as unknown as RescueRow;
+    const lists = (rescues: RescueRow[]) =>
+      buildPostLists({
+        ...empty,
+        qualified: groupByJob([role({ jobId: 'r-q' }), role({ jobId: 'x' })]),
+        review: groupByJob([role({ jobId: 'r-rev', outcome: 'review' })]),
+        rejected: groupByJob([role({ jobId: 'r-rej', outcome: 'rejected' })]),
+        rescues,
+      });
+
+    it('keeps the post in Matches as Rescued and hides its rejected, review and qualified roles', () => {
+      const l = lists([junkRescue(null)]);
+      expect(l.matches.map((i) => [i.jobId, i.rescueOrigin])).toEqual([
+        ['post', 'junk'],
+        ['x', null],
+      ]);
+      expect(l.review).toEqual([]);
+      expect(l.disqualified).toEqual([]);
+    });
+
+    it('a decided rescue leaves no undecided role row anywhere', () => {
+      const l = lists([junkRescue('applied')]);
+      expect(l.matches.map((i) => i.jobId)).toEqual(['x']);
+      expect(l.review).toEqual([]);
+      expect(l.disqualified).toEqual([]);
+    });
+
+    it('after Undo rescue the roles return to their tabs', () => {
+      const l = lists([]);
+      expect(l.matches.map((i) => i.jobId).sort()).toEqual(['r-q', 'x']);
+      expect(l.review.map((i) => i.jobId)).toEqual(['r-rev']);
+      expect(l.disqualified.map((i) => i.jobId)).toEqual(['r-rej']);
+    });
   });
 
   it('orders Disqualified by newest decision', () => {
@@ -110,7 +162,11 @@ describe('failedReasons', () => {
           { outcome: 'fail', reason: 'later' },
         ],
       }),
-      role({ jobId: 'a', profileId: 'p2', checks: [{ outcome: 'fail', reason: 'two' }] }),
+      role({
+        jobId: 'a',
+        profileId: 'p2',
+        checks: [{ outcome: 'fail', reason: 'two' }],
+      }),
       role({ jobId: 'b', checks: null }),
     ];
     expect(failedReasons(rows)).toEqual({ a: { p1: 'one', p2: 'two' } });
