@@ -1,5 +1,8 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
+import { fireEvent, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { toast } from 'sonner';
+import { blockAuthorAction } from '@/app/(app)/preferences/actions';
 import type { PostDetails } from '@/lib/posts/load';
 import { NOW, hoursAgo } from '@/components/matches/test-fixtures';
 import { PostDetail } from './post-detail';
@@ -8,6 +11,12 @@ import { PostSection } from './post-section';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
+
+vi.mock('@/app/(app)/preferences/actions', () => ({
+  blockAuthorAction: vi.fn(),
+  unblockAuthorAction: vi.fn(),
+}));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 afterEach(cleanup);
 
@@ -147,6 +156,57 @@ describe('PostSection', () => {
     );
     expect(screen.getByText('<b>bold</b> claim')).toBeTruthy();
     expect(container.querySelector('b')).toBeNull();
+  });
+});
+
+describe('Block author', () => {
+  it('shows a Block button for the author and one for the sharer', () => {
+    render(<PostSection details={details()} now={new Date(NOW)} />);
+    expect(
+      screen.getByRole('button', { name: 'Block Olga Original' }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Block Sam Sharer' }),
+    ).toBeTruthy();
+  });
+
+  it('confirms, then blocks the sharer by key and toasts', async () => {
+    vi.mocked(blockAuthorAction).mockResolvedValue({ status: 'saved' });
+    render(<PostSection details={details()} now={new Date(NOW)} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Block Sam Sharer' }));
+    const dialog = within(screen.getByRole('alertdialog'));
+    expect(dialog.getByText('Block Sam Sharer?')).toBeTruthy();
+    expect(
+      dialog.getByText(
+        'Their posts move to Disqualified within a few minutes, and are never emailed.',
+      ),
+    ).toBeTruthy();
+    fireEvent.click(dialog.getByRole('button', { name: 'Block' }));
+    await waitFor(() =>
+      expect(blockAuthorAction).toHaveBeenCalledWith({
+        authorKey: 'profile:sam',
+        name: 'Sam Sharer',
+        profileUrl: 'https://www.linkedin.com/in/sam',
+      }),
+    );
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith('Blocked Sam Sharer'),
+    );
+  });
+
+  it('offers no Block for an author without a key', () => {
+    const src = {
+      ...shareSource,
+      original: null,
+      author: { ...person('Keyless', 'k'), key: null },
+    };
+    render(
+      <PostSection
+        details={details({ sources: [src], linked: [] })}
+        now={new Date(NOW)}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: /^Block/ })).toBeNull();
   });
 });
 

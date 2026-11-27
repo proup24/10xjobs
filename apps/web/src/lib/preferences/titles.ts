@@ -2,6 +2,7 @@
 export const SECTION_TITLES = {
   contacts: 'Contacts',
   webhook: 'Webhook',
+  blockedAuthors: 'Blocked authors',
   eligibility: 'Where you can work',
   job: 'The job you want',
   terms: 'Location and terms',
