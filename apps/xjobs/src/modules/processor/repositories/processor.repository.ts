@@ -113,7 +113,7 @@ export type ReprocessFilter = {
   allInScope?: boolean;
   nullStatus?: boolean;
   failed?: boolean;
-  /** Jobs with a current `qualified` or `review` decision: on the job's current extraction, by this matcher version. */
+  /** Jobs with a `qualified` or `review` decision on their current extraction, by this matcher version or later. */
   matched?: boolean;
   jobIds?: string[];
 };

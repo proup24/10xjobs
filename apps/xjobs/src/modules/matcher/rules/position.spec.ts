@@ -63,6 +63,11 @@ describe('checkPosition', () => {
         unsure: false,
       });
     });
+    it('tech_lead at lead seniority rejects an ai_training job on position', () => {
+      expect(
+        checkPosition(leadRole('ai_training', 'lead'), lead).outcome,
+      ).toBe('fail');
+    });
     it('tech_lead still fails on senior fullstack_engineer', () => {
       expect(
         checkPosition(leadRole('fullstack_engineer', 'senior'), lead).outcome,
