@@ -60,7 +60,6 @@ function setup(
   const factsRepo = new MemoryFactsRepository();
   repo.candidates.set('job-1', {
     extractionId: 'ext-1',
-    needsReview: false,
     kind: 'job',
     post: null,
   });
@@ -80,7 +79,6 @@ function setup(
   // A role job of a post, decided like a listing plus the post checks.
   repo.candidates.set('role-1', {
     extractionId: 'ext-r',
-    needsReview: false,
     kind: 'post_role',
     post: {
       verdictConfidence: 'sure',
@@ -241,21 +239,6 @@ describe('MatcherService', () => {
     };
     expect(await service.matchJob('job-1')).toMatchObject({ profiles: 1 });
     expect(await service.matchJob('job-1')).toMatchObject({ profiles: 0 });
-  });
-
-  it('marks every row unverified when the extraction needs review', async () => {
-    const { repo, service } = setup();
-    repo.candidates.set('job-1', {
-      extractionId: 'ext-1',
-      needsReview: true,
-      kind: 'job',
-      post: null,
-    });
-    await service.matchJob('job-1');
-    const rows = await repo.matchesForJob('job-1');
-    expect(rows.every((r) => r.outcome === 'rejected' || r.unverified)).toBe(
-      true,
-    );
   });
 
   it('counts qualified rows', async () => {

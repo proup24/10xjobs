@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { or } from '@prisma/orm-postgres/orm-client';
 import { DatabaseService } from 'src/database';
 import type { DatabaseTransaction, JobExtractionRow } from '@xjobs/database';
 import { inRetriedTransaction } from 'src/modules/ingest/repositories/raw.repository';
@@ -97,10 +96,15 @@ export type FinishOutcome =
   | { status: 'pending'; error: string; refundAttempt?: boolean }
   | { status: 'failed'; error: string };
 
-/** What `markPending` did: jobs sent back, and archived jobs a selector matched but left alone. */
+/**
+ * What `markPending` did: jobs sent back, archived jobs a selector matched but
+ * left alone, and `skipped` jobs `allInScope` matched but left alone.
+ */
 export interface MarkPendingResult {
   marked: number;
   skippedArchived: number;
+  /** Never processed: the prefilter's recheck reopens them. `jobIds` sends one to `pending`, and the next sweep skips it again if it still fails the check. */
+  leftSkipped: number;
 }
 
 /** Which in-scope jobs `markPending` sends back to the processor; selectors add up. */
@@ -153,9 +157,18 @@ export function readStoredData(
   };
 }
 
-/** In-scope jobs per processing status; `unset` is a null status (never sent to the processor). */
+/**
+ * In-scope jobs per processing status; `unset` is a null status (never sent
+ * to the processor), `skipped` a listing the prefilter kept from it.
+ */
 export type Counts = Record<
-  'pending' | 'processing' | 'processed' | 'failed' | 'archived' | 'unset',
+  | 'pending'
+  | 'processing'
+  | 'processed'
+  | 'failed'
+  | 'archived'
+  | 'skipped'
+  | 'unset',
   number
 >;
 
@@ -543,14 +556,29 @@ export class PrismaProcessorRepository extends ProcessorRepository {
     if (updated.length > 0) return 'finished';
 
     // The extraction is still the freshest one unless a newer run already
-    // finished the job; until then qualify reads this one.
-    if (outcome.status === 'processed' && outcome.extractionId !== null)
-      await jobs
-        .where({ id: claim.jobId })
-        .where((j) =>
-          or(j.processingStatus.isNull(), j.processingStatus.neq('processed')),
-        )
-        .updateAll({ currentExtractionId: outcome.extractionId });
+    // finished the job; until then qualify reads this one. A job the
+    // prefilter skipped meanwhile (released as stale, then checked) goes back
+    // to `pending`: a job with an extraction is never `skipped`. One UPDATE,
+    // so it cannot interleave with `markSkipped`: whichever commits first, the
+    // other re-checks the row (READ COMMITTED) and either flips the skip back
+    // or refuses a row that now holds an extraction.
+    if (outcome.status === 'processed' && outcome.extractionId !== null) {
+      const { raw } = this.db;
+      await this.db.query(
+        raw.sql`UPDATE normalized_jobs SET
+            "currentExtractionId" = ${outcome.extractionId}::uuid,
+            "processingRequestedAt" = CASE WHEN "processingStatus" = 'skipped'
+              THEN now() ELSE "processingRequestedAt" END,
+            "processingStatus" = CASE WHEN "processingStatus" = 'skipped'
+              THEN 'pending' ELSE "processingStatus" END,
+            "updatedAt" = now()
+          WHERE id = ${claim.jobId}::uuid
+            AND "processingStatus" IS DISTINCT FROM 'processed'
+          RETURNING id`
+          .returnsRow({ id: UUID })
+          .build(),
+      );
+    }
     return 'superseded';
   }
 
@@ -644,6 +672,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       processed: 0,
       failed: 0,
       archived: 0,
+      skipped: 0,
       unset: 0,
     });
     const counts: ProcessingCounts = {
@@ -757,26 +786,30 @@ export class PrismaProcessorRepository extends ProcessorRepository {
       };
       const { raw } = tx;
       const scope = () => processorScopeSql(raw, 'j');
-      // Archived jobs are never touched; count the ones a selector would have matched.
-      let skippedArchived = 0;
-      const countArchived = async (plan: Parameters<typeof tx.query>[0]) => {
-        skippedArchived += (await tx.query(plan)).length;
+      // Archived jobs are never touched, nor skipped ones by `allInScope`;
+      // count the ones a selector would have matched. A skipped job was never
+      // processed: the prefilter's recheck sends it back, or `jobIds` (the
+      // operator's run of one job) on purpose.
+      const left = { archived: 0, skipped: 0 };
+      const countLeft = async (plan: Parameters<typeof tx.query>[0]) => {
+        for (const row of await tx.query(plan))
+          left[(row as { status: 'archived' | 'skipped' }).status]++;
       };
       if (filter.allInScope)
-        await countArchived(
-          raw.sql`SELECT j.id FROM normalized_jobs j
+        await countLeft(
+          raw.sql`SELECT j.id, j."processingStatus" AS status FROM normalized_jobs j
             WHERE j.status = 'active' AND ${scope()}
-              AND "processingStatus" = 'archived'`
-            .returnsRow({ id: UUID })
+              AND "processingStatus" IN ('archived', 'skipped')`
+            .returnsRow({ id: UUID, status: 'pg/text@1' })
             .build(),
         );
       else
         for (const jobId of new Set(filter.jobIds ?? []))
-          await countArchived(
-            raw.sql`SELECT j.id FROM normalized_jobs j
+          await countLeft(
+            raw.sql`SELECT j.id, j."processingStatus" AS status FROM normalized_jobs j
               WHERE j.status = 'active' AND ${scope()}
                 AND "processingStatus" = 'archived' AND id = ${jobId}::uuid`
-              .returnsRow({ id: UUID })
+              .returnsRow({ id: UUID, status: 'pg/text@1' })
               .build(),
           );
       // Every statement: in scope (see `processorScopeSql`), then the selector.
@@ -785,6 +818,7 @@ export class PrismaProcessorRepository extends ProcessorRepository {
           raw.sql`UPDATE normalized_jobs j SET ${pendingColumns(raw)}
             WHERE j.status = 'active' AND ${scope()}
               AND "processingStatus" IS DISTINCT FROM 'archived'
+              AND "processingStatus" IS DISTINCT FROM 'skipped'
             RETURNING id`
             .returnsRow({ id: UUID })
             .build(),
@@ -819,7 +853,11 @@ export class PrismaProcessorRepository extends ProcessorRepository {
             .returnsRow({ id: UUID })
             .build(),
         );
-      return { marked: touched.size, skippedArchived };
+      return {
+        marked: touched.size,
+        skippedArchived: left.archived,
+        leftSkipped: left.skipped,
+      };
     });
   }
 }

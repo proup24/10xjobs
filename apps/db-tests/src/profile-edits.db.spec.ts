@@ -179,6 +179,7 @@ describe('published profiles are editable by their owner', () => {
     ['publishedAt', '2000-01-01T00:00:00.000Z'],
     ['matchVersion', 99],
     ['searchesVersion', 99],
+    ['prefilterCheckedVersion', 99],
   ])('cannot set %s', async (column, value) => {
     const { id } = await published(a);
     const before = await row(id);
@@ -195,6 +196,7 @@ describe('published profiles are editable by their owner', () => {
     ['publishedAt', '2000-01-01T00:00:00.000Z'],
     ['matchVersion', 99],
     ['searchesVersion', 99],
+    ['prefilterCheckedVersion', 99],
   ])('rejects a user insert with %s', async (column, value) => {
     const id = randomUUID();
     const { error } = await a.client

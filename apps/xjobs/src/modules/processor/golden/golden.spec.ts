@@ -1,5 +1,6 @@
 import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { SEED } from '../vocab/seed-data';
 import { convertGoldenCase, GOLDEN_CASES_DIR, loadGolden } from './golden';
 
 const CASES_DIR = GOLDEN_CASES_DIR;
@@ -38,6 +39,23 @@ describe('golden set', () => {
     for (const c of cases)
       expect(Object.keys(c.expected)).not.toContain('verdict');
     expect(text).not.toContain('checkIds');
+  });
+
+  it('labels every case with arrangement, contract type and engineering role', () => {
+    const codes = (list: 'arrangements' | 'contractTypes') =>
+      SEED[list].map((t) => t.code);
+    for (const c of cases) {
+      expect(codes('arrangements'), c.id).toContain(
+        c.drafted.arrangement?.value,
+      );
+      expect(codes('contractTypes'), c.id).toContain(
+        c.drafted.contractType?.value,
+      );
+      expect(typeof c.drafted.isSoftwareEngineeringRole?.value, c.id).toBe(
+        'boolean',
+      );
+      expect(c.drafted, c.id).not.toHaveProperty('engagement');
+    }
   });
 
   it('carries no reviewed drafted values until a human reviews them', () => {
@@ -138,8 +156,8 @@ describe('convertGoldenCase', () => {
       expect(convertGoldenCase(structuredClone(c))).toEqual(c);
   });
 
-  it('holds all 82 cases in the converted shape', () => {
-    expect(cases).toHaveLength(82);
+  it('holds all 94 cases in the converted shape', () => {
+    expect(cases).toHaveLength(94);
     for (const c of cases) {
       expect(c.expected).not.toHaveProperty('mainStack');
       expect(Array.isArray(c.expected.requirements)).toBe(true);

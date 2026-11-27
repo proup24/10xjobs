@@ -4014,6 +4014,13 @@
                   }
                 }
               },
+              "processingSkip": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
               "processingStartedAt": {
                 "nullable": true,
                 "type": {
@@ -4488,6 +4495,9 @@
                 },
                 "processingRequestedAt": {
                   "column": "processingRequestedAt"
+                },
+                "processingSkip": {
+                  "column": "processingSkip"
                 },
                 "processingStartedAt": {
                   "column": "processingStartedAt"
@@ -5094,6 +5104,13 @@
                   "kind": "scalar"
                 }
               },
+              "prefilterCheckedVersion": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "publishedAt": {
                 "nullable": true,
                 "type": {
@@ -5331,6 +5348,9 @@
                 },
                 "postSearch": {
                   "column": "postSearch"
+                },
+                "prefilterCheckedVersion": {
+                  "column": "prefilterCheckedVersion"
                 },
                 "publishedAt": {
                   "column": "publishedAt"
@@ -12121,8 +12141,8 @@
                   "prefix": "normalized_jobs_processing_reason"
                 },
                 {
-                  "expression": "\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed', 'archived')",
-                  "name": "normalized_jobs_processing_status_89abdf7d",
+                  "expression": "\"processingStatus\" IS NULL OR \"processingStatus\" IN ('pending', 'processing', 'processed', 'failed', 'archived', 'skipped')",
+                  "name": "normalized_jobs_processing_status_0418256a",
                   "prefix": "normalized_jobs_processing_status"
                 },
                 {
@@ -12382,6 +12402,11 @@
                   "typeParams": {
                     "precision": 3
                   }
+                },
+                "processingSkip": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": true
                 },
                 "processingStartedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -13484,6 +13509,11 @@
                     "value": false
                   },
                   "nullable": false
+                },
+                "prefilterCheckedVersion": {
+                  "codecId": "pg/int4@1",
+                  "dataType": "pg/int4",
+                  "nullable": true
                 },
                 "publishedAt": {
                   "codecId": "pg/timestamptz-date@1",
@@ -15900,7 +15930,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72"
+    "storageHash": "5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06"
   },
   "execution": {
     "executionHash": "dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7",

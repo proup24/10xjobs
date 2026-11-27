@@ -1194,6 +1194,7 @@ export type Database = {
           processingError: string | null;
           processingReason: string | null;
           processingRequestedAt: string | null;
+          processingSkip: Json | null;
           processingStartedAt: string | null;
           processingStatus: string | null;
           publishedAt: string | null;
@@ -1256,6 +1257,7 @@ export type Database = {
           processingError?: string | null;
           processingReason?: string | null;
           processingRequestedAt?: string | null;
+          processingSkip?: Json | null;
           processingStartedAt?: string | null;
           processingStatus?: string | null;
           publishedAt?: string | null;
@@ -1317,6 +1319,7 @@ export type Database = {
           processingError?: string | null;
           processingReason?: string | null;
           processingRequestedAt?: string | null;
+          processingSkip?: Json | null;
           processingStartedAt?: string | null;
           processingStatus?: string | null;
           publishedAt?: string | null;
@@ -1622,6 +1625,7 @@ export type Database = {
           noticePeriodDays: number;
           position: string;
           postSearch: boolean;
+          prefilterCheckedVersion: number | null;
           publishedAt: string | null;
           resumeFilename: string | null;
           resumeKey: string | null;
@@ -1656,6 +1660,7 @@ export type Database = {
           noticePeriodDays: number;
           position: string;
           postSearch?: boolean;
+          prefilterCheckedVersion?: number | null;
           publishedAt?: string | null;
           resumeFilename?: string | null;
           resumeKey?: string | null;
@@ -1689,6 +1694,7 @@ export type Database = {
           noticePeriodDays?: number;
           position?: string;
           postSearch?: boolean;
+          prefilterCheckedVersion?: number | null;
           publishedAt?: string | null;
           resumeFilename?: string | null;
           resumeKey?: string | null;

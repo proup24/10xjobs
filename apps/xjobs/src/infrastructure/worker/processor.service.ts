@@ -27,6 +27,7 @@ import {
   type ProcessorConfig,
   ProcessorRepository,
 } from 'src/modules/processor';
+import { PrefilterService } from 'src/modules/prefilter';
 import { WorkerRuntimeService } from './runtime.service';
 import {
   RUN_SCHEDULES,
@@ -56,6 +57,7 @@ export class ProcessorWorkerService implements OnModuleDestroy {
     private readonly processQueue: ProcessQueue,
     private readonly matchQueue: MatchQueue,
     private readonly autoSilence: AutoSilenceService,
+    private readonly prefilter: PrefilterService,
     @Inject(PROCESSOR_CONFIG) private readonly config: ProcessorConfig,
     private readonly guard: ProcessorGuard,
     private readonly model: ExtractionModel,
@@ -162,6 +164,7 @@ export class ProcessorWorkerService implements OnModuleDestroy {
           queue: this.processQueue,
           matchQueue: this.matchQueue,
           autoSilence: this.autoSilence,
+          prefilter: this.prefilter,
           config: this.config,
         }),
       this.config.concurrency,

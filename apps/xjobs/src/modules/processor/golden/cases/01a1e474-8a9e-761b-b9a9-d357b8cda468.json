@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "unstated"
+        ],
         "places": [
           {
             "kind": "city",
@@ -18,7 +20,7 @@
         "placeStrictness": "label"
       }
     ],
-    "roleKind": "security_engineer",
+    "roleKind": "cloud_engineer",
     "seniority": "senior",
     "yearsRequired": {
       "min": 7,
@@ -57,6 +59,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "OCI",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -72,19 +82,15 @@
     },
     "contractType": {
       "value": "unstated",
-      "reviewed": false
+      "reviewed": true
     },
     "isSoftwareEngineeringRole": {
       "value": true,
-      "reviewed": false
-    },
-    "engagement": {
-      "value": "unstated",
-      "reviewed": false
+      "reviewed": true
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

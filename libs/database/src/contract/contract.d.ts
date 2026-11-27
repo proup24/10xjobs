@@ -24,7 +24,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72'>;
+  StorageHashBase<'5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06'>;
 export type ExecutionHash =
   ExecutionHashBase<'dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7'>;
 export type ProfileHash =
@@ -1023,6 +1023,7 @@ export namespace Models {
     processingError: FieldOutputTypes['public']['NormalizedJob']['processingError'];
     processingReason: FieldOutputTypes['public']['NormalizedJob']['processingReason'];
     processingRequestedAt: FieldOutputTypes['public']['NormalizedJob']['processingRequestedAt'];
+    processingSkip: FieldOutputTypes['public']['NormalizedJob']['processingSkip'];
     processingStartedAt: FieldOutputTypes['public']['NormalizedJob']['processingStartedAt'];
     processingStatus: FieldOutputTypes['public']['NormalizedJob']['processingStatus'];
     publishedAt: FieldOutputTypes['public']['NormalizedJob']['publishedAt'];
@@ -1130,6 +1131,7 @@ export namespace Models {
     noticePeriodDays: FieldOutputTypes['public']['Profile']['noticePeriodDays'];
     position: FieldOutputTypes['public']['Profile']['position'];
     postSearch: FieldOutputTypes['public']['Profile']['postSearch'];
+    prefilterCheckedVersion: FieldOutputTypes['public']['Profile']['prefilterCheckedVersion'];
     publishedAt: FieldOutputTypes['public']['Profile']['publishedAt'];
     resumeFilename: FieldOutputTypes['public']['Profile']['resumeFilename'];
     resumeKey: FieldOutputTypes['public']['Profile']['resumeKey'];
@@ -4089,6 +4091,12 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                   readonly many: false;
                 };
+                readonly processingSkip: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
                 readonly processingStartedAt: {
                   readonly dataType: 'pg/timestamptz';
                   readonly codecId: 'pg/timestamptz-date@1';
@@ -4881,6 +4889,12 @@ type ContractBase = Omit<
                     readonly kind: 'literal';
                     readonly value: DefaultLiteralValue<'pg/bool@1', false>;
                   };
+                  readonly many: false;
+                };
+                readonly prefilterCheckedVersion: {
+                  readonly dataType: 'pg/int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
                   readonly many: false;
                 };
                 readonly publishedAt: {
@@ -9050,6 +9064,10 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 3 };
                 };
               };
+              readonly processingSkip: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
               readonly processingStartedAt: {
                 readonly nullable: true;
                 readonly type: {
@@ -9337,6 +9355,7 @@ type ContractBase = Omit<
                 readonly processingError: { readonly column: 'processingError' };
                 readonly processingReason: { readonly column: 'processingReason' };
                 readonly processingRequestedAt: { readonly column: 'processingRequestedAt' };
+                readonly processingSkip: { readonly column: 'processingSkip' };
                 readonly processingStartedAt: { readonly column: 'processingStartedAt' };
                 readonly processingStatus: { readonly column: 'processingStatus' };
                 readonly publishedAt: { readonly column: 'publishedAt' };
@@ -9689,6 +9708,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
               };
+              readonly prefilterCheckedVersion: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly publishedAt: {
                 readonly nullable: true;
                 readonly type: {
@@ -9825,6 +9848,7 @@ type ContractBase = Omit<
                 readonly noticePeriodDays: { readonly column: 'noticePeriodDays' };
                 readonly position: { readonly column: 'position' };
                 readonly postSearch: { readonly column: 'postSearch' };
+                readonly prefilterCheckedVersion: { readonly column: 'prefilterCheckedVersion' };
                 readonly publishedAt: { readonly column: 'publishedAt' };
                 readonly resumeFilename: { readonly column: 'resumeFilename' };
                 readonly resumeKey: { readonly column: 'resumeKey' };

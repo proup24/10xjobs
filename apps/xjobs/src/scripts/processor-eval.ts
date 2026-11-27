@@ -14,8 +14,9 @@
  * generator as the worker, with in-memory repositories seeded from `seed-data.ts`,
  * so the database is not touched. Attempts are recorded with `eval: true`.
  * Prints every miss by fact (golden value → the model's, with its quote) and
- * the report, writes both to `golden/last-report.<generator>.json` and exits 1
- * unless every bar holds.
+ * the report, writes both, with every case's scores (and its unreviewed drafts
+ * next to the model's answers, for `processor:golden-review`), to
+ * `golden/last-report.<generator>.json` and exits 1 unless every bar holds.
  */
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -29,8 +30,10 @@ import {
 import {
   BARS,
   callStats,
+  type EvalMiss as Miss,
   type EvalReport,
   type FactScores,
+  type ListingReportFile,
   reportFileName,
   scoreCase,
   summarize,
@@ -83,17 +86,6 @@ class EvalProcessorRepository extends MemoryProcessorRepository {
   override async recordAttempts(rows: NewAttempt[]): Promise<void> {
     await super.recordAttempts(rows.map((r) => ({ ...r, eval: true })));
   }
-}
-
-/** One wrong fact in one case, to tell a model miss from a wrong label. */
-interface Miss {
-  caseId: string;
-  title: string;
-  fact: string;
-  confidence: string | null;
-  want: unknown;
-  got: unknown;
-  quote: string;
 }
 
 /** Facts scored below full marks, and required technologies missed or added. */
@@ -432,7 +424,7 @@ async function main(): Promise<void> {
     );
   writeFileSync(
     join(GOLDEN_CASES_DIR, '..', reportFileName(config.extractionModel)),
-    `${JSON.stringify({ ...report, pass, failed, stoppedOnLimit: limit, notRun: stopped, config, misses }, null, 2)}\n`,
+    `${JSON.stringify({ ...report, pass, failed, stoppedOnLimit: limit, notRun: stopped, config, misses, scores } satisfies ListingReportFile, null, 2)}\n`,
   );
   process.exit(pass ? 0 : 1);
 }
