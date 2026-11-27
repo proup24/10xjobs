@@ -43,6 +43,7 @@ export const POSITION_TITLES: Readonly<Record<string, readonly string[]>> = {
   software_architect: ['software architect', 'technical architect'],
   tech_lead: ['tech lead', 'technical lead', 'engineering lead'],
   engineering_manager: ['engineering manager', 'software engineering manager'],
+  ai_training: ['ai trainer', 'ai training', 'ai tutor'],
 };
 
 /** Seniority word added to a title query; `unstated` adds nothing. */

@@ -88,9 +88,9 @@ describe('systemPrompt field paths', () => {
 describe('postSystemPrompt', () => {
   const text = postSystemPrompt();
 
-  it('leaves the listing prompt hash unchanged', () => {
+  it('pins the listing prompt hash (update it with every prompt edit)', () => {
     expect(promptHash()).toBe(
-      'acec5044dd160a5ebf7dff8090d74f5a0a3d09d311b4308aa2b8b9954785db86',
+      'ea379b22466b6561aead9d0a0df29844e2297a713fd4cb7a88b50c70008730bf',
     );
   });
 

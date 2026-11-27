@@ -1,4 +1,5 @@
 import type { createDatabaseClient } from 'src/database';
+import { skippableListingSql } from '../skip-share';
 import { postExtractionSql, shapePostExtraction } from './post-extraction';
 
 type Db = ReturnType<typeof createDatabaseClient>;
@@ -12,6 +13,7 @@ type Raw = Tx['raw'];
  * (`kind = 'job'`); post role rows are reported per kind by `db:match-shares`.
  * Sections 5 to 8 judge listing extractions: they read only listing rows
  * (`docType`) of job-board jobs, never post rows or post role jobs.
+ * Section 15 reads the turn record of listing and post calls alike.
  */
 export const SECTIONS: {
   title: string;
@@ -229,5 +231,93 @@ export const SECTIONS: {
     sql: postExtractionSql,
     shape: (rows, now) =>
       shapePostExtraction(rows as never, now).map((r) => ({ ...r })),
+  },
+  {
+    // New listings = active LinkedIn job board listings (the processor's
+    // scope; ATS and merged rows are never skipped) first seen in the last 7
+    // days; skipped =
+    // those whose current status is 'skipped' (the pre-LLM check). The sample
+    // is random, so it differs on every run.
+    title:
+      '14. Skipped before processing (last 7 days; new LinkedIn listings first seen in the window)',
+    sql: (
+      raw,
+    ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
+        WITH new_listings AS (
+          SELECT id, title, "processingStatus", "processingSkip"
+          FROM normalized_jobs
+          WHERE ${skippableListingSql(raw)}
+            AND "firstSeenAt" >= now() - interval '7 days'),
+        skipped AS (
+          SELECT * FROM new_listings WHERE "processingStatus" = 'skipped')
+        SELECT 'by_tag_country' AS part, "processingSkip"->>'tag' AS tag,
+          "processingSkip"->>'country' AS country, NULL::text AS title,
+          count(*)::int AS count, NULL::numeric AS share
+        FROM skipped GROUP BY 2, 3
+        UNION ALL
+        SELECT 'share', NULL, NULL, NULL,
+          (SELECT count(*)::int FROM skipped),
+          round((SELECT count(*) FROM skipped)::numeric
+            / nullif((SELECT count(*) FROM new_listings), 0), 3)
+        UNION ALL
+        SELECT 'sample', "processingSkip"->>'tag', "processingSkip"->>'country',
+          title, NULL, NULL
+        FROM (SELECT * FROM skipped ORDER BY random() LIMIT 20) s) t`,
+  },
+  {
+    // Calls that carry a turn record (`processing_attempts.turns`, from
+    // slice 03 task 12): how many model requests each needed, and what the
+    // calls with a repeat did. A text reply plus a nudge points at the prompt
+    // (the model wrote the JSON as text); a rejection names the field the
+    // CLI's schema check refused. Rejection texts are counted with their
+    // prefix dropped and array indices folded to N.
+    title:
+      '15. Claude call requests (last 7 days; calls with a turn record): requests per call, what repeats did, max turns, top rejections',
+    sql: (
+      raw,
+    ) => raw.sql`SELECT coalesce(jsonb_agg(to_jsonb(t) - 'p' - 'o'
+          ORDER BY t.p, t.kind, t.o, t.count DESC, t.key), '[]'::jsonb) AS rows FROM (
+        WITH a AS (
+          SELECT "docType" AS kind, turns,
+            least(coalesce((turns->>'requests')::int, 0), 3) AS requests
+          FROM processing_attempts
+          WHERE NOT eval AND turns IS NOT NULL
+            AND "createdAt" >= now() - interval '7 days'),
+        totals AS (SELECT kind, count(*) AS n FROM a GROUP BY kind),
+        multi AS (
+          SELECT kind, count(*) AS n,
+            count(*) FILTER (WHERE (turns->>'textReplies')::int > 0) AS text,
+            count(*) FILTER (WHERE (turns->>'enforceNudges')::int > 0) AS nudged,
+            count(*) FILTER (WHERE jsonb_array_length(coalesce(turns->'rejections', '[]'::jsonb)) > 0) AS rejected
+          FROM a WHERE requests >= 2 GROUP BY kind),
+        rejection AS (
+          SELECT left(regexp_replace(
+              regexp_replace(r, '^Output does not match required schema: ', ''),
+              '/[0-9]+(?=/|:|[[:space:]]|$)', '/N', 'g'), 160) AS key
+          FROM a, jsonb_array_elements_text(
+            CASE WHEN jsonb_typeof(turns->'rejections') = 'array'
+                 THEN turns->'rejections' ELSE '[]'::jsonb END) r)
+        SELECT 1 AS p, 'requests' AS part, a.kind, a.requests AS o,
+          a.requests::text AS key, count(*)::int AS count,
+          round(count(*)::numeric / t.n, 3) AS share
+        FROM a JOIN totals t USING (kind) GROUP BY a.kind, a.requests, t.n
+        UNION ALL
+        SELECT 2, 'multi', m.kind, v.o, v.key, v.count::int, v.share
+        FROM multi m CROSS JOIN LATERAL (VALUES
+          (1, 'calls', m.n, NULL::numeric),
+          (2, 'with_text_replies', m.text, round(m.text::numeric / m.n, 3)),
+          (3, 'with_enforce_nudges', m.nudged, round(m.nudged::numeric / m.n, 3)),
+          (4, 'with_rejections', m.rejected, round(m.rejected::numeric / m.n, 3))
+        ) v(o, key, count, share)
+        UNION ALL
+        SELECT 3, 'max_turns', a.kind, 0, 'error_max_turns',
+          count(*) FILTER (WHERE a.turns->>'subtype' = 'error_max_turns')::int,
+          round(count(*) FILTER (WHERE a.turns->>'subtype' = 'error_max_turns')::numeric
+            / count(*), 3)
+        FROM a GROUP BY a.kind
+        UNION ALL
+        SELECT 4, 'rejection', NULL, 0, key, count, NULL
+        FROM (SELECT key, count(*)::int AS count FROM rejection
+              GROUP BY key ORDER BY 2 DESC, 1 LIMIT 10) r) t`,
   },
 ];

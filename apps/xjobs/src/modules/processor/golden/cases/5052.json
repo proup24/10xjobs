@@ -7,14 +7,16 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "remote"
+        ],
         "places": [
           {
             "kind": "country",
             "code": "FR"
           }
         ],
-        "placeStrictness": "unstated"
+        "placeStrictness": "limit"
       }
     ],
     "roleKind": "mobile_engineer",
@@ -40,6 +42,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "Expo",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -54,9 +64,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

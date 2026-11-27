@@ -5,6 +5,7 @@ import {
   ProviderUnavailableError,
   TransientModelError,
 } from '../models/errors';
+import { turnsSummary } from '../models/claude/turns';
 import type { ModelCallMeta } from '../models/types';
 import type { DocType, NewAttempt } from '../repositories/processor.repository';
 
@@ -16,6 +17,8 @@ const clip = (text: string): string =>
 const seconds = (ms: number | undefined): string =>
   `${((ms ?? 0) / 1000).toFixed(1)}s`;
 const usd = (n: number | undefined): string => `$${(n ?? 0).toFixed(6)}`;
+const turns = (meta: Partial<ModelCallMeta> | undefined): string =>
+  meta?.turns ? ` · ${turnsSummary(meta.turns)}` : '';
 
 /**
  * One run of the processor: every model call, in order, as
@@ -67,7 +70,7 @@ export class AttemptLog {
   ok(step: AttemptStep, model: string, meta: ModelCallMeta): void {
     this.push(step, model, meta, 'ok', null);
     this.info(
-      `${step} ok in ${seconds(meta.latencyMs)} · ${meta.inputTokens} in / ${meta.outputTokens} out tokens · ${usd(meta.costUsd)}`,
+      `${step} ok in ${seconds(meta.latencyMs)} · ${meta.inputTokens} in / ${meta.outputTokens} out tokens · ${usd(meta.costUsd)}${turns(meta)}`,
     );
   }
 
@@ -80,7 +83,7 @@ export class AttemptLog {
   ): void {
     this.push(step, model, meta, 'invalid', error);
     this.warn(
-      `${step} invalid in ${seconds(meta?.latencyMs)} · ${usd(meta?.costUsd)}: ${clip(error)}`,
+      `${step} invalid in ${seconds(meta?.latencyMs)} · ${usd(meta?.costUsd)}${turns(meta)}: ${clip(error)}`,
     );
   }
 
@@ -89,7 +92,7 @@ export class AttemptLog {
     const meta = metaOf(error);
     this.push(step, model, meta, 'error', messageOf(error));
     this.warn(
-      `${step} failed after ${seconds(meta?.latencyMs)}: ${clip(messageOf(error))}`,
+      `${step} failed after ${seconds(meta?.latencyMs)}${turns(meta)}: ${clip(messageOf(error))}`,
     );
   }
 
@@ -139,6 +142,7 @@ export class AttemptLog {
       cachedInputTokens: meta?.cachedInputTokens ?? 0,
       costUsd: meta?.costUsd ?? 0,
       latencyMs: meta?.latencyMs ?? 0,
+      turns: meta?.turns ?? null,
     });
   }
 }

@@ -132,12 +132,11 @@ const LABEL_KEYS: readonly LabelKey[] = [
   'arrangement',
   'contractType',
   'isSoftwareEngineeringRole',
-  'engagement',
 ];
 
 /**
  * A reviewed role as a listing golden case, so `scoreCase` scores its facts.
- * The four drafted facts go in `drafted` as reviewed: the role's review covers them.
+ * The three drafted facts go in `drafted` as reviewed: the role's review covers them.
  */
 function roleCase(id: string, role: PostGoldenRole): GoldenCase {
   const drafted: GoldenCase['drafted'] = {};

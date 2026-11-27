@@ -14,6 +14,7 @@ import {
   POST_MAX_AGE_DAYS,
 } from '../config/matcher.config';
 import type { Decision, MatchContext } from '../rules/decide';
+import { loadPlaceIndex } from './place-index';
 import type {
   Check,
   MatchEligibility,
@@ -385,44 +386,14 @@ export class PrismaMatcherRepository extends MatcherRepository {
 
   async loadContext(): Promise<MatchContext> {
     const { raw } = this.db;
-    const regions = await this.db.query(
-      raw.sql`SELECT "regionCode", "countryCode" FROM region_countries`
-        .returnsRow({ regionCode: TEXT, countryCode: TEXT })
-        .build(),
-    );
-    const cities = await this.db.query(
-      raw.sql`SELECT id, "countryCode", name FROM cities`
-        .returnsRow({ id: UUID, countryCode: TEXT, name: TEXT })
-        .build(),
-    );
-    const countries = await this.db.query(
-      raw.sql`SELECT code FROM countries WHERE status = 'approved'`
-        .returnsRow({ code: TEXT })
-        .build(),
-    );
     const tags = await this.db.query(
       raw.sql`SELECT code, to_jsonb(implies) AS implies FROM tech_tags WHERE status = 'approved'`
         .returnsRow({ code: TEXT, implies: JSONB })
         .build(),
     );
-    const countriesOfRegion = new Map<string, Set<string>>();
-    for (const r of regions) {
-      const set = countriesOfRegion.get(r.regionCode as string) ?? new Set();
-      set.add(r.countryCode as string);
-      countriesOfRegion.set(r.regionCode as string, set);
-    }
     return {
       rates: await this.rates.all(),
-      places: {
-        countriesOfRegion,
-        countryOfCity: new Map(
-          cities.map((c) => [c.id as string, c.countryCode as string]),
-        ),
-        countries: new Set(countries.map((c) => c.code as string)),
-        nameOfCity: new Map(
-          cities.map((c) => [c.id as string, c.name as string]),
-        ),
-      },
+      places: await loadPlaceIndex(this.db),
       implies: new Map(
         tags.map((t) => [
           t.code as string,
