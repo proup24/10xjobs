@@ -2127,6 +2127,27 @@ describe.skipIf(!url)('raw storage in PostgreSQL', () => {
           expect(await sources()).toHaveLength(2);
         });
 
+        it('trial first, skipped by the prefilter: harvestapi joining it sends it back as joined', async () => {
+          await saveTrial(t1);
+          const trialJob = await jobByKey(linkedinKey);
+          await db.orm.public.NormalizedJob.where({
+            id: trialJob.id,
+          }).updateAll({
+            processingStatus: 'skipped',
+            processingSkip: { version: 1, tag: 'onsite', country: 'FR' },
+            processingRequestedAt: null,
+          });
+
+          await save(harvest(), t2);
+
+          expect(await jobByKey(linkedinKey)).toMatchObject({
+            id: trialJob.id,
+            processingStatus: 'pending',
+            processingReason: 'joined',
+            processingRequestedAt: t2,
+          });
+        });
+
         it('joins two trial actors and then harvestapi', async () => {
           const bebity = () => ({
             ...structuredClone(bebityJob),

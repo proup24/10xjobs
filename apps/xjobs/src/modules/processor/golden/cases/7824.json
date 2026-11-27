@@ -7,12 +7,27 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
-        "places": [],
-        "placeStrictness": "unstated"
+        "arrangements": [
+          "unstated"
+        ],
+        "places": [
+          {
+            "kind": "country",
+            "code": "FR"
+          },
+          {
+            "kind": "country",
+            "code": "BE"
+          },
+          {
+            "kind": "country",
+            "code": "ES"
+          }
+        ],
+        "placeStrictness": "limit"
       }
     ],
-    "roleKind": "security_engineer",
+    "roleKind": "other",
     "seniority": "junior",
     "yearsRequired": {
       "min": 2,
@@ -36,9 +51,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": false,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

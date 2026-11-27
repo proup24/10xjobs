@@ -98,15 +98,21 @@ export class GenerationService {
     const model = this.config.extractionModel;
     const schema = spec.schema(vocabulary);
     let errors: string[] = [];
+    // What the next try sends back: the errors, unless the call said otherwise.
+    let feedback: string[] = [];
     for (let attempt = 1; attempt <= this.config.generationTries; attempt++) {
       const current = attempt === 1 ? 'generation' : 'generation_retry';
-      const retryErrors = attempt === 1 ? undefined : errors;
+      const retryErrors =
+        attempt === 1 || feedback.length === 0 ? undefined : feedback;
       log.calling(
         current,
         model,
         [
           `${kb(input.description)} posting${input.truncated ? ' (truncated)' : ''}`,
-          retryErrors && `retrying ${retryErrors.length} errors`,
+          attempt > 1 &&
+            (retryErrors
+              ? `retrying ${retryErrors.length} errors`
+              : 'retrying without feedback'),
           `try ${attempt} of ${this.config.generationTries}`,
         ]
           .filter(Boolean)
@@ -126,12 +132,13 @@ export class GenerationService {
         }
         log.invalid(current, model, error.meta, error.message);
         errors = [error.message];
+        feedback = error.retryErrors ?? errors;
         continue;
       }
       // The model already checked the schema; parsed again for the types.
       const parsed = schema.safeParse(result.output);
       if (!parsed.success) {
-        errors = zodErrors(parsed.error);
+        errors = feedback = zodErrors(parsed.error);
         log.invalid(current, model, result.meta, errors.join('; '));
         continue;
       }
@@ -150,7 +157,7 @@ export class GenerationService {
         if (!(error instanceof ExtractionInvalidError)) throw error;
         const message = invalidMessage(error);
         log.markLastInvalid(message);
-        errors = [message];
+        errors = feedback = [message];
       }
     }
     log.warn(

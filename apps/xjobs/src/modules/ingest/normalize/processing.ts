@@ -5,7 +5,9 @@ export type ProcessingStatus =
   | 'processing'
   | 'processed'
   | 'failed'
-  | 'archived';
+  | 'archived'
+  /** The prefilter found no published profile that could take it; it was never processed. */
+  | 'skipped';
 /**
  * 'joined': harvestapi's first source joined a job only trial actors had seen;
  * the processor may reuse the trial's extraction.
@@ -23,7 +25,8 @@ export interface ProcessingState {
  * or when the job had gone unseen for `reopenAfterMs`. Uses observation time,
  * so replaying an old batch never reopens anything. An `archived` job goes
  * back to `pending` on an observation newer than its last one (never on a
- * replay or a rebuild). Ingest only
+ * replay or a rebuild), and so does a `skipped` one, so the prefilter checks it
+ * again on the spot. Ingest only
  * ever sets `pending`; the other statuses belong to Process.
  */
 export function nextProcessing(input: {
@@ -38,7 +41,10 @@ export function nextProcessing(input: {
   if (input.rebuild || input.sightingOnly) return input.current;
   if (input.created)
     return { status: 'pending', reason: 'new', requestedAt: input.observedAt };
-  if (input.current.status === 'archived') {
+  if (
+    input.current.status === 'archived' ||
+    input.current.status === 'skipped'
+  ) {
     if (
       input.previousLastSeenAt &&
       input.observedAt.getTime() <= input.previousLastSeenAt.getTime()

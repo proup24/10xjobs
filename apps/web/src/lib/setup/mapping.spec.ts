@@ -76,6 +76,7 @@ function storedRow(over: Partial<ProfileRow> = {}): ProfileRow {
     indeedSearch: false,
     matchVersion: 0,
     searchesVersion: null,
+    prefilterCheckedVersion: null,
     resumeFilename: null,
     resumeKey: null,
     resumeSha256: null,

@@ -78,6 +78,18 @@ describe('search switches', () => {
     },
   );
 
+  it('the prefilter recording its recheck bumps nothing', async () => {
+    const id = await published();
+    const before = await profile(id);
+    const { error } = await admin()
+      .from('profiles')
+      .update({ prefilterCheckedVersion: before.matchVersion })
+      .eq('id', id);
+    expect(error).toBeNull();
+    expect((await profile(id)).matchVersion).toBe(before.matchVersion);
+    expect((await resumedAt())?.toISOString()).toBe(PAST);
+  });
+
   it('a preference edit still bumps', async () => {
     const id = await published();
     const before = await profile(id);

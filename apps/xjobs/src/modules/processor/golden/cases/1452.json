@@ -7,7 +7,9 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["unstated"],
+        "arrangements": [
+          "unstated"
+        ],
         "places": [],
         "placeStrictness": "unstated"
       }
@@ -16,8 +18,114 @@
     "seniority": "unstated",
     "yearsRequired": null,
     "contractMonths": null,
-    "requirements": [],
-    "groups": [],
+    "requirements": [
+      {
+        "text": "SQL",
+        "code": "sql",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "HTML",
+        "code": "html",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "CSS",
+        "code": "css",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Google Search Console",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Screaming Frog",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "JetOctopus",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Ahrefs",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "SEMrush",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "DataforSEO",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "ChatGPT",
+        "code": "openai",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Claude",
+        "code": "claude",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -29,9 +137,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": false,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

@@ -1,0 +1,24 @@
+[
+  {
+    "id": "data.ai_training_engineering",
+    "invariantId": "ai-training-engineering",
+    "label": "Make ai_training an engineering role kind (pickable position)",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "role_kinds"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "set isEngineering on ai_training",
+        "sql": "UPDATE public.role_kinds SET \"isEngineering\" = true WHERE code = 'ai_training'"
+      }
+    ],
+    "postcheck": []
+  }
+]
