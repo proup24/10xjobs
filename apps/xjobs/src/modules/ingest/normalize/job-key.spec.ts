@@ -96,9 +96,10 @@ describe('jobKey', () => {
     expect(liJob(`${base}?lever-source=LinkedIn`)).toBe(
       liJob(`${base}?lever-source=Indeed`),
     );
-    expect(
-      liJob(`${base}?iis=Indeed&iisn=Indeed&indeed-apply-token=abc`),
-    ).toBe(liJob(base));
+    expect(liJob(`${base}?iis=Indeed&iisn=Indeed&indeed-apply-token=abc`)).toBe(
+      liJob(base),
+    );
+    expect(liJob(`${base}?jobSite=Indeed`)).toBe(liJob(base));
     expect(
       liJob(
         'https://acme.bamboohr.com/careers/25?source=indeed&postedDate=2026-11-23',

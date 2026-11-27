@@ -16,8 +16,6 @@ export const normalizeConfig = {
     'indeed-apply-token',
     'postedDate',
     'jobSite',
-    'gns',
-    'rb',
   ],
   /** A non-ATS apply URL is a job id only if its path or query has one of these. */
   identifierPattern:
