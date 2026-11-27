@@ -4,7 +4,10 @@
  * input format lives here; the collector only runs it. Builders keep storing
  * LinkedIn's `f_E` and `f_WT` codes; this maps them to the actor's names.
  */
-import { linkedinKeyword } from 'src/modules/queries/channels/linkedin_keyword';
+import {
+  linkedinKeyword,
+  linkedinKeywordFits,
+} from 'src/modules/queries/channels/linkedin_keyword';
 import { locationKey } from 'src/modules/queries/steps/normalize';
 import {
   LINKEDIN_GEO_IDS,
@@ -170,4 +173,33 @@ export function mergedLinkedinKeyword(
 ): string {
   const { roleWords, spellings } = linkedinMemberWords(queries);
   return linkedinKeyword(roleWords, spellings);
+}
+
+/** LinkedIn's remote `f_WT` code. */
+const REMOTE_WORK_TYPE = '2';
+
+/** True when there are members and every one searches remote only. */
+export function isRemoteSearch(
+  queries: readonly { params: Record<string, unknown> }[],
+): boolean {
+  return (
+    queries.length > 0 &&
+    queries.every(({ params }) => params.workType === REMOTE_WORK_TYPE)
+  );
+}
+
+/**
+ * The keyword a LinkedIn job board run sends: {@link mergedLinkedinKeyword},
+ * with ` AND remote` on a remote search when the word still fits LinkedIn's
+ * limits. Segment chunking leaves room for it (`planSegments`); only a lone
+ * keyword unit within 11 characters or one term of the limit goes without.
+ */
+export function linkedinBoardKeyword(
+  queries: readonly { params: Record<string, unknown> }[],
+): string {
+  const { roleWords, spellings } = linkedinMemberWords(queries);
+  const remote =
+    isRemoteSearch(queries) &&
+    linkedinKeywordFits(roleWords, spellings, { remote: true });
+  return linkedinKeyword(roleWords, spellings, { remote });
 }
