@@ -24,9 +24,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'668c4a1752b51f2e7aa44792a829918d5251da7b7d8c2ccad6fdeb544f3d9a9f'>;
+  StorageHashBase<'a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824'>;
 export type ExecutionHash =
-  ExecutionHashBase<'dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7'>;
+  ExecutionHashBase<'43f96e9ea4c3242b3e60bf904369955db4873127cd090ad393c291c8a54db296'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -1053,6 +1053,7 @@ export namespace Models {
     matches: public_JobMatch[];
     mergedInto: public_NormalizedJob | null;
     parent: public_NormalizedJob | null;
+    postRescues: public_PostRescue[];
     roles: public_NormalizedJob[];
     views: public_JobView[];
     webhookDeliveries: public_WebhookDelivery[];
@@ -1068,6 +1069,7 @@ export namespace Models {
       | 'matches'
       | 'mergedInto'
       | 'parent'
+      | 'postRescues'
       | 'roles'
       | 'views'
       | 'webhookDeliveries';
@@ -1094,6 +1096,20 @@ export namespace Models {
     status: FieldOutputTypes['public']['NormalizedVersion']['status'];
     rawVersion: public_RawItemVersion;
     readonly [RelationKeys]?: 'rawVersion';
+  };
+  export type public_PostRescue = {
+    createdAt: FieldOutputTypes['public']['PostRescue']['createdAt'];
+    id: FieldOutputTypes['public']['PostRescue']['id'];
+    jobId: FieldOutputTypes['public']['PostRescue']['jobId'];
+    note: FieldOutputTypes['public']['PostRescue']['note'];
+    origin: FieldOutputTypes['public']['PostRescue']['origin'];
+    snapshot: FieldOutputTypes['public']['PostRescue']['snapshot'];
+    undoneAt: FieldOutputTypes['public']['PostRescue']['undoneAt'];
+    updatedAt: FieldOutputTypes['public']['PostRescue']['updatedAt'];
+    userId: FieldOutputTypes['public']['PostRescue']['userId'];
+    job: public_NormalizedJob;
+    user: public_User;
+    readonly [RelationKeys]?: 'job' | 'user';
   };
   export type public_ProcessingAttempt = {
     cachedInputTokens: FieldOutputTypes['public']['ProcessingAttempt']['cachedInputTokens'];
@@ -1353,6 +1369,7 @@ export namespace Models {
     jobMatches: public_JobMatch[];
     jobViews: public_JobView[];
     matchReviews: public_MatchReview[];
+    postRescues: public_PostRescue[];
     webhookCallbacks: public_WebhookCallback[];
     webhookDeliveries: public_WebhookDelivery[];
     webhooks: public_Webhook[];
@@ -1363,6 +1380,7 @@ export namespace Models {
       | 'jobMatches'
       | 'jobViews'
       | 'matchReviews'
+      | 'postRescues'
       | 'webhookCallbacks'
       | 'webhookDeliveries'
       | 'webhooks';
@@ -1466,6 +1484,7 @@ export declare const models: {
     NormalizedJob: Models.public_NormalizedJob;
     NormalizedJobSource: Models.public_NormalizedJobSource;
     NormalizedVersion: Models.public_NormalizedVersion;
+    PostRescue: Models.public_PostRescue;
     ProcessingAttempt: Models.public_ProcessingAttempt;
     Profile: Models.public_Profile;
     ProfileQuerySearchBuilder: Models.public_ProfileQuerySearchBuilder;
@@ -1612,6 +1631,10 @@ type ContractBase = Omit<
                   readonly dataType: 'pg/uuid';
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
                   readonly many: false;
                 };
                 readonly name: {
@@ -4248,6 +4271,13 @@ type ContractBase = Omit<
                   readonly unique: false;
                 },
                 {
+                  readonly name: 'normalized_jobs_processed_posts_a37ab94e';
+                  readonly prefix: 'normalized_jobs_processed_posts';
+                  readonly columns: readonly ['firstSeenAt'];
+                  readonly where: "kind = 'post' AND \"processingStatus\" = 'processed'";
+                  readonly unique: false;
+                },
+                {
                   readonly name: 'normalized_jobs_processing_queue';
                   readonly columns: readonly ['processingStatus', 'processingRequestedAt'];
                   readonly unique: false;
@@ -4379,6 +4409,128 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'raw_item_versions';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly post_rescues: {
+              columns: {
+                readonly createdAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly id: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'gen_random_uuid()';
+                  };
+                  readonly many: false;
+                };
+                readonly jobId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly note: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                  readonly many: false;
+                };
+                readonly origin: {
+                  readonly dataType: 'pg/text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly snapshot: {
+                  readonly dataType: 'pg/jsonb';
+                  readonly codecId: 'pg/jsonb@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+                readonly undoneAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly updatedAt: {
+                  readonly dataType: 'pg/timestamptz';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                  readonly typeParams: { readonly precision: 3 };
+                  readonly many: false;
+                };
+                readonly userId: {
+                  readonly dataType: 'pg/uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                  readonly many: false;
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'post_rescues_createdAt_idx_9575dbd7';
+                  readonly prefix: 'post_rescues_createdAt_idx';
+                  readonly columns: readonly ['createdAt'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'post_rescues_jobId_idx_623c8f77';
+                  readonly prefix: 'post_rescues_jobId_idx';
+                  readonly columns: readonly ['jobId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'post_rescues_live_user_job_800e0fe1';
+                  readonly prefix: 'post_rescues_live_user_job';
+                  readonly columns: readonly ['userId', 'jobId'];
+                  readonly where: '"undoneAt" IS NULL';
+                  readonly unique: true;
+                },
+                {
+                  readonly name: 'post_rescues_userId_idx_a489d58a';
+                  readonly prefix: 'post_rescues_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'post_rescues';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'users';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'post_rescues';
+                    readonly columns: readonly ['jobId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'normalized_jobs';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -6789,6 +6941,10 @@ type ContractBase = Omit<
     readonly normalized_versions: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'NormalizedVersion';
+    };
+    readonly post_rescues: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'PostRescue';
     };
     readonly processing_attempts: {
       readonly namespace: 'public' & NamespaceId;
@@ -9283,6 +9439,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['id'];
                 };
               };
+              readonly postRescues: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PostRescue';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['jobId'];
+                };
+              };
               readonly roles: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -9526,6 +9693,96 @@ type ContractBase = Omit<
                 readonly reason: { readonly column: 'reason' };
                 readonly record: { readonly column: 'record' };
                 readonly status: { readonly column: 'status' };
+              };
+            };
+          };
+          readonly PostRescue: {
+            readonly fields: {
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly jobId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly note: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly origin: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly snapshot: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/jsonb@1' };
+              };
+              readonly undoneAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-date@1';
+                  readonly typeParams: { readonly precision: 3 };
+                };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+            };
+            readonly relations: {
+              readonly job: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'NormalizedJob';
+                };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['jobId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly nullable: false;
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'post_rescues';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly id: { readonly column: 'id' };
+                readonly jobId: { readonly column: 'jobId' };
+                readonly note: { readonly column: 'note' };
+                readonly origin: { readonly column: 'origin' };
+                readonly snapshot: { readonly column: 'snapshot' };
+                readonly undoneAt: { readonly column: 'undoneAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
+                readonly userId: { readonly column: 'userId' };
               };
             };
           };
@@ -11098,6 +11355,17 @@ type ContractBase = Omit<
                   readonly targetFields: readonly ['userId'];
                 };
               };
+              readonly postRescues: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'PostRescue';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
+                };
+              };
               readonly webhookCallbacks: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -12016,6 +12284,23 @@ type ContractBase = Omit<
           readonly ref: {
             readonly entry: 'normalized_versions';
             readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'uuidv7'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'post_rescues';
+            readonly field: 'id';
+            readonly namespace: 'public';
+          };
+        },
+        {
+          readonly onCreate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly onUpdate: { readonly id: 'timestampNow'; readonly kind: 'generator' };
+          readonly ref: {
+            readonly entry: 'post_rescues';
+            readonly field: 'updatedAt';
             readonly namespace: 'public';
           };
         },

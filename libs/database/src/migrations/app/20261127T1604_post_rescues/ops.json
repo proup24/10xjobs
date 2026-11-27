@@ -1,0 +1,601 @@
+[
+  {
+    "id": "table.post_rescues",
+    "label": "Create table \"post_rescues\"",
+    "summary": "Creates table \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"post_rescues\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"post_rescues\""],
+        "expectation": {
+          "expects": "absent",
+          "object": "table \"post_rescues\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"post_rescues\"",
+        "sql": "CREATE TABLE \"public\".\"post_rescues\" (\n  \"createdAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"id\" uuid DEFAULT (gen_random_uuid()) NOT NULL,\n  \"jobId\" uuid NOT NULL,\n  \"note\" text,\n  \"origin\" text NOT NULL,\n  \"snapshot\" jsonb NOT NULL,\n  \"undoneAt\" timestamptz(3),\n  \"updatedAt\" timestamptz(3) DEFAULT (now()) NOT NULL,\n  \"userId\" uuid NOT NULL,\n  PRIMARY KEY (\"id\"),\n  CONSTRAINT \"post_rescues_note_length_73ec5843\" CHECK (note IS NULL OR char_length(note) <= 500),\n  CONSTRAINT \"post_rescues_origin_0c531019\" CHECK (origin IN ('junk','disqualified'))\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"post_rescues\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3))) AS \"result\"",
+        "params": ["\"public\".\"post_rescues\"", "r", "p"],
+        "expectation": {
+          "expects": "present",
+          "object": "table \"post_rescues\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "setDefault.blocked_authors.id",
+    "label": "Set default on \"blocked_authors\".\"id\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "id",
+        "table": "blocked_authors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": ["public", "blocked_authors", "id"],
+        "expectation": {
+          "expects": "present",
+          "object": "column \"id\" on \"blocked_authors\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "set default on \"id\"",
+        "sql": "ALTER TABLE \"public\".\"blocked_authors\" ALTER COLUMN \"id\" SET DEFAULT (gen_random_uuid())"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "index.post_rescues.post_rescues_createdAt_idx_9575dbd7",
+    "label": "Create index \"post_rescues_createdAt_idx_9575dbd7\" on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "post_rescues_createdAt_idx_9575dbd7",
+        "table": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"post_rescues_createdAt_idx_9575dbd7\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"post_rescues_createdAt_idx_9575dbd7\""],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"post_rescues_createdAt_idx_9575dbd7\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"post_rescues_createdAt_idx_9575dbd7\"",
+        "sql": "CREATE INDEX \"post_rescues_createdAt_idx_9575dbd7\" ON \"public\".\"post_rescues\" (\"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"post_rescues_createdAt_idx_9575dbd7\" exists on \"post_rescues\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"post_rescues_createdAt_idx_9575dbd7\"",
+          "i",
+          "I",
+          "\"public\".\"post_rescues\"",
+          "btree",
+          "[\"createdAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.post_rescues.post_rescues_jobId_idx_623c8f77",
+    "label": "Create index \"post_rescues_jobId_idx_623c8f77\" on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "post_rescues_jobId_idx_623c8f77",
+        "table": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"post_rescues_jobId_idx_623c8f77\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"post_rescues_jobId_idx_623c8f77\""],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"post_rescues_jobId_idx_623c8f77\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"post_rescues_jobId_idx_623c8f77\"",
+        "sql": "CREATE INDEX \"post_rescues_jobId_idx_623c8f77\" ON \"public\".\"post_rescues\" (\"jobId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"post_rescues_jobId_idx_623c8f77\" exists on \"post_rescues\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"post_rescues_jobId_idx_623c8f77\"",
+          "i",
+          "I",
+          "\"public\".\"post_rescues\"",
+          "btree",
+          "[\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.post_rescues.post_rescues_live_user_job_800e0fe1",
+    "label": "Create index \"post_rescues_live_user_job_800e0fe1\" on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "post_rescues_live_user_job_800e0fe1",
+        "table": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"post_rescues_live_user_job_800e0fe1\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"post_rescues_live_user_job_800e0fe1\""],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"post_rescues_live_user_job_800e0fe1\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"post_rescues_live_user_job_800e0fe1\"",
+        "sql": "CREATE UNIQUE INDEX \"post_rescues_live_user_job_800e0fe1\" ON \"public\".\"post_rescues\" (\"userId\", \"jobId\") WHERE (\"undoneAt\" IS NULL)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"post_rescues_live_user_job_800e0fe1\" exists on \"post_rescues\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND \"i\".\"indisunique\" AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"post_rescues_live_user_job_800e0fe1\"",
+          "i",
+          "I",
+          "\"public\".\"post_rescues\"",
+          "btree",
+          "[\"userId\",\"jobId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.post_rescues.post_rescues_userId_idx_a489d58a",
+    "label": "Create index \"post_rescues_userId_idx_a489d58a\" on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "post_rescues_userId_idx_a489d58a",
+        "table": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"post_rescues_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"post_rescues_userId_idx_a489d58a\""],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"post_rescues_userId_idx_a489d58a\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"post_rescues_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"post_rescues_userId_idx_a489d58a\" ON \"public\".\"post_rescues\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"post_rescues_userId_idx_a489d58a\" exists on \"post_rescues\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"post_rescues_userId_idx_a489d58a\"",
+          "i",
+          "I",
+          "\"public\".\"post_rescues\"",
+          "btree",
+          "[\"userId\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.post_rescues.post_rescues_userId_fkey",
+    "label": "Add foreign key \"post_rescues_userId_fkey\" on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "post_rescues_userId_fkey",
+        "table": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"post_rescues_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "post_rescues_userId_fkey",
+          "public",
+          "\"public\".\"post_rescues\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"post_rescues_userId_fkey\" on \"post_rescues\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"post_rescues_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"post_rescues\"\nADD CONSTRAINT \"post_rescues_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"post_rescues_userId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "post_rescues_userId_fkey",
+          "public",
+          "\"public\".\"post_rescues\"",
+          "f",
+          "[\"userId\"]",
+          "\"public\".\"users\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.post_rescues.post_rescues_jobId_fkey",
+    "label": "Add foreign key \"post_rescues_jobId_fkey\" on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "post_rescues_jobId_fkey",
+        "table": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"post_rescues_jobId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "post_rescues_jobId_fkey",
+          "public",
+          "\"public\".\"post_rescues\""
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "FK \"post_rescues_jobId_fkey\" on \"post_rescues\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"post_rescues_jobId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"post_rescues\"\nADD CONSTRAINT \"post_rescues_jobId_fkey\"\nFOREIGN KEY (\"jobId\")\nREFERENCES \"public\".\"normalized_jobs\" (\"id\")\nON DELETE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"post_rescues_jobId_fkey\" exists with the planned columns, referenced table and actions",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3) AND \"c\".\"contype\" = $4 AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"conkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"conrelid\" AND key_attribute.attnum = key_column.attnum) = ($5)::jsonb AND \"c\".\"confrelid\" = to_regclass($6) AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"c\".\"confkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"c\".\"confrelid\" AND key_attribute.attnum = key_column.attnum) = ($7)::jsonb AND \"c\".\"confdeltype\" = $8 AND \"c\".\"confupdtype\" = $9)) AS \"result\"",
+        "params": [
+          "post_rescues_jobId_fkey",
+          "public",
+          "\"public\".\"post_rescues\"",
+          "f",
+          "[\"jobId\"]",
+          "\"public\".\"normalized_jobs\"",
+          "[\"id\"]",
+          "c",
+          "a"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.post_rescues",
+    "label": "Enable row-level security on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"post_rescues\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": ["public", "post_rescues"]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"post_rescues\"",
+        "sql": "ALTER TABLE \"public\".\"post_rescues\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"post_rescues\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": ["public", "post_rescues"]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_decisions.job_decisions_owner_insert_3e2aa6d5",
+    "label": "Create RLS policy \"job_decisions_owner_insert_3e2aa6d5\" on \"job_decisions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_decisions_owner_insert_3e2aa6d5",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_decisions_owner_insert_3e2aa6d5\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_insert_3e2aa6d5"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_decisions_owner_insert_3e2aa6d5\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"job_decisions_owner_insert_3e2aa6d5\"",
+        "sql": "CREATE POLICY \"job_decisions_owner_insert_3e2aa6d5\" ON \"public\".\"job_decisions\" AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (\"userId\" = auth.uid() AND (EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_decisions.\"jobId\") OR EXISTS (SELECT 1 FROM public.post_rescues r WHERE r.\"userId\" = auth.uid() AND r.\"jobId\" = job_decisions.\"jobId\" AND r.\"undoneAt\" IS NULL)))",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_decisions_owner_insert_3e2aa6d5\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_insert_3e2aa6d5",
+          "INSERT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.post_rescues.post_rescues_owner_read_ab58a1a7",
+    "label": "Create RLS policy \"post_rescues_owner_read_ab58a1a7\" on \"post_rescues\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "post_rescues_owner_read_ab58a1a7",
+        "table": "post_rescues"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"post_rescues_owner_read_ab58a1a7\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "post_rescues",
+          "post_rescues_owner_read_ab58a1a7"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"post_rescues_owner_read_ab58a1a7\" on \"post_rescues\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"post_rescues_owner_read_ab58a1a7\"",
+        "sql": "CREATE POLICY \"post_rescues_owner_read_ab58a1a7\" ON \"public\".\"post_rescues\" AS PERMISSIVE FOR SELECT TO authenticated USING (\"userId\" = auth.uid())",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"post_rescues_owner_read_ab58a1a7\" exists with the planned command, roles and permissiveness",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3 AND \"cmd\" = $4 AND \"permissive\" = $5 AND (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT policy_role::text COLLATE \"C\" AS role_name FROM unnest(\"roles\") AS policy_role) AS actual_roles) = (SELECT coalesce(jsonb_agg(role_name ORDER BY role_name), '[]'::jsonb) FROM (SELECT DISTINCT (CASE expected_role WHEN 'current_user' THEN current_user::text WHEN 'current_role' THEN current_role::text WHEN 'session_user' THEN session_user::text ELSE expected_role END) COLLATE \"C\" AS role_name FROM jsonb_array_elements_text(($6)::jsonb) AS expected_role) AS expected_roles))) AS \"result\"",
+        "params": [
+          "public",
+          "post_rescues",
+          "post_rescues_owner_read_ab58a1a7",
+          "SELECT",
+          "PERMISSIVE",
+          "[\"authenticated\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.job_decisions.job_decisions_owner_insert_13839fbe.drop",
+    "label": "Drop RLS policy \"job_decisions_owner_insert_13839fbe\" on \"job_decisions\"",
+    "operationClass": "widening",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "job_decisions_owner_insert_13839fbe",
+        "table": "job_decisions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"job_decisions_owner_insert_13839fbe\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_insert_13839fbe"
+        ],
+        "expectation": {
+          "expects": "present",
+          "object": "RLS policy \"job_decisions_owner_insert_13839fbe\" on \"job_decisions\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop RLS policy \"job_decisions_owner_insert_13839fbe\"",
+        "sql": "DROP POLICY \"job_decisions_owner_insert_13839fbe\" ON \"public\".\"job_decisions\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"job_decisions_owner_insert_13839fbe\" is absent",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "job_decisions",
+          "job_decisions_owner_insert_13839fbe"
+        ],
+        "expectation": {
+          "expects": "absent",
+          "object": "RLS policy \"job_decisions_owner_insert_13839fbe\" on \"job_decisions\""
+        }
+      }
+    ]
+  },
+  {
+    "id": "triggers.blocked_authors_lower_key",
+    "invariantId": "blocked-authors-lower-key",
+    "label": "blocked_authors stores authorKey lower-cased",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "blocked_authors"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create blocked_authors_lower_key",
+        "sql": "CREATE OR REPLACE FUNCTION public.blocked_authors_lower_key()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  NEW.\"authorKey\" := lower(NEW.\"authorKey\");\n  RETURN NEW;\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.blocked_authors_lower_key() FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create the trigger",
+        "sql": "CREATE TRIGGER blocked_authors_lower_key\n  BEFORE INSERT ON public.blocked_authors\n  FOR EACH ROW EXECUTE FUNCTION public.blocked_authors_lower_key();"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.post_rescue",
+    "invariantId": "post-rescue-rpcs",
+    "label": "post_rescue and post_rescue_undo",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "post_rescues"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create post_rescue",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_rescue(p_job_id uuid, p_note text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_user uuid := auth.uid();\n  v_id uuid;\n  v_snapshot jsonb;\nBEGIN\n  IF v_user IS NULL THEN\n    RAISE EXCEPTION 'not rescuable';\n  END IF;\n  SELECT r.id INTO v_id FROM public.post_rescues r\n   WHERE r.\"userId\" = v_user AND r.\"jobId\" = p_job_id AND r.\"undoneAt\" IS NULL;\n  IF v_id IS NOT NULL THEN\n    RETURN v_id;\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM public.normalized_jobs j\n                  WHERE j.id = p_job_id AND j.kind = 'post_role')\n     OR NOT EXISTS (SELECT 1 FROM public.job_matches m\n                     WHERE m.\"userId\" = v_user AND m.\"jobId\" = p_job_id AND m.outcome = 'rejected') THEN\n    RAISE EXCEPTION 'not rescuable';\n  END IF;\n  SELECT jsonb_build_object(\n           'profiles', jsonb_agg(jsonb_build_object(\n             'profileId', m.\"profileId\",\n             'matchId', m.id,\n             'matcherVersion', m.\"matcherVersion\",\n             'failed', COALESCE((\n               SELECT jsonb_agg(c.value)\n                 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(m.checks) = 'array' THEN m.checks ELSE '[]'::jsonb END) c\n                WHERE c.value ->> 'outcome' = 'fail'), '[]'::jsonb)\n           ) ORDER BY m.\"decidedAt\", m.id),\n           'extractionId', (SELECT j.\"currentExtractionId\" FROM public.normalized_jobs j WHERE j.id = p_job_id))\n    INTO v_snapshot\n    FROM public.job_matches m\n   WHERE m.\"userId\" = v_user AND m.\"jobId\" = p_job_id AND m.outcome = 'rejected';\n  INSERT INTO public.post_rescues (\"userId\", \"jobId\", origin, snapshot, note)\n  VALUES (v_user, p_job_id, 'disqualified', v_snapshot, p_note)\n  ON CONFLICT (\"userId\", \"jobId\") WHERE \"undoneAt\" IS NULL DO NOTHING\n  RETURNING id INTO v_id;\n  IF v_id IS NULL THEN\n    SELECT r.id INTO v_id FROM public.post_rescues r\n     WHERE r.\"userId\" = v_user AND r.\"jobId\" = p_job_id AND r.\"undoneAt\" IS NULL;\n  END IF;\n  RETURN v_id;\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_rescue(uuid, text) FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.post_rescue(uuid, text) TO authenticated;"
+      },
+      {
+        "description": "create post_rescue_undo",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_rescue_undo(p_job_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_user uuid := auth.uid();\nBEGIN\n  IF v_user IS NULL THEN\n    RAISE EXCEPTION 'not rescuable';\n  END IF;\n  IF public.group_decision_status(v_user, p_job_id) IS NOT NULL THEN\n    RAISE EXCEPTION 'decided';\n  END IF;\n  UPDATE public.post_rescues\n     SET \"undoneAt\" = now(), \"updatedAt\" = now()\n   WHERE \"userId\" = v_user AND \"jobId\" = p_job_id AND \"undoneAt\" IS NULL;\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_rescue_undo(uuid) FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.post_rescue_undo(uuid) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

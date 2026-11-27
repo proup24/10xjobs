@@ -1,5 +1,5 @@
 {
-  "hash": "668c4a1752b51f2e7aa44792a829918d5251da7b7d8c2ccad6fdeb544f3d9a9f",
+  "hash": "a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -41,6 +41,10 @@
     "role-link-keys-index",
     "job-link-group",
     "profile-prefilter-no-bump",
-    "ai-training-engineering"
+    "ai-training-engineering",
+    "blocked-authors-lower-key",
+    "post-rescue-rpcs",
+    "post-reads",
+    "post-rescue-junk"
   ]
 }

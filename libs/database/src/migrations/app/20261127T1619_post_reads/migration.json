@@ -1,0 +1,7 @@
+{
+  "from": "830fc4a03331a38a1c682ee66f7b0250b50d72327d8c8a93f96461451902e63f",
+  "to": "a0917348c1267aba2f41c5b39988f9d003b36a3dadd7f37284afb66803615824",
+  "providedInvariants": ["post-reads", "post-rescue-junk"],
+  "createdAt": "2026-11-27T22:22:54.500Z",
+  "migrationHash": "c35b53dc5fd9937b74494aa999b9d495fa6edb2045d7e3d9e38a5fff13612f1d"
+}

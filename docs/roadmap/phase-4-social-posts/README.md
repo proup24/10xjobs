@@ -21,7 +21,7 @@ Same as Phases 1 to 3: each slice is a short brief covering the goal, what exist
 | 02  | [Prepare](02-prepare.md)                       | Built ([spec](../../superpowers/specs/2026-11-21-posts-prepare-design.md)) |
 | 03  | [Extract](03-extract.md)                       | Built ([spec](../../superpowers/specs/2026-11-22-posts-extract-design.md)) |
 | 04  | [Ingest and qualify](04-ingest-and-qualify.md) | Built ([spec](../../superpowers/specs/2026-11-25-posts-qualify-design.md)) |
-| 04a | [Social posts page](04a-social-posts-page.md)  | Brief                                                                      |
+| 04a | [Social posts page](04a-social-posts-page.md)  | Designed ([spec](../../superpowers/specs/2026-11-27-posts-page-design.md)) |
 | 04b | [Open post search](04b-open-post-search.md)    | Brief                                                                      |
 | 05  | [Send email](05-send-email.md)                 | Brief                                                                      |
 

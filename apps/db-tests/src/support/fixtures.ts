@@ -189,6 +189,9 @@ export type SeededJob = { jobId: string; extractionId: string };
 // Every row the detailed-job seeders create, in creation order; cleanup deletes in reverse.
 const detailedRows: Array<[table: string, id: string, idColumn: string]> = [];
 
+// One LINKEDIN_POSTS batch serves every post raw item a spec file seeds; cleanup forgets it.
+let postBatchId: string | null = null;
+
 async function insertTracked(
   table: string,
   row: Record<string, unknown>,
@@ -750,6 +753,7 @@ export const seedMatchOn = (
 
 /** Deletes everything seedDetailedJob and seedMatchOn created, children first. */
 export async function cleanupDetailedJobs(): Promise<void> {
+  postBatchId = null;
   while (detailedRows.length > 0) {
     const [table, id, idColumn] = detailedRows.pop()!;
     const { error } = await admin().from(table).delete().eq(idColumn, id);
@@ -809,3 +813,294 @@ export async function seedLinkedRole(
 /** A LinkedIn job id no other test uses. */
 export const linkedinJobId = (): string =>
   String(4_000_000_000 + Math.floor(Math.random() * 1e9));
+
+/** One `postSources.sources` entry: a plain post, or a share of `original` by its author. */
+export function postDetail(opts: {
+  authorKey: string;
+  authorName?: string;
+  text?: string;
+  original?: { authorKey: string | null; authorName?: string; text?: string };
+}): Record<string, unknown> {
+  const author = (key: string, name?: string) => ({
+    key,
+    name: name ?? key,
+    profileUrl: `https://www.linkedin.com/in/${key.split(':')[1]}`,
+    headline: null,
+    type: key.startsWith('company:') ? 'company' : 'person',
+  });
+  const id = `7390${String(Math.floor(Math.random() * 1e15)).padStart(15, '0')}`;
+  return {
+    id,
+    url: `https://www.linkedin.com/feed/update/urn:li:activity:${id}`,
+    author: author(opts.authorKey, opts.authorName),
+    text: opts.text ?? 'We are hiring',
+    truncated: false,
+    attachedUrls: [],
+    postedAt: '2026-11-26T10:00:00.000Z',
+    original: opts.original
+      ? {
+          id: `${id}0`,
+          url: null,
+          author: opts.original.authorKey
+            ? author(opts.original.authorKey, opts.original.authorName)
+            : null,
+          text: opts.original.text ?? 'Original text',
+          truncated: false,
+          attachedUrls: [],
+          postedAt: '2026-11-25T10:00:00.000Z',
+        }
+      : null,
+    links: { emails: [], linkedinJobIds: [], atsPostings: [], other: [] },
+  };
+}
+
+/** A post role's `howToApply`; with an email its kinds are ['email'], else a DM. */
+export const howToApply = (email: string | null) => ({
+  kinds: email ? ['email'] : ['connect_dm_comment'],
+  email,
+  emailQuote: email ? `Send your CV to ${email}` : '',
+  links: [],
+  quote: email ? `Send your CV to ${email}` : 'DM me',
+});
+
+/**
+ * A processed post job (`kind = 'post'`) with its current post extraction (`docType = 'post'`):
+ * the verdict in its columns and document, and one document role per `roles` entry.
+ */
+export async function seedPost(opts: {
+  verdict: 'hiring' | 'not_hiring' | 'junk' | 'role_filled';
+  confidence?: 'sure' | 'unsure';
+  reason?: string;
+  roles?: { roleKey: string; email?: string | null }[];
+  sources?: Record<string, unknown>[];
+  descriptionText?: string;
+  firstSeenAt?: string;
+}): Promise<SeededJob> {
+  const now = opts.firstSeenAt ?? new Date().toISOString();
+  const confidence = opts.confidence ?? 'sure';
+  const reason =
+    opts.reason ?? (opts.verdict === 'hiring' ? 'hiring' : 'funnel');
+  const id = randomUUID();
+  const jobId = await insertTracked('normalized_jobs', {
+    jobKey: `test:post:${id}`,
+    kind: 'post',
+    status: 'active',
+    postingUrl: `https://www.linkedin.com/posts/test-${id}`,
+    postedAt: '2026-11-26T10:00:00.000Z',
+    descriptionText: opts.descriptionText ?? 'We are hiring',
+    closed: false,
+    fieldSources: {},
+    postSources: {
+      sources: opts.sources ?? [postDetail({ authorKey: 'profile:someone' })],
+    },
+    firstSeenAt: now,
+    lastSeenAt: now,
+    processingStatus: 'processed',
+    normalizerVersion: 8,
+  });
+  const extractionId = await insertTracked('job_extractions', {
+    jobId,
+    inputHash: 'test',
+    schemaVersion: 1,
+    promptHash: 'test',
+    decisionModel: null,
+    extractionModel: 'test',
+    docType: 'post',
+    verdict: opts.verdict,
+    verdictReason: reason,
+    verdictConfidence: confidence,
+    data: {
+      verdict: {
+        value: opts.verdict,
+        reason,
+        quote: 'We are hiring',
+        confidence,
+      },
+      roles: (opts.roles ?? []).map((r) => ({
+        roleKey: r.roleKey,
+        title: 'Backend Engineer',
+        employer: { name: 'Acme', quote: 'Acme' },
+        authorRelation: 'employer',
+        howToApply: howToApply(r.email ?? null),
+        facts: {},
+      })),
+      truncated: false,
+      models: { generator: 'm' },
+    },
+    needsReview: confidence === 'unsure',
+    worldwide: false,
+    regionCodes: [],
+    countryCodes: [],
+    cityIds: [],
+    techTags: [],
+    mainStackTags: [],
+    costUsd: 0,
+  });
+  const { error } = await admin()
+    .from('normalized_jobs')
+    .update({ currentExtractionId: extractionId })
+    .eq('id', jobId);
+  if (error)
+    throw new Error(`Could not set the post extraction: ${error.message}`);
+  return { jobId, extractionId };
+}
+
+/** The role job for `roleKey` of a seeded post (with its own listing extraction, for matches). */
+export async function seedPostRole(
+  post: SeededJob,
+  roleKey: string,
+  linkKeys: string[] = [],
+): Promise<SeededJob> {
+  const role = await seedDetailedJob({ channels: [] });
+  const { data, error: readError } = await admin()
+    .from('normalized_jobs')
+    .select('postingUrl')
+    .eq('id', post.jobId)
+    .single();
+  if (readError)
+    throw new Error(`Could not read the post: ${readError.message}`);
+  const { error } = await admin()
+    .from('normalized_jobs')
+    .update({
+      kind: 'post_role',
+      parentJobId: post.jobId,
+      roleKey,
+      linkKeys,
+      postingUrl: data.postingUrl as string,
+    })
+    .eq('id', role.jobId);
+  if (error) throw new Error(`Could not make a post role: ${error.message}`);
+  return role;
+}
+
+/** A LINKEDIN_POSTS query linked to the profile; returns the query id. */
+export async function seedPostQuery(profileId: string): Promise<string> {
+  const queryId = await insertTracked('query_search_builder', {
+    channel: 'LINKEDIN_POSTS',
+    location: 'remote',
+    experience: 'senior',
+    technologies: [],
+    domain: 'backend',
+    type: 'remote',
+    keyword: 'hiring',
+    version: 1,
+    params: {},
+    hash: randomUUID(),
+  });
+  await insertTracked('profile_query_search_builders', { profileId, queryId });
+  return queryId;
+}
+
+async function postBatch(now: string): Promise<string> {
+  if (postBatchId) return postBatchId;
+  const segmentRunId = await insertTracked('search_segment_runs', {
+    channel: 'LINKEDIN_POSTS',
+    segmentKey: 'posts',
+    segmentHash: randomUUID(),
+    queryIds: [],
+    windowStart: '2026-11-02T00:00:00Z',
+    windowEnd: now,
+    startedAt: now,
+    finishedAt: now,
+    status: 'succeeded',
+    fetched: 1,
+    capped: false,
+    truncatedQueryIds: [],
+    perQuery: {},
+  });
+  postBatchId = await insertTracked('collection_batches', {
+    channel: 'LINKEDIN_POSTS',
+    segmentRunId,
+    storageKey: `batches/${randomUUID()}.json`,
+    formatVersion: 1,
+    observedAt: now,
+    itemCount: 1,
+    actor: 'test',
+    status: 'ingested',
+  });
+  return postBatchId;
+}
+
+/**
+ * One LINKEDIN_POSTS raw item linked to the job as a source, with one sighting per entry of
+ * `queryIds` (null: a sighting attributed to no query). Returns the raw item id.
+ */
+export async function seedPostRawItem(
+  jobId: string,
+  queryIds: (string | null)[],
+): Promise<string> {
+  const now = new Date().toISOString();
+  const batchId = await postBatch(now);
+  const rawItemId = await insertTracked('raw_items', {
+    channel: 'LINKEDIN_POSTS',
+    sourceKey: randomUUID(),
+    kind: 'post',
+    firstSeenAt: now,
+    lastSeenAt: now,
+  });
+  const versionId = await insertTracked('raw_item_versions', {
+    rawItemId,
+    contentHash: randomUUID(),
+    payload: {},
+    firstBatchId: batchId,
+    firstSeenAt: now,
+    lastSeenAt: now,
+  });
+  const normalizedVersionId = await insertTracked('normalized_versions', {
+    rawVersionId: versionId,
+    normalizerVersion: 8,
+    status: 'valid',
+    record: {},
+    jobKey: `test:${randomUUID()}`,
+  });
+  await insertTracked('normalized_job_sources', {
+    jobId,
+    rawItemId,
+    normalizedVersionId,
+    linkedAt: now,
+  });
+  for (const queryId of queryIds)
+    await insertTracked('raw_item_sightings', {
+      batchId,
+      rawItemId,
+      versionId,
+      queryId,
+      attribution: queryId ?? 'none',
+      observedAt: now,
+    });
+  return rawItemId;
+}
+
+/** Turns post search on for a profile, the way the engine does. */
+export async function enablePostSearch(profileId: string): Promise<void> {
+  const { error } = await admin()
+    .from('profiles')
+    .update({ postSearch: true })
+    .eq('id', profileId);
+  if (error) throw new Error(`Could not turn post search on: ${error.message}`);
+}
+
+/** A blocked author of the user's (the trigger lowercases the key). */
+export async function blockAuthor(
+  userId: string,
+  authorKey: string,
+): Promise<void> {
+  const { error } = await admin()
+    .from('blocked_authors')
+    .insert({ userId, authorKey });
+  if (error) throw new Error(`Could not block ${authorKey}: ${error.message}`);
+}
+
+/** Removes a blocked author of the user's. */
+export async function unblockAuthor(
+  userId: string,
+  authorKey: string,
+): Promise<void> {
+  const { error } = await admin()
+    .from('blocked_authors')
+    .delete()
+    .eq('userId', userId)
+    .eq('authorKey', authorKey.toLowerCase());
+  if (error)
+    throw new Error(`Could not unblock ${authorKey}: ${error.message}`);
+}

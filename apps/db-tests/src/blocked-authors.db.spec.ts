@@ -88,4 +88,23 @@ describe('blocked_authors', () => {
     const { data } = await a.client.from('blocked_authors').select('*');
     expect(data).toEqual([]);
   });
+
+  it('stores the key lower-cased and needs no id', async () => {
+    const suffix = randomUUID();
+    const { error } = await a.client.from('blocked_authors').insert({
+      userId: a.id,
+      authorKey: `profile:Jane-DOE-${suffix}`,
+    });
+    expect(error).toBeNull();
+    const { data } = await a.client
+      .from('blocked_authors')
+      .select('authorKey')
+      .eq('authorKey', `profile:jane-doe-${suffix}`);
+    expect(data).toEqual([{ authorKey: `profile:jane-doe-${suffix}` }]);
+    const again = await a.client.from('blocked_authors').insert({
+      userId: a.id,
+      authorKey: `profile:jane-doe-${suffix}`,
+    });
+    expect(again.error?.code).toBe(UNIQUE);
+  });
 });

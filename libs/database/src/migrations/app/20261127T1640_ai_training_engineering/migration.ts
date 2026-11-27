@@ -5,7 +5,11 @@ import type {
 } from '../../snapshots/5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06/contract';
 import endContract from '../../snapshots/5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06/contract.json' with { type: 'json' };
 import startContract from '../../snapshots/5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06/contract.json' with { type: 'json' };
-import { Migration, MigrationCLI, rawSql } from '@prisma/orm-postgres/migration';
+import {
+  Migration,
+  MigrationCLI,
+  rawSql,
+} from '@prisma/orm-postgres/migration';
 
 export default class M extends Migration<Start, End> {
   override readonly startContractJson = startContract;

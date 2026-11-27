@@ -290,4 +290,41 @@ describe('job_decisions', () => {
       .eq('jobId', job);
     expect(data).toEqual([]);
   });
+
+  it('allows a decision on a job with a live rescue, not an undone one', async () => {
+    await clear();
+    const post = await seedDetailedJob();
+    const { error: kindError } = await admin()
+      .from('normalized_jobs')
+      .update({ kind: 'post' })
+      .eq('id', post.jobId);
+    expect(kindError).toBeNull();
+    // A Junk rescue is written by post_rescue's Junk branch (a later migration), so seed it.
+    const { data: rescue, error: rescueError } = await admin()
+      .from('post_rescues')
+      .insert({
+        userId: a.id,
+        jobId: post.jobId,
+        origin: 'junk',
+        snapshot: {},
+      })
+      .select('id')
+      .single();
+    expect(rescueError).toBeNull();
+    const live = await a.client
+      .from('job_decisions')
+      .insert({ userId: a.id, jobId: post.jobId, status: 'applied' });
+    expect(live.error).toBeNull();
+
+    await clear();
+    const undone = await admin()
+      .from('post_rescues')
+      .update({ undoneAt: new Date().toISOString() })
+      .eq('id', rescue!.id);
+    expect(undone.error).toBeNull();
+    const refused = await a.client
+      .from('job_decisions')
+      .insert({ userId: a.id, jobId: post.jobId, status: 'applied' });
+    expect(refused.error?.code).toBe('42501');
+  });
 });

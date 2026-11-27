@@ -1,0 +1,7 @@
+{
+  "from": "668c4a1752b51f2e7aa44792a829918d5251da7b7d8c2ccad6fdeb544f3d9a9f",
+  "to": "830fc4a03331a38a1c682ee66f7b0250b50d72327d8c8a93f96461451902e63f",
+  "providedInvariants": ["blocked-authors-lower-key", "post-rescue-rpcs"],
+  "createdAt": "2026-11-27T22:22:08.407Z",
+  "migrationHash": "861f262b301a11a3a85db3f0242ee101ca4dcca3ad62b887e7359a18e08eb517"
+}

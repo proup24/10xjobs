@@ -1,0 +1,128 @@
+[
+  {
+    "id": "index.normalized_jobs.normalized_jobs_processed_posts_a37ab94e",
+    "label": "Create index \"normalized_jobs_processed_posts_a37ab94e\" on \"normalized_jobs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "normalized_jobs_processed_posts_a37ab94e",
+        "table": "normalized_jobs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"normalized_jobs_processed_posts_a37ab94e\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": ["\"public\".\"normalized_jobs_processed_posts_a37ab94e\""],
+        "expectation": {
+          "expects": "absent",
+          "object": "index \"normalized_jobs_processed_posts_a37ab94e\""
+        }
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"normalized_jobs_processed_posts_a37ab94e\"",
+        "sql": "CREATE INDEX \"normalized_jobs_processed_posts_a37ab94e\" ON \"public\".\"normalized_jobs\" (\"firstSeenAt\") WHERE (kind = 'post' AND \"processingStatus\" = 'processed')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"normalized_jobs_processed_posts_a37ab94e\" exists on \"normalized_jobs\" with the planned definition",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_index\" AS \"i\" ON \"i\".\"indexrelid\" = \"c\".\"oid\" INNER JOIN \"pg_am\" AS \"m\" ON \"m\".\"oid\" = \"c\".\"relam\" WHERE (\"c\".\"oid\" = to_regclass($1) AND (\"c\".\"relkind\" = $2 OR \"c\".\"relkind\" = $3) AND \"i\".\"indrelid\" = to_regclass($4) AND NOT (\"i\".\"indisunique\") AND \"m\".\"amname\" = $5 AND (\"i\".\"indexprs\" IS NULL AND (SELECT coalesce(jsonb_agg(key_attribute.attname ORDER BY key_column.position), '[]'::jsonb) FROM unnest(\"i\".\"indkey\"::int2[]) WITH ORDINALITY AS key_column(attnum, position) JOIN pg_attribute key_attribute ON key_attribute.attrelid = \"i\".\"indrelid\" AND key_attribute.attnum = key_column.attnum) = ($6)::jsonb) AND \"i\".\"indpred\" IS NOT NULL)) AS \"result\"",
+        "params": [
+          "\"public\".\"normalized_jobs_processed_posts_a37ab94e\"",
+          "i",
+          "I",
+          "\"public\".\"normalized_jobs\"",
+          "btree",
+          "[\"firstSeenAt\"]"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "functions.post_reads",
+    "invariantId": "post-reads",
+    "label": "post reads: post_junk_list, post_list_extras, post_details, post_rescue_list, group_decision_job and their helpers",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "normalized_jobs"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create post_author_of",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_author_of(p_post_sources jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n IMMUTABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF jsonb_typeof(p_post_sources->'sources') IS DISTINCT FROM 'array' THEN\n    RETURN NULL;\n  END IF;\n  RETURN (SELECT x.a\n            FROM (SELECT CASE WHEN jsonb_typeof(s.value->'original') = 'object'\n                              THEN s.value->'original'->'author'\n                              ELSE s.value->'author' END AS a, s.ord\n                    FROM jsonb_array_elements(p_post_sources->'sources') WITH ORDINALITY s(value, ord)) x\n           WHERE jsonb_typeof(x.a) = 'object'\n           ORDER BY x.ord\n           LIMIT 1);\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_author_of(jsonb) FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create post_author_keys",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_author_keys(p_post_sources jsonb)\n RETURNS text[]\n LANGUAGE plpgsql\n IMMUTABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF jsonb_typeof(p_post_sources->'sources') IS DISTINCT FROM 'array' THEN\n    RETURN '{}'::text[];\n  END IF;\n  RETURN ARRAY(\n    SELECT DISTINCT lower(k.key)\n      FROM jsonb_array_elements(p_post_sources->'sources') s(value)\n      CROSS JOIN LATERAL (VALUES (s.value->'author'->>'key'),\n                                 (s.value->'original'->'author'->>'key')) k(key)\n     WHERE k.key IS NOT NULL);\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_author_keys(jsonb) FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create post_role_contact_email",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_role_contact_email(p_job uuid)\n RETURNS text\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  RETURN (SELECT NULLIF(r.value->'howToApply'->>'email', '')\n            FROM public.normalized_jobs j\n            JOIN public.normalized_jobs p ON p.id = j.\"parentJobId\"\n            JOIN public.job_extractions e ON e.id = p.\"currentExtractionId\" AND e.\"docType\" = 'post'\n            CROSS JOIN LATERAL jsonb_array_elements(\n              CASE WHEN jsonb_typeof(e.data->'roles') = 'array' THEN e.data->'roles' ELSE '[]'::jsonb END) r(value)\n           WHERE j.id = p_job AND j.kind = 'post_role'\n             AND r.value->>'roleKey' = j.\"roleKey\"\n           LIMIT 1);\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_role_contact_email(uuid) FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create post_email_pending",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_email_pending(p_user uuid, p_job uuid)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nBEGIN\n  IF p_user IS NULL OR NOT EXISTS (\n    SELECT 1\n      FROM public.normalized_jobs j\n      JOIN public.normalized_jobs p ON p.id = j.\"parentJobId\"\n      JOIN public.job_extractions e ON e.id = p.\"currentExtractionId\" AND e.\"docType\" = 'post'\n     WHERE j.id = p_job AND j.kind = 'post_role' AND j.status = 'active'\n       AND j.\"processingStatus\" IS DISTINCT FROM 'archived'\n       AND e.verdict = 'hiring' AND e.\"verdictConfidence\" = 'sure') THEN\n    RETURN false;\n  END IF;\n  IF NOT EXISTS (\n    SELECT 1\n      FROM public.job_matches m\n      JOIN public.profiles pr ON pr.id = m.\"profileId\" AND pr.state = 'published'\n      -- match_details' reviewChoice: the latest choice, when it still applies to the match.\n      LEFT JOIN LATERAL (\n        SELECT r.choice\n          FROM (SELECT r.choice, r.rule, r.field, r.\"createdAt\", r.\"profileVersion\"\n                  FROM public.match_reviews r\n                 WHERE r.\"matchId\" = m.id AND r.\"userId\" = m.\"userId\"\n                 ORDER BY r.\"createdAt\" DESC, r.id DESC\n                 LIMIT 1) r\n         WHERE m.outcome = 'review' AND r.rule = m.\"reviewRule\" AND r.field = m.\"reviewField\"\n           AND r.\"createdAt\" >= m.\"decidedAt\"\n           AND r.\"profileVersion\" = m.\"profileVersion\") d ON true\n     WHERE m.\"userId\" = p_user AND m.\"jobId\" = p_job\n       AND COALESCE(d.choice, m.outcome) = 'qualified') THEN\n    RETURN false;\n  END IF;\n  IF public.post_role_contact_email(p_job) IS NULL THEN\n    RETURN false;\n  END IF;\n  IF EXISTS (SELECT 1 FROM public.post_rescues r\n              WHERE r.\"userId\" = p_user AND r.\"jobId\" = p_job AND r.\"undoneAt\" IS NULL) THEN\n    RETURN false;\n  END IF;\n  RETURN public.group_decision_status(p_user, p_job) IS NULL;\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_email_pending(uuid, uuid) FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create post_junk_rows",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_junk_rows(p_user uuid, p_since timestamp with time zone, p_job uuid DEFAULT NULL::uuid)\n RETURNS TABLE(\"jobId\" uuid, \"profileIds\" uuid[], verdict text, confidence text, reason text, \"postingUrl\" text, \"postedAt\" timestamp with time zone, \"firstSeenAt\" timestamp with time zone, \"authorName\" text, \"authorUrl\" text, \"authorKey\" text, text text, \"extractionId\" uuid)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nWITH mine AS MATERIALIZED (\n  SELECT p.id FROM public.profiles p\n   WHERE p.\"userId\" = p_user AND p.state = 'published' AND p.\"postSearch\"\n),\njunk AS (\n  SELECT j.id, j.\"postingUrl\", j.\"postedAt\", j.\"firstSeenAt\", j.\"descriptionText\", j.\"postSources\",\n         e.id AS \"extractionId\", e.verdict, e.\"verdictConfidence\", e.\"verdictReason\"\n    FROM public.normalized_jobs j\n    JOIN public.job_extractions e ON e.id = j.\"currentExtractionId\" AND e.\"docType\" = 'post'\n   WHERE j.kind = 'post' AND j.\"processingStatus\" = 'processed' AND j.status = 'active'\n     AND j.\"firstSeenAt\" >= p_since\n     AND (p_job IS NULL OR j.id = p_job)\n     AND e.verdict IN ('not_hiring', 'junk')\n),\nfound AS (\n  SELECT s.\"jobId\", array_agg(DISTINCT q.\"profileId\" ORDER BY q.\"profileId\") AS ids\n    FROM junk\n    JOIN public.normalized_job_sources s ON s.\"jobId\" = junk.id\n    JOIN public.raw_item_sightings r ON r.\"rawItemId\" = s.\"rawItemId\"\n    JOIN public.profile_query_search_builders q ON q.\"queryId\" = r.\"queryId\"\n    JOIN mine ON mine.id = q.\"profileId\"\n   GROUP BY s.\"jobId\"\n)\nSELECT junk.id, found.ids, junk.verdict, junk.\"verdictConfidence\", junk.\"verdictReason\",\n       junk.\"postingUrl\", junk.\"postedAt\", junk.\"firstSeenAt\",\n       au.a->>'name', au.a->>'profileUrl', au.a->>'key', junk.\"descriptionText\", junk.\"extractionId\"\n  FROM junk\n  JOIN found ON found.\"jobId\" = junk.id\n  CROSS JOIN LATERAL (SELECT public.post_author_of(junk.\"postSources\") AS a) au\n WHERE NOT EXISTS (SELECT 1 FROM public.post_rescues pr\n                    WHERE pr.\"userId\" = p_user AND pr.\"jobId\" = junk.id AND pr.\"undoneAt\" IS NULL)\n   AND NOT EXISTS (SELECT 1 FROM public.blocked_authors b\n                    WHERE b.\"userId\" = p_user\n                      AND b.\"authorKey\" = ANY (public.post_author_keys(junk.\"postSources\")))\n ORDER BY junk.\"firstSeenAt\" DESC, junk.id DESC\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_junk_rows(uuid, timestamptz, uuid) FROM PUBLIC, anon, authenticated;"
+      },
+      {
+        "description": "create post_junk_list",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_junk_list(p_since timestamp with time zone)\n RETURNS TABLE(\"jobId\" uuid, \"profileIds\" uuid[], verdict text, confidence text, reason text, \"postingUrl\" text, \"postedAt\" timestamp with time zone, \"firstSeenAt\" timestamp with time zone, \"authorName\" text, \"authorUrl\" text, \"authorKey\" text, text text)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nSELECT r.\"jobId\", r.\"profileIds\", r.verdict, r.confidence, r.reason, r.\"postingUrl\", r.\"postedAt\",\n       r.\"firstSeenAt\", r.\"authorName\", r.\"authorUrl\", r.\"authorKey\", r.text\n  FROM public.post_junk_rows((SELECT auth.uid()), p_since) r\n ORDER BY r.\"firstSeenAt\" DESC, r.\"jobId\" DESC\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_junk_list(timestamptz) FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.post_junk_list(timestamptz) TO authenticated;"
+      },
+      {
+        "description": "create post_list_extras",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_list_extras(p_job_ids uuid[])\n RETURNS TABLE(\"jobId\" uuid, \"emailPending\" boolean, \"applyKinds\" text[], \"authorName\" text, \"authorUrl\" text, \"authorKey\" text, rescued boolean)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nWITH me AS (SELECT auth.uid() AS uid),\nids AS (\n  SELECT u.id, min(u.ord) AS ord FROM unnest(p_job_ids) WITH ORDINALITY u(id, ord) GROUP BY u.id\n)\nSELECT j.id,\n       CASE WHEN j.kind = 'post_role' THEN public.post_email_pending(me.uid, j.id) ELSE false END,\n       CASE WHEN j.kind = 'post_role' THEN ARRAY(\n         SELECT k.kind FROM jsonb_array_elements_text(\n           CASE WHEN jsonb_typeof(role.entry->'howToApply'->'kinds') = 'array'\n                THEN role.entry->'howToApply'->'kinds' ELSE '[]'::jsonb END) WITH ORDINALITY k(kind, ord)\n          ORDER BY k.ord) END,\n       au.a->>'name', au.a->>'profileUrl', au.a->>'key',\n       rs.live\n  FROM me\n  CROSS JOIN ids\n  JOIN public.normalized_jobs j ON j.id = ids.id AND j.kind IN ('post', 'post_role')\n  JOIN public.normalized_jobs p ON p.id = COALESCE(j.\"parentJobId\", j.id)\n  LEFT JOIN public.job_extractions e ON e.id = p.\"currentExtractionId\" AND e.\"docType\" = 'post'\n  LEFT JOIN LATERAL (\n    SELECT r.value AS entry\n      FROM jsonb_array_elements(\n        CASE WHEN j.kind = 'post_role' AND jsonb_typeof(e.data->'roles') = 'array'\n             THEN e.data->'roles' ELSE '[]'::jsonb END) r(value)\n     WHERE r.value->>'roleKey' = j.\"roleKey\"\n     LIMIT 1) role ON true\n  CROSS JOIN LATERAL (SELECT public.post_author_of(p.\"postSources\") AS a) au\n  CROSS JOIN LATERAL (SELECT EXISTS (\n    SELECT 1 FROM public.post_rescues r\n     WHERE r.\"userId\" = me.uid AND r.\"jobId\" = j.id AND r.\"undoneAt\" IS NULL) AS live) rs\n WHERE rs.live\n    OR EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = me.uid AND m.\"jobId\" = j.id)\n ORDER BY ids.ord\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_list_extras(uuid[]) FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.post_list_extras(uuid[]) TO authenticated;"
+      },
+      {
+        "description": "create post_details",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_details(p_job_id uuid)\n RETURNS TABLE(\"jobId\" uuid, kind text, \"postJobId\" uuid, \"postingUrl\" text, \"postedAt\" timestamp with time zone, verdict jsonb, \"howToApply\" jsonb, \"authorRelation\" text, sources jsonb, \"emailPending\" boolean, rescue jsonb, linked jsonb)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nWITH me AS (SELECT auth.uid() AS uid)\nSELECT j.id, j.kind, p.id, j.\"postingUrl\", j.\"postedAt\",\n       CASE WHEN e.id IS NOT NULL THEN jsonb_build_object(\n         'value', e.verdict,\n         'reason', e.\"verdictReason\",\n         'confidence', e.\"verdictConfidence\",\n         'quote', e.data->'verdict'->'quote') END,\n       role.entry->'howToApply',\n       role.entry->>'authorRelation',\n       p.\"postSources\"->'sources',\n       CASE WHEN j.kind = 'post_role' THEN public.post_email_pending(me.uid, j.id) ELSE false END,\n       (SELECT jsonb_build_object('origin', r.origin, 'createdAt', r.\"createdAt\", 'note', r.note)\n          FROM public.post_rescues r\n         WHERE r.\"userId\" = me.uid AND r.\"jobId\" = j.id AND r.\"undoneAt\" IS NULL),\n       (SELECT COALESCE(jsonb_agg(jsonb_build_object(\n                 'jobId', g.id,\n                 'kind', g.kind,\n                 'title', g.title,\n                 'authorName', CASE WHEN g.kind = 'post_role'\n                                    THEN public.post_author_of(gp.\"postSources\")->>'name' END)\n               ORDER BY g.\"firstSeenAt\", g.id), '[]'::jsonb)\n          FROM public.job_link_group(j.id) lg(id)\n          JOIN public.normalized_jobs g ON g.id = lg.id\n          LEFT JOIN public.normalized_jobs gp ON gp.id = g.\"parentJobId\"\n         WHERE g.id <> j.id\n           AND EXISTS (SELECT 1 FROM public.job_matches m\n                        WHERE m.\"userId\" = me.uid AND m.\"jobId\" = g.id))\n  FROM me\n  JOIN public.normalized_jobs j ON j.id = p_job_id AND j.kind IN ('post', 'post_role')\n  JOIN public.normalized_jobs p ON p.id = COALESCE(j.\"parentJobId\", j.id)\n  LEFT JOIN public.job_extractions e ON e.id = p.\"currentExtractionId\" AND e.\"docType\" = 'post'\n  LEFT JOIN LATERAL (\n    SELECT r.value AS entry\n      FROM jsonb_array_elements(\n        CASE WHEN j.kind = 'post_role' AND jsonb_typeof(e.data->'roles') = 'array'\n             THEN e.data->'roles' ELSE '[]'::jsonb END) r(value)\n     WHERE r.value->>'roleKey' = j.\"roleKey\"\n     LIMIT 1) role ON true\n WHERE EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = me.uid AND m.\"jobId\" = j.id)\n    OR EXISTS (SELECT 1 FROM public.post_rescues r\n                WHERE r.\"userId\" = me.uid AND r.\"jobId\" = j.id AND r.\"undoneAt\" IS NULL)\n    OR (j.kind = 'post' AND EXISTS (\n          SELECT 1 FROM public.post_junk_rows(me.uid, now() - interval '30 days', j.id)))\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_details(uuid) FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.post_details(uuid) TO authenticated;"
+      },
+      {
+        "description": "create post_rescue_list",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_rescue_list()\n RETURNS TABLE(\"jobId\" uuid, kind text, origin text, \"profileIds\" uuid[], title text, \"companyName\" text, \"postingUrl\" text, \"postedAt\" timestamp with time zone, \"firstSeenAt\" timestamp with time zone, \"authorName\" text, \"decisionStatus\" text)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nWITH me AS (SELECT auth.uid() AS uid)\nSELECT j.id, j.kind, r.origin,\n       CASE WHEN r.origin = 'disqualified' THEN ARRAY(\n         SELECT DISTINCT m.\"profileId\" FROM public.job_matches m\n          WHERE m.\"userId\" = me.uid AND m.\"jobId\" = j.id AND m.outcome = 'rejected'\n          ORDER BY 1)\n       ELSE ARRAY(\n         SELECT DISTINCT q.\"profileId\"\n           FROM public.normalized_job_sources s\n           JOIN public.raw_item_sightings ris ON ris.\"rawItemId\" = s.\"rawItemId\"\n           JOIN public.profile_query_search_builders q ON q.\"queryId\" = ris.\"queryId\"\n           JOIN public.profiles pr ON pr.id = q.\"profileId\"\n          WHERE s.\"jobId\" = j.id AND pr.\"userId\" = me.uid\n            AND pr.state = 'published' AND pr.\"postSearch\"\n          ORDER BY 1) END,\n       j.title, j.\"companyName\", j.\"postingUrl\", j.\"postedAt\", j.\"firstSeenAt\",\n       public.post_author_of(p.\"postSources\")->>'name',\n       public.group_decision_status(me.uid, j.id)\n  FROM me\n  JOIN public.post_rescues r ON r.\"userId\" = me.uid AND r.\"undoneAt\" IS NULL\n  JOIN public.normalized_jobs j ON j.id = r.\"jobId\"\n  JOIN public.normalized_jobs p ON p.id = COALESCE(j.\"parentJobId\", j.id)\n WHERE NOT EXISTS (SELECT 1 FROM public.blocked_authors b\n                    WHERE b.\"userId\" = me.uid\n                      AND b.\"authorKey\" = ANY (public.post_author_keys(p.\"postSources\")))\n ORDER BY r.\"createdAt\" DESC, r.id DESC\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_rescue_list() FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.post_rescue_list() TO authenticated;"
+      },
+      {
+        "description": "create group_decision_job",
+        "sql": "CREATE OR REPLACE FUNCTION public.group_decision_job(p_job_id uuid)\n RETURNS uuid\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_user uuid := auth.uid();\nBEGIN\n  IF v_user IS NULL\n     OR NOT EXISTS (SELECT 1 FROM public.job_decisions d WHERE d.\"userId\" = v_user) THEN\n    RETURN NULL;\n  END IF;\n  RETURN (SELECT d.\"jobId\"\n            FROM public.job_decisions d\n           WHERE d.\"userId\" = v_user\n             AND d.\"jobId\" IN (SELECT public.job_link_group(p_job_id))\n           ORDER BY CASE d.status WHEN 'applied' THEN 0 WHEN 'expired' THEN 1 ELSE 2 END,\n                    d.\"decidedAt\" DESC, d.id DESC\n           LIMIT 1);\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.group_decision_job(uuid) FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.group_decision_job(uuid) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "functions.post_rescue_junk",
+    "invariantId": "post-rescue-junk",
+    "label": "post_rescue accepts a post in the caller's Junk tab",
+    "operationClass": "data",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "post_rescues"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "replace post_rescue: add the Junk branch",
+        "sql": "CREATE OR REPLACE FUNCTION public.post_rescue(p_job_id uuid, p_note text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_user uuid := auth.uid();\n  v_id uuid;\n  v_kind text;\n  v_origin text;\n  v_snapshot jsonb;\nBEGIN\n  IF v_user IS NULL THEN\n    RAISE EXCEPTION 'not rescuable';\n  END IF;\n  SELECT r.id INTO v_id FROM public.post_rescues r\n   WHERE r.\"userId\" = v_user AND r.\"jobId\" = p_job_id AND r.\"undoneAt\" IS NULL;\n  IF v_id IS NOT NULL THEN\n    RETURN v_id;\n  END IF;\n  SELECT j.kind INTO v_kind FROM public.normalized_jobs j WHERE j.id = p_job_id;\n  IF v_kind = 'post' THEN\n    SELECT jsonb_build_object(\n             'verdict', jsonb_build_object('value', r.verdict, 'reason', r.reason, 'confidence', r.confidence),\n             'extractionId', r.\"extractionId\",\n             'profileIds', to_jsonb(r.\"profileIds\"))\n      INTO v_snapshot\n      FROM public.post_junk_rows(v_user, now() - interval '30 days', p_job_id) r;\n    IF v_snapshot IS NULL THEN\n      RAISE EXCEPTION 'not rescuable';\n    END IF;\n    v_origin := 'junk';\n  ELSIF v_kind = 'post_role' AND EXISTS (\n          SELECT 1 FROM public.job_matches m\n           WHERE m.\"userId\" = v_user AND m.\"jobId\" = p_job_id AND m.outcome = 'rejected') THEN\n    SELECT jsonb_build_object(\n             'profiles', jsonb_agg(jsonb_build_object(\n               'profileId', m.\"profileId\",\n               'matchId', m.id,\n               'matcherVersion', m.\"matcherVersion\",\n               'failed', COALESCE((\n                 SELECT jsonb_agg(c.value)\n                   FROM jsonb_array_elements(CASE WHEN jsonb_typeof(m.checks) = 'array' THEN m.checks ELSE '[]'::jsonb END) c\n                  WHERE c.value ->> 'outcome' = 'fail'), '[]'::jsonb)\n             ) ORDER BY m.\"decidedAt\", m.id),\n             'extractionId', (SELECT j.\"currentExtractionId\" FROM public.normalized_jobs j WHERE j.id = p_job_id))\n      INTO v_snapshot\n      FROM public.job_matches m\n     WHERE m.\"userId\" = v_user AND m.\"jobId\" = p_job_id AND m.outcome = 'rejected';\n    v_origin := 'disqualified';\n  ELSE\n    RAISE EXCEPTION 'not rescuable';\n  END IF;\n  INSERT INTO public.post_rescues (\"userId\", \"jobId\", origin, snapshot, note)\n  VALUES (v_user, p_job_id, v_origin, v_snapshot, p_note)\n  ON CONFLICT (\"userId\", \"jobId\") WHERE \"undoneAt\" IS NULL DO NOTHING\n  RETURNING id INTO v_id;\n  IF v_id IS NULL THEN\n    SELECT r.id INTO v_id FROM public.post_rescues r\n     WHERE r.\"userId\" = v_user AND r.\"jobId\" = p_job_id AND r.\"undoneAt\" IS NULL;\n  END IF;\n  RETURN v_id;\nEND\n$function$;\nREVOKE EXECUTE ON FUNCTION public.post_rescue(uuid, text) FROM PUBLIC, anon, authenticated;\nGRANT EXECUTE ON FUNCTION public.post_rescue(uuid, text) TO authenticated;"
+      }
+    ],
+    "postcheck": []
+  }
+]

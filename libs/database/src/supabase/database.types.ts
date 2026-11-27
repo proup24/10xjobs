@@ -73,7 +73,7 @@ export type Database = {
         Insert: {
           authorKey: string;
           createdAt?: string;
-          id: string;
+          id?: string;
           name?: string | null;
           profileUrl?: string | null;
           updatedAt?: string;
@@ -1412,6 +1412,58 @@ export type Database = {
           },
         ];
       };
+      post_rescues: {
+        Row: {
+          createdAt: string;
+          id: string;
+          jobId: string;
+          note: string | null;
+          origin: string;
+          snapshot: NonNullable<Json>;
+          undoneAt: string | null;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          id?: string;
+          jobId: string;
+          note?: string | null;
+          origin: string;
+          snapshot: NonNullable<Json>;
+          undoneAt?: string | null;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          id?: string;
+          jobId?: string;
+          note?: string | null;
+          origin?: string;
+          snapshot?: NonNullable<Json>;
+          undoneAt?: string | null;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'post_rescues_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'post_rescues_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       processing_attempts: {
         Row: {
           cachedInputTokens: number;
@@ -2519,6 +2571,7 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      group_decision_job: { Args: { p_job_id: string }; Returns: string };
       group_decision_status: {
         Args: { p_job: string; p_user: string };
         Returns: string;
@@ -2611,6 +2664,98 @@ export type Database = {
           viewedAt: string;
         }[];
       };
+      post_author_keys: { Args: { p_post_sources: Json }; Returns: string[] };
+      post_author_of: { Args: { p_post_sources: Json }; Returns: Json };
+      post_details: {
+        Args: { p_job_id: string };
+        Returns: {
+          authorRelation: string;
+          emailPending: boolean;
+          howToApply: Json;
+          jobId: string;
+          kind: string;
+          linked: Json;
+          postedAt: string;
+          postingUrl: string;
+          postJobId: string;
+          rescue: Json;
+          sources: Json;
+          verdict: Json;
+        }[];
+      };
+      post_email_pending: {
+        Args: { p_job: string; p_user: string };
+        Returns: boolean;
+      };
+      post_junk_list: {
+        Args: { p_since: string };
+        Returns: {
+          authorKey: string;
+          authorName: string;
+          authorUrl: string;
+          confidence: string;
+          firstSeenAt: string;
+          jobId: string;
+          postedAt: string;
+          postingUrl: string;
+          profileIds: string[];
+          reason: string;
+          text: string;
+          verdict: string;
+        }[];
+      };
+      post_junk_rows: {
+        Args: { p_job?: string; p_since: string; p_user: string };
+        Returns: {
+          authorKey: string;
+          authorName: string;
+          authorUrl: string;
+          confidence: string;
+          extractionId: string;
+          firstSeenAt: string;
+          jobId: string;
+          postedAt: string;
+          postingUrl: string;
+          profileIds: string[];
+          reason: string;
+          text: string;
+          verdict: string;
+        }[];
+      };
+      post_list_extras: {
+        Args: { p_job_ids: string[] };
+        Returns: {
+          applyKinds: string[];
+          authorKey: string;
+          authorName: string;
+          authorUrl: string;
+          emailPending: boolean;
+          jobId: string;
+          rescued: boolean;
+        }[];
+      };
+      post_rescue: {
+        Args: { p_job_id: string; p_note?: string };
+        Returns: string;
+      };
+      post_rescue_list: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          authorName: string;
+          companyName: string;
+          decisionStatus: string;
+          firstSeenAt: string;
+          jobId: string;
+          kind: string;
+          origin: string;
+          postedAt: string;
+          postingUrl: string;
+          profileIds: string[];
+          title: string;
+        }[];
+      };
+      post_rescue_undo: { Args: { p_job_id: string }; Returns: undefined };
+      post_role_contact_email: { Args: { p_job: string }; Returns: string };
       replace_profile_skills: {
         Args: { p_profile_id: string; p_skills: Json };
         Returns: undefined;

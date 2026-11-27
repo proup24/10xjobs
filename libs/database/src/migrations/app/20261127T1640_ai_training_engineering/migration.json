@@ -1,9 +1,7 @@
 {
   "from": "5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06",
   "to": "5939ea1853a407103172fa96c99abb769846b6154c9478bb1c69034452cded06",
-  "providedInvariants": [
-    "ai-training-engineering"
-  ],
+  "providedInvariants": ["ai-training-engineering"],
   "createdAt": "2026-11-27T16:40:32.936Z",
   "migrationHash": "3fa574ce89d12e52209f591715fbf31188bb98744e2959f63cef8e67ff463d1b"
 }
