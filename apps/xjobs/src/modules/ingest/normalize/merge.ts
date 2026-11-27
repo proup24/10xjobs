@@ -23,7 +23,11 @@ export interface MergedJob {
   postSources: { sources: PostDetail[] } | null;
 }
 
-/** The employer's own ATS posting first, then the LinkedIn job, then a post. */
+/**
+ * The employer's own ATS posting first, then the LinkedIn job, then Indeed,
+ * then a post. Indeed's place against the trial actors can't matter: a trial
+ * actor always keys by LinkedIn id and never shares a job with Indeed.
+ */
 const precedence: Record<Channel, number> = {
   [Channel.ASHBY]: 1,
   [Channel.GREEN_HOUSE]: 1,

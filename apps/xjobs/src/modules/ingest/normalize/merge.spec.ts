@@ -46,6 +46,14 @@ describe('mergeSources', () => {
     expect(merged.record.postingUrl).toBe('https://example.com/ashby-1');
   });
 
+  it("takes harvestapi's fields over Indeed's on a joined job", () => {
+    const merged = mergeSources([
+      source('in-1', Channel.INDEED, { title: 'Indeed title' }),
+      source('li-1', Channel.LINKEDIN_JOB_BOARD, { title: 'LinkedIn title' }),
+    ]);
+    expect(merged.record.title).toBe('LinkedIn title');
+  });
+
   it('prefers the most recently seen source of the same rank', () => {
     const older = source(
       'li-old',
