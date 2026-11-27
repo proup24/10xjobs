@@ -1,5 +1,7 @@
 # 04a: Social posts page
 
+Status: built; the deploy waits on slice 04's. Spec: [posts page design](../../superpowers/specs/2026-11-27-posts-page-design.md). Built in five PRs: `feat/posts-page-db` (PR A), `feat/posts-page-ui` (PR B), `feat/posts-page-rescues` (PR C), `feat/posts-page-blocked` (PR D) and `feat/posts-page-webhooks` (PR E); swap the branch names for PR numbers once opened.
+
 ## Goal
 
 Social post matches have their own page in the web app, apart from job-board matches, and each user can block authors they never want to see or email.
