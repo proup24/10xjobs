@@ -73,7 +73,7 @@ export type Database = {
         Insert: {
           authorKey: string;
           createdAt?: string;
-          id: string;
+          id?: string;
           name?: string | null;
           profileUrl?: string | null;
           updatedAt?: string;
@@ -1409,6 +1409,58 @@ export type Database = {
           },
         ];
       };
+      post_rescues: {
+        Row: {
+          createdAt: string;
+          id: string;
+          jobId: string;
+          note: string | null;
+          origin: string;
+          snapshot: NonNullable<Json>;
+          undoneAt: string | null;
+          updatedAt: string;
+          userId: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          createdAt?: string;
+          id?: string;
+          jobId: string;
+          note?: string | null;
+          origin: string;
+          snapshot: NonNullable<Json>;
+          undoneAt?: string | null;
+          updatedAt?: string;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          id?: string;
+          jobId?: string;
+          note?: string | null;
+          origin?: string;
+          snapshot?: NonNullable<Json>;
+          undoneAt?: string | null;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'post_rescues_jobId_fkey';
+            columns: ['jobId'];
+            isOneToOne: false;
+            referencedRelation: 'normalized_jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'post_rescues_userId_fkey';
+            columns: ['userId'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       processing_attempts: {
         Row: {
           cachedInputTokens: number;
@@ -2602,6 +2654,11 @@ export type Database = {
           viewedAt: string;
         }[];
       };
+      post_rescue: {
+        Args: { p_job_id: string; p_note?: string };
+        Returns: string;
+      };
+      post_rescue_undo: { Args: { p_job_id: string }; Returns: undefined };
       replace_profile_skills: {
         Args: { p_profile_id: string; p_skills: Json };
         Returns: undefined;

@@ -1,5 +1,5 @@
 {
-  "hash": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72",
+  "hash": "5299fb8fc35c27b60dfa6c603b48c8f630d6657c3b48e80e47a4d33132349dc5",
   "invariants": [
     "end-expired-sessions",
     "code-check-fixes",
@@ -39,6 +39,8 @@
     "job-decisions-update-source",
     "indeed-markets-seed",
     "role-link-keys-index",
-    "job-link-group"
+    "job-link-group",
+    "blocked-authors-lower-key",
+    "post-rescue-rpcs"
   ]
 }

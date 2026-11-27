@@ -112,6 +112,10 @@
       "model": "NormalizedVersion",
       "namespace": "public"
     },
+    "post_rescues": {
+      "model": "PostRescue",
+      "namespace": "public"
+    },
     "processing_attempts": {
       "model": "ProcessingAttempt",
       "namespace": "public"
@@ -4318,6 +4322,21 @@
                   "namespace": "public"
                 }
               },
+              "postRescues": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "jobId"
+                  ]
+                },
+                "to": {
+                  "model": "PostRescue",
+                  "namespace": "public"
+                }
+              },
               "roles": {
                 "cardinality": "1:N",
                 "on": {
@@ -4770,6 +4789,149 @@
               },
               "namespaceId": "public",
               "table": "normalized_versions"
+            }
+          },
+          "PostRescue": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "jobId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "origin": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "snapshot": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/jsonb@1",
+                  "kind": "scalar"
+                }
+              },
+              "undoneAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 3
+                  }
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "job": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "jobId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "NormalizedJob",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "nullable": false,
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "jobId": {
+                  "column": "jobId"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "origin": {
+                  "column": "origin"
+                },
+                "snapshot": {
+                  "column": "snapshot"
+                },
+                "undoneAt": {
+                  "column": "undoneAt"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "post_rescues"
             }
           },
           "ProcessingAttempt": {
@@ -7384,6 +7546,21 @@
                   "namespace": "public"
                 }
               },
+              "postRescues": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "PostRescue",
+                  "namespace": "public"
+                }
+              },
               "webhookCallbacks": {
                 "cardinality": "1:N",
                 "on": {
@@ -8417,7 +8594,7 @@
             },
             "job_decisions_owner_insert": {
               "kind": "policy",
-              "name": "job_decisions_owner_insert_13839fbe",
+              "name": "job_decisions_owner_insert_3e2aa6d5",
               "namespaceId": "public",
               "operation": "insert",
               "permissive": true,
@@ -8426,7 +8603,7 @@
                 "authenticated"
               ],
               "tableName": "job_decisions",
-              "withCheck": "\"userId\" = auth.uid() AND EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_decisions.\"jobId\")"
+              "withCheck": "\"userId\" = auth.uid() AND (EXISTS (SELECT 1 FROM public.job_matches m WHERE m.\"userId\" = auth.uid() AND m.\"jobId\" = job_decisions.\"jobId\") OR EXISTS (SELECT 1 FROM public.post_rescues r WHERE r.\"userId\" = auth.uid() AND r.\"jobId\" = job_decisions.\"jobId\" AND r.\"undoneAt\" IS NULL))"
             },
             "job_decisions_owner_read": {
               "kind": "policy",
@@ -8531,6 +8708,19 @@
                 "authenticated"
               ],
               "tableName": "match_reviews",
+              "using": "\"userId\" = auth.uid()"
+            },
+            "post_rescues_owner_read": {
+              "kind": "policy",
+              "name": "post_rescues_owner_read_ab58a1a7",
+              "namespaceId": "public",
+              "operation": "select",
+              "permissive": true,
+              "prefix": "post_rescues_owner_read",
+              "roles": [
+                "authenticated"
+              ],
+              "tableName": "post_rescues",
               "using": "\"userId\" = auth.uid()"
             },
             "profile_setup_drafts_owner": {
@@ -8935,6 +9125,11 @@
               "namespaceId": "public",
               "tableName": "normalized_versions"
             },
+            "post_rescues": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "post_rescues"
+            },
             "processing_attempts": {
               "kind": "rls",
               "namespaceId": "public",
@@ -9177,6 +9372,10 @@
                 "id": {
                   "codecId": "pg/uuid@1",
                   "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
                   "nullable": false
                 },
                 "name": {
@@ -12744,6 +12943,172 @@
                 }
               ]
             },
+            "post_rescues": {
+              "checks": [
+                {
+                  "expression": "note IS NULL OR char_length(note) <= 500",
+                  "name": "post_rescues_note_length_73ec5843",
+                  "prefix": "post_rescues_note_length"
+                },
+                {
+                  "expression": "origin IN ('junk','disqualified')",
+                  "name": "post_rescues_origin_0c531019",
+                  "prefix": "post_rescues_origin"
+                }
+              ],
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "default": {
+                    "expression": "gen_random_uuid()",
+                    "kind": "function"
+                  },
+                  "nullable": false
+                },
+                "jobId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": true
+                },
+                "origin": {
+                  "codecId": "pg/text@1",
+                  "dataType": "pg/text",
+                  "nullable": false
+                },
+                "snapshot": {
+                  "codecId": "pg/jsonb@1",
+                  "dataType": "pg/jsonb",
+                  "nullable": false
+                },
+                "undoneAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-date@1",
+                  "dataType": "pg/timestamptz",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 3
+                  }
+                },
+                "userId": {
+                  "codecId": "pg/uuid@1",
+                  "dataType": "pg/uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "index": {
+                    "name": "post_rescues_userId_idx_a489d58a"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "post_rescues"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                },
+                {
+                  "index": {
+                    "name": "post_rescues_jobId_idx_623c8f77"
+                  },
+                  "onDelete": "cascade",
+                  "source": {
+                    "columns": [
+                      "jobId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "post_rescues"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "normalized_jobs"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "createdAt"
+                  ],
+                  "name": "post_rescues_createdAt_idx_9575dbd7",
+                  "prefix": "post_rescues_createdAt_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "jobId"
+                  ],
+                  "name": "post_rescues_jobId_idx_623c8f77",
+                  "prefix": "post_rescues_jobId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId",
+                    "jobId"
+                  ],
+                  "name": "post_rescues_live_user_job_800e0fe1",
+                  "prefix": "post_rescues_live_user_job",
+                  "unique": true,
+                  "where": "\"undoneAt\" IS NULL"
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "post_rescues_userId_idx_a489d58a",
+                  "prefix": "post_rescues_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "processing_attempts": {
               "checks": [
                 {
@@ -15900,10 +16265,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "84883c684e9b8bc81b7fad1234576075a5a08a30f80a9c2b08f617b52f123c72"
+    "storageHash": "5299fb8fc35c27b60dfa6c603b48c8f630d6657c3b48e80e47a4d33132349dc5"
   },
   "execution": {
-    "executionHash": "dbb201d62f2711ea7cf7dcb33b7ae828be2e7e5199137cb1c6671ca0a1ab97e7",
+    "executionHash": "43f96e9ea4c3242b3e60bf904369955db4873127cd090ad393c291c8a54db296",
     "mutations": {
       "defaults": [
         {
@@ -16203,6 +16568,32 @@
           "ref": {
             "entry": "normalized_versions",
             "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv7",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "post_rescues",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "post_rescues",
+            "field": "updatedAt",
             "namespace": "public"
           }
         },
