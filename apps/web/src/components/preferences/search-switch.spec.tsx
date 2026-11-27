@@ -50,7 +50,10 @@ describe('SearchSwitch', () => {
 
   it('shows the Indeed label and description', () => {
     render(
-      <SearchSwitch profileId={ID} view={view({ key: 'indeed', searches: 0 })} />,
+      <SearchSwitch
+        profileId={ID}
+        view={view({ key: 'indeed', searches: 0 })}
+      />,
     );
     expect(screen.getByText('Search Indeed')).toBeTruthy();
     expect(
@@ -59,6 +62,44 @@ describe('SearchSwitch', () => {
       ),
     ).toBeTruthy();
     expect(screen.queryByText(/No post searches for this profile/)).toBeNull();
+  });
+
+  it('says when post searches are paused for the day', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: '2026-11-28T00:00:00.000Z' })}
+      />,
+    );
+    expect(
+      screen.getByText(
+        /Post searches are paused until .+ because today's search budget is used up\. They catch up on what they missed when they restart\./,
+      ),
+    ).toBeTruthy();
+  });
+
+  it('shows no pause line when posts is not paused', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: null })}
+      />,
+    );
+    expect(screen.queryByText(/paused until/)).toBeNull();
+  });
+
+  it('shows no pause line for Indeed even with a pausedUntil', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({
+          key: 'indeed',
+          enabled: true,
+          pausedUntil: '2026-11-28T00:00:00.000Z',
+        })}
+      />,
+    );
+    expect(screen.queryByText(/paused until/)).toBeNull();
   });
 
   it('reverts when the action fails', async () => {

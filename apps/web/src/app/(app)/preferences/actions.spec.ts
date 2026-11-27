@@ -138,7 +138,7 @@ describe('setSearchSwitchAction', () => {
   it('maps ok to saved and passes the id, key and flag', async () => {
     setSearchSwitch.mockResolvedValue({
       kind: 'ok',
-      data: { key: 'indeed', enabled: true, searches: 1 },
+      data: { key: 'indeed', enabled: true, searches: 1, pausedUntil: null },
     });
     expect(await setSearchSwitchAction(ID, 'indeed', true)).toBe('saved');
     expect(setSearchSwitch).toHaveBeenCalledWith(ID, 'indeed', true);

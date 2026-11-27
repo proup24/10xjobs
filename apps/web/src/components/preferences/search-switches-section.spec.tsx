@@ -26,8 +26,8 @@ describe('SearchSwitchesSection', () => {
     searchSwitches.mockResolvedValue({
       kind: 'ok',
       data: [
-        { key: 'posts', enabled: false, searches: 1 },
-        { key: 'indeed', enabled: true, searches: 3 },
+        { key: 'posts', enabled: false, searches: 1, pausedUntil: null },
+        { key: 'indeed', enabled: true, searches: 3, pausedUntil: null },
       ],
     });
     await renderSection();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, useTransition } from 'react';
+import { useEffect, useId, useState, useTransition } from 'react';
 import type { SearchSwitchKey, SearchSwitchView } from '@xjobs/engine-client';
 import { setSearchSwitchAction } from '@/app/(app)/preferences/actions';
 import { notifySaveFailed } from '@/components/setup/step-frame';
@@ -36,6 +36,19 @@ export function SearchSwitch({ profileId, view }: Props) {
   const [enabled, setEnabled] = useState(view.enabled);
   const [, startTransition] = useTransition();
   const copy = COPY[view.key];
+  // Formatted after mount: the server's time zone differs from the viewer's, so formatting
+  // during render would break hydration.
+  const [pausedAt, setPausedAt] = useState('tomorrow');
+  useEffect(() => {
+    if (!view.pausedUntil) return;
+    setPausedAt(
+      new Intl.DateTimeFormat(undefined, {
+        weekday: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(new Date(view.pausedUntil)),
+    );
+  }, [view.pausedUntil]);
 
   function change(next: boolean) {
     setEnabled(next);
@@ -63,6 +76,13 @@ export function SearchSwitch({ profileId, view }: Props) {
             <span className="mt-1 block">
               No post searches for this profile: English posts are searched for
               remote work only, and it has no remote places.
+            </span>
+          )}
+          {view.key === 'posts' && view.pausedUntil !== null && (
+            <span className="mt-1 block">
+              Post searches are paused until {pausedAt} because today&apos;s
+              search budget is used up. They catch up on what they missed when
+              they restart.
             </span>
           )}
         </FieldDescription>
