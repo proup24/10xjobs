@@ -57,7 +57,7 @@ describe('mapIndeedJob', () => {
       city: 'Rabat',
       state: '4',
       regionCode: null,
-      location: 'Rabat, 4, Maroc',
+      location: 'Rabat, Maroc',
       salary: null,
     });
   });
@@ -145,6 +145,15 @@ describe('mapIndeedJob', () => {
     expect(record.postingUrl).toBe(
       'https://www.indeed.com/viewjob?jk=615c52287907ef33',
     );
+  });
+
+  it('refuses an item with neither url nor key', () => {
+    const result = normalize(
+      Channel.INDEED,
+      { ...remote, url: null, key: null },
+      { scrapedAt },
+    );
+    expect(result).toEqual({ invalid: 'no Indeed job key or URL' });
   });
 
   it('upgrades an http posting URL to https', () => {

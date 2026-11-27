@@ -76,15 +76,17 @@ function salaryOf(baseSalary: unknown): NormalizedRecord['salary'] {
 export function mapIndeedJob(
   payload: Record<string, unknown>,
   _ctx: NormalizeContext,
-): NormalizedRecord {
+): NormalizedRecord | { invalid: string } {
   const place = objectAt(payload.location);
   const employer = objectAt(payload.employer);
   const description = objectAt(payload.description);
   const rawCity = cleanText(place.city);
   const state = cleanText(place.admin1Code);
-  const parts = [rawCity, state, cleanText(place.countryName)].filter(
-    (part): part is string => part !== null,
-  );
+  const parts = [
+    rawCity,
+    state && !/^\d+$/.test(state) ? state : null,
+    cleanText(place.countryName),
+  ].filter((part): part is string => part !== null);
   const countryCode = cleanText(place.countryCode)?.toUpperCase() ?? null;
   const descriptionHtml = cleanText(description.html);
   const jobUrl = httpUrl(payload.jobUrl);
@@ -93,6 +95,9 @@ export function mapIndeedJob(
   if (posting) posting.protocol = 'https:';
   const postedAt =
     isoDate(payload.datePublished) ?? isoDate(payload.dateOnIndeed);
+  const postingUrl =
+    posting?.href ?? (key ? `https://www.indeed.com/viewjob?jk=${key}` : null);
+  if (!postingUrl) return { invalid: 'no Indeed job key or URL' };
   return emptyRecord({
     kind: 'job',
     title: cleanText(payload.title),
@@ -114,7 +119,6 @@ export function mapIndeedJob(
       cleanText(description.text) ??
       (descriptionHtml ? cleanText(htmlToPlainText(descriptionHtml)) : null),
     applyUrl: jobUrl && !isIndeedHost(jobUrl) ? jobUrl.href : null,
-    postingUrl: (posting?.href ??
-      `https://www.indeed.com/viewjob?jk=${key}`) as string,
+    postingUrl,
   });
 }
