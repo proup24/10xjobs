@@ -21,11 +21,14 @@ export function PostDetail({
   now,
   userId,
   backHref,
+  actions,
 }: {
   details: PostDetails;
   now: Date;
   userId: string;
   backHref: string;
+  /** The page's own actions on the post (Rescue, Undo rescue). */
+  actions?: React.ReactNode;
 }) {
   const { author } = postParts(details.sources);
   const verdict = verdictLine(details.verdict);
@@ -44,6 +47,7 @@ export function PostDetail({
         userId={userId}
         jobId={details.jobId}
       />
+      {actions}
       <PostSection details={details} now={now} />
     </article>
   );

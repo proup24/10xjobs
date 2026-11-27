@@ -1,4 +1,11 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { groupByJob, type MatchRow } from '@/lib/matches/group';
 import type {
@@ -15,6 +22,7 @@ import {
   labels,
   matchRow,
 } from '@/components/matches/test-fixtures';
+import { rescuePostAction, undoRescueAction } from '@/app/(app)/actions';
 import { PostsView } from './posts-view';
 
 vi.mock('next/navigation', () => ({
@@ -25,6 +33,8 @@ vi.mock('@/app/(app)/actions', () => ({
   decideJobAction: vi.fn(),
   clearJobDecisionAction: vi.fn(),
   reportMismatchAction: vi.fn(),
+  rescuePostAction: vi.fn(),
+  undoRescueAction: vi.fn(),
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -266,5 +276,101 @@ describe('PostsView', () => {
     ).toBeTruthy();
     expect(screen.queryByText("This job isn't in your matches")).toBeNull();
     expect(screen.queryByText(/Why it matched/)).toBeNull();
+  });
+
+  describe('rescue', () => {
+    it('rescues a Junk post with an optional note', async () => {
+      vi.mocked(rescuePostAction).mockResolvedValue({ status: 'saved' });
+      renderView(
+        { list: 'junk', job: 'j1' },
+        {
+          details: detailsOf({
+            jobId: 'j1',
+            kind: 'post',
+            verdict: { value: 'not_hiring', reason: 'r' },
+            howToApply: null,
+          }),
+        },
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Rescue' }));
+      fireEvent.change(
+        screen.getByLabelText('Why this one is for you (optional)'),
+        { target: { value: 'good fit' } },
+      );
+      const dialog = within(screen.getByRole('dialog'));
+      fireEvent.click(dialog.getByRole('button', { name: 'Rescue' }));
+      await waitFor(() =>
+        expect(rescuePostAction).toHaveBeenCalledWith({
+          jobId: 'j1',
+          note: 'good fit',
+        }),
+      );
+    });
+
+    const disq = (over: Parameters<typeof post>[0]) => [
+      post({
+        jobId: 'd1',
+        title: 'Junior role',
+        outcome: 'rejected',
+        ...over,
+      }),
+    ];
+
+    it('offers Rescue on a Disqualified role', () => {
+      renderView(
+        { list: 'disqualified', job: 'd1' },
+        { selected: disq({}), details: detailsOf({ jobId: 'd1' }) },
+      );
+      expect(screen.getByRole('button', { name: 'Rescue' })).toBeTruthy();
+    });
+
+    it('offers no Rescue on a role rejected for a blocked author', () => {
+      renderView(
+        { list: 'disqualified', job: 'd1' },
+        {
+          selected: disq({
+            checks: [
+              {
+                rule: 'blockedAuthor',
+                outcome: 'fail',
+                reason: 'you blocked Bob',
+              },
+            ],
+          }),
+          details: detailsOf({ jobId: 'd1' }),
+        },
+      );
+      expect(screen.queryByRole('button', { name: 'Rescue' })).toBeNull();
+    });
+
+    it('offers no Rescue on a role the user moved out of Review', () => {
+      renderView(
+        { list: 'disqualified', job: 'd1' },
+        {
+          selected: disq({ reviewChoice: 'rejected' }),
+          details: detailsOf({ jobId: 'd1' }),
+        },
+      );
+      expect(screen.queryByRole('button', { name: 'Rescue' })).toBeNull();
+    });
+
+    it('shows Undo rescue on a rescued post without a decision', async () => {
+      vi.mocked(undoRescueAction).mockResolvedValue({ status: 'saved' });
+      renderView(
+        { list: 'matches', job: 'r1' },
+        {
+          selected: [
+            post({ jobId: 'r1', title: 'Rescued role', outcome: 'rejected' }),
+          ],
+          details: detailsOf({
+            jobId: 'r1',
+            rescue: { origin: 'disqualified' },
+          }),
+        },
+      );
+      expect(screen.queryByRole('button', { name: 'Rescue' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Undo rescue' }));
+      await waitFor(() => expect(undoRescueAction).toHaveBeenCalledWith('r1'));
+    });
   });
 });

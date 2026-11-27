@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { PostDetail } from './post-detail';
 import { PostRow } from './post-row';
 import { PostSection } from './post-section';
+import { RescueControls } from './rescue-dialog';
 
 type Profile = { id: string; label: string; state: 'draft' | 'published' };
 
@@ -53,6 +54,42 @@ const EMPTY: Record<PostList, { day: DayKind; week: WeekKind }> = {
   disqualified: { day: 'no-disqualified-24h', week: 'no-disqualified-7d' },
   junk: { day: 'no-junk-24h', week: 'no-junk-7d' },
 };
+
+const hasFailed = (checks: unknown, rule: string) =>
+  Array.isArray(checks) &&
+  checks.some(
+    (c) =>
+      c && typeof c === 'object' && c.rule === rule && c.outcome === 'fail',
+  );
+
+/**
+ * The open post's rescue button: Undo rescue on a rescued post with no decision; Rescue on a
+ * Junk post or a Disqualified role. None on a role rejected for a blocked author (Unblock
+ * comes instead), nor on one the user moved out of Review (`post_rescue` refuses it: its raw
+ * outcome is still review).
+ */
+function rescueControl(f: {
+  jobId: string;
+  list: PostList;
+  rows: MatchRow[];
+  details: PostDetails | null;
+  rescues: RescueRow[];
+  closeHref: string;
+}): React.ReactNode {
+  const { jobId, closeHref } = f;
+  const rescued = f.rescues.find((r) => r.jobId === jobId);
+  if (rescued || f.details?.rescue)
+    return rescued?.decisionStatus == null &&
+      f.rows.every((r) => r.decisionStatus == null) ? (
+      <RescueControls jobId={jobId} mode="undo" closeHref={closeHref} />
+    ) : null;
+  if (f.list === 'junk' && f.details && f.rows.length === 0)
+    return <RescueControls jobId={jobId} mode="rescue" closeHref={closeHref} />;
+  if (f.list !== 'disqualified' || f.rows.length === 0) return null;
+  if (f.rows.some((r) => r.reviewChoice != null)) return null;
+  if (f.rows.some((r) => hasFailed(r.checks, 'blockedAuthor'))) return null;
+  return <RescueControls jobId={jobId} mode="rescue" closeHref={closeHref} />;
+}
 
 /**
  * The social posts page: four tabs (Matches, Review, Disqualified, Junk) beside the selected
@@ -191,6 +228,16 @@ export function PostsView({
   const own = selected?.filter((r) => r.profileId === state.profile) ?? [];
   const detailRows = own.length ? own : (selected ?? []);
   const backHref = href({ ...state, job: null });
+  const rescue = state.job
+    ? rescueControl({
+        jobId: state.job,
+        list: state.list,
+        rows: detailRows,
+        details,
+        rescues,
+        closeHref: backHref,
+      })
+    : null;
   let detail: React.ReactNode;
   if (state.job === null) detail = <MatchEmpty kind="pick" />;
   else if (detailRows.length === 0)
@@ -202,6 +249,7 @@ export function PostsView({
         now={now}
         userId={userId}
         backHref={backHref}
+        actions={rescue}
       />
     ) : (
       <div className="flex flex-col gap-6">
@@ -228,7 +276,12 @@ export function PostsView({
         onReport={reportMismatchAction}
         postings={[]}
         actions={
-          details ? <PostSection details={details} now={now} /> : undefined
+          details || rescue ? (
+            <>
+              {rescue}
+              {details && <PostSection details={details} now={now} />}
+            </>
+          ) : undefined
         }
       />
     );
