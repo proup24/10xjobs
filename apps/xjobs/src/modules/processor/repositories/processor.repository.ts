@@ -188,7 +188,7 @@ export interface ProcessingCounts {
 
 /**
  * Every read and write the processor makes. A job is in scope when it is
- * active and either a `job` with at least one LinkedIn job board source, or a
+ * active and either a `job` with at least one LinkedIn job board or Indeed source, or a
  * `post` first seen within 7 days whose authors are not all silenced (see
  * `processorScopeSql`); nothing here claims or reprocesses any other job, and
  * never a `post_role` job.
@@ -258,7 +258,7 @@ const UUID = 'pg/uuid@1';
 type LinkedInJobIds = ReturnType<ReturnType<Raw['sql']>['returnsRow']>;
 
 /**
- * Ids of jobs with a LinkedIn job board source (harvestapi or trial channel). Spliced into the statements
+ * Ids of jobs with a LinkedIn job board or Indeed source (the `PROCESSOR_CHANNELS`). Spliced into the statements
  * below as `id IN (…)`; the job's own columns are checked on the updated row
  * itself, so a concurrent change to them is seen (see `claim`).
  */
@@ -301,7 +301,7 @@ export function postScopeSql(raw: Raw, alias: string) {
 }
 
 /**
- * True when the job aliased `alias` has a LinkedIn job board source: the same
+ * True when the job aliased `alias` has a LinkedIn job board or Indeed source: the same
  * test as `id IN (linkedInJobIds)`, but correlated, so inside an OR it probes
  * that job's sources by index instead of hashing every LinkedIn source. The
  * processor's scope and the matcher's matchable test both use it.
@@ -320,7 +320,7 @@ export function hasLinkedInSourceSql(raw: Raw, alias: string) {
 
 /**
  * The processor's scope on the job aliased `alias`: a listing `job` with a
- * LinkedIn job board source, or an in-window, unsilenced `post`. Never a
+ * LinkedIn job board or Indeed source, or an in-window, unsilenced `post`. Never a
  * `post_role` job. The caller checks `status = 'active'`.
  */
 export function processorScopeSql(raw: Raw, alias: string) {

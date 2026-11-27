@@ -43,7 +43,11 @@ export async function processIngestJob(
       onPending: async ({ channel, jobIds }) => {
         // Other channels' jobs are out of the processor's scope: it would only
         // fail to claim them.
-        if (!isLinkedinJobBoard(channel) && channel !== Channel.LINKEDIN_POSTS)
+        if (
+          !isLinkedinJobBoard(channel) &&
+          channel !== Channel.INDEED &&
+          channel !== Channel.LINKEDIN_POSTS
+        )
           return;
         // A posts batch holds only post jobs: at the posts' lower priority.
         for (const jobId of jobIds)

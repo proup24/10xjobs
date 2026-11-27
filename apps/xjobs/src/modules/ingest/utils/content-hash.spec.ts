@@ -5,6 +5,7 @@ import linkedinJob from './fixtures/linkedin-job.json';
 import cheapJob from './fixtures/linkedin-job-cheap.json';
 import harvestJobs from './fixtures/linkedin-job-harvest.json';
 import linkedinPost from './fixtures/linkedin-post.json';
+import indeedJobs from './fixtures/indeed-valig.json';
 import { contentHash } from './content-hash';
 
 describe('contentHash', () => {
@@ -38,6 +39,36 @@ describe('contentHash', () => {
     expect(contentHash(Channel.LINKEDIN_JOB_BOARD, later)).toBe(
       contentHash(Channel.LINKEDIN_JOB_BOARD, linkedinJob),
     );
+  });
+
+  it("ignores employer ratings and images in an Indeed item's hash", () => {
+    const [item] = indeedJobs as unknown as {
+      title: string;
+      employer?: Record<string, unknown>;
+    }[];
+    const base = {
+      ...item!,
+      employer: {
+        ...item!.employer,
+        ratingsCount: 10,
+        ratingsValue: 4.1,
+        logoUrl: 'https://a/logo.png',
+      },
+    };
+    const later = {
+      ...base,
+      employer: {
+        ...base.employer,
+        ratingsCount: 11,
+        ratingsValue: 4.2,
+        logoUrl: 'https://b/logo.png',
+        headerImageUrl: 'https://b/h.png',
+        ceoPhotoUrl: 'https://b/c.png',
+      },
+    };
+    const hash = (x: unknown) => contentHash(Channel.INDEED, x);
+    expect(hash(later)).toBe(hash(base));
+    expect(hash({ ...base, title: 'Another title' })).not.toBe(hash(base));
   });
 
   it('ignores what changes on an unchanged harvestapi job, and sees a changed description', () => {

@@ -78,7 +78,7 @@ describe('mapIndeedJob', () => {
 
   it('ignores a remote tag the employer did not set', () => {
     const { DSQF7: _remote, ...rest } = remote.employerAttributes;
-    const item = { ...remote, employerAttributes: rest };
+    const item: Record<string, any> = { ...remote, employerAttributes: rest };
     expect(item.attributes.DSQF7).toBeDefined();
     expect(mapped(item).workplaceType).toBeNull();
   });
