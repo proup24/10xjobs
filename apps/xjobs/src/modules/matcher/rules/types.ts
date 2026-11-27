@@ -104,8 +104,6 @@ export interface MatchJob {
   jobId: string;
   extractionId: string;
   factsHash: string;
-  /** From the current extraction; not part of the facts. */
-  needsReview: boolean;
   facts: JobFactsDocument;
   /** Null for a listing. */
   post: PostContext | null;
