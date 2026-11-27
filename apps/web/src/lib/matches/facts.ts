@@ -14,7 +14,7 @@ export type FactLines = {
   salary: FactLine | null;
 };
 
-/** A worded fact and where it came from: the description, or the LinkedIn listing. */
+/** A worded fact and where it came from: the description, or the listing. */
 export type FactLine = { text: string; source: FactSource };
 export type FactSource = 'description' | 'linkedin';
 
@@ -211,8 +211,8 @@ function conflictValue(v: unknown): string | null {
 }
 
 /**
- * Where the LinkedIn listing disagreed with the description, by fact, worded as
- * "LinkedIn says X". A fact with no conflict is absent.
+ * Where the listing disagreed with the description, by fact, worded as
+ * "The listing says X". A fact with no conflict is absent.
  */
 export function conflictLines(
   conflicts: unknown,
@@ -222,7 +222,7 @@ export function conflictLines(
     const field = obj(c)?.field;
     const text = conflictValue(obj(c)?.listingValue);
     if (text && CONFLICT_FIELDS.some((f) => f === field))
-      out[field as ConflictField] = `LinkedIn says ${text}`;
+      out[field as ConflictField] = `The listing says ${text}`;
   }
   return out;
 }

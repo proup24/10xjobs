@@ -133,7 +133,7 @@ describe('combineFacts', () => {
         arrangementSource: 'linkedin',
         placesSource: 'linkedin',
         confidence: 'sure',
-        quote: expect.stringContaining('LinkedIn'),
+        quote: expect.stringContaining('Listing'),
       },
     ]);
     expect(facts.arrangement).toMatchObject({
@@ -315,7 +315,7 @@ describe('combineFacts', () => {
         places: [{ kind: 'country', code: 'EG' }],
         placeStrictness: 'label',
         timezones: [tz],
-        quote: 'LinkedIn: Cairo, Egypt',
+        quote: 'Listing: Cairo, Egypt',
         confidence: 'sure',
         arrangementSource: 'linkedin',
         placesSource: 'linkedin',
@@ -358,7 +358,7 @@ describe('combineFacts', () => {
         places: [{ kind: 'country', code: 'US' }],
         placeStrictness: 'label',
         placesSource: 'linkedin',
-        quote: 'also welcomes remote candidacy | LinkedIn: New York, NY',
+        quote: 'also welcomes remote candidacy | Listing: New York, NY',
       },
     ]);
   });
@@ -387,7 +387,7 @@ describe('combineFacts', () => {
         places: [{ kind: 'country', code: 'DK' }],
         placeStrictness: 'label',
         quote:
-          'deliver managed solutions across EMEA | LinkedIn: Copenhagen, Denmark',
+          'deliver managed solutions across EMEA | Listing: Copenhagen, Denmark',
         arrangementSource: 'linkedin',
         placesSource: 'linkedin',
       }),
@@ -631,7 +631,7 @@ describe('combineFacts', () => {
           places: [{ kind: 'country', code: 'US' }],
           placeStrictness: 'label',
           timezones: [],
-          quote: expect.stringContaining('LinkedIn: United States'),
+          quote: expect.stringContaining('Listing: United States'),
           confidence: 'sure',
           arrangementSource: 'description',
           placesSource: 'linkedin',

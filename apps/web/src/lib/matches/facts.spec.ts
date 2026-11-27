@@ -226,8 +226,8 @@ describe('conflictLines', () => {
         { field: 'unknown', listingValue: 'x' },
       ]),
     ).toEqual({
-      arrangement: 'LinkedIn says onsite',
-      places: 'LinkedIn says United States',
+      arrangement: 'The listing says onsite',
+      places: 'The listing says United States',
     });
     expect(conflictLines(null)).toEqual({});
   });
