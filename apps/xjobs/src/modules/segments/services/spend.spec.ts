@@ -96,6 +96,20 @@ describe('nextMoroccoDayStart', () => {
 
   // Morocco changes offset at 02:00 UTC on 2026-02-15 and 2026-03-22 (tzdata
   // 2026e); the next midnight is the day start of an instant just after it.
+  // The Ramadan day is 25 hours (offset change at 02:00 UTC 2026-02-15) and
+  // the one after is 23 hours; "day start of now + 24h" is wrong near them.
+  it('finds the next midnight when the local day is 25 hours long', () => {
+    expect(
+      nextMoroccoDayStart(new Date('2026-02-14T23:30:00Z')).toISOString(),
+    ).toBe('2026-02-16T00:00:00.000Z');
+  });
+
+  it('finds the next midnight before the 23-hour day', () => {
+    expect(
+      nextMoroccoDayStart(new Date('2026-03-21T23:30:00Z')).toISOString(),
+    ).toBe('2026-03-22T00:00:00.000Z');
+  });
+
   it('matches the day start just after the next midnight across an offset change', () => {
     for (const iso of [
       '2026-02-14T12:00:00Z',

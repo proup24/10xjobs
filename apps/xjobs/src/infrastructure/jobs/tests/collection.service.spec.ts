@@ -19,7 +19,11 @@ import {
 import { FakeActivityRepository } from 'src/modules/activity/testing/fakes';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
-import { segmentHash, segmentKey } from 'src/modules/segments';
+import {
+  PostsBudgetService,
+  segmentHash,
+  segmentKey,
+} from 'src/modules/segments';
 import {
   FakeLinkedinSearchSplitsRepository,
   FakeSearchSegmentsRepository,
@@ -127,6 +131,7 @@ function setup(
     queries as unknown as QuerySearchService,
     segments,
     splits,
+    new PostsBudgetService(segments, { get: configGet } as never),
     activity,
     storage,
     ingestQueue as unknown as IngestQueue,

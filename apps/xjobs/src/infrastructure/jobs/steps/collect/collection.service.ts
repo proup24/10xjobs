@@ -38,7 +38,7 @@ import {
   type SegmentQueryOutcome,
   DailyBudget,
   LinkedinSearchSplitsRepository,
-  POSTS_MIN_LEFT_USD,
+  PostsBudgetService,
   POSTS_NULL_COST_MICRO_USD,
   moroccoDayStart,
   planSegments,
@@ -117,6 +117,7 @@ export class CollectionService {
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
     private readonly splits: LinkedinSearchSplitsRepository,
+    private readonly postsBudget: PostsBudgetService,
     private readonly activity: ActivityRepository,
     private readonly storage: StorageService,
     private readonly ingestQueue: IngestQueue,
@@ -324,7 +325,7 @@ export class CollectionService {
       (channel === Channel.LINKEDIN_POSTS
         ? postsBudgetReached(budget)
         : budget.reached ||
-          (chargesFromBudget(channel) && budget.leftUsd < minLeftUsd(channel)))
+          (channel === Channel.INDEED && budget.leftUsd < INDEED_MIN_LEFT_USD))
     ) {
       // Not a failure: no run started and no cursor moved, so the next tick re-covers the window.
       this.logBudgetReached(channel, budget);
@@ -415,6 +416,10 @@ export class CollectionService {
     now: Date,
   ): Promise<DailyBudget | undefined> {
     if (!hasDailyBudget(channel)) return undefined;
+    if (channel === Channel.LINKEDIN_POSTS) {
+      const day = await this.postsBudget.today(now);
+      return new DailyBudget(day.limitUsd, day.spentMicroUsd, day.dayStart);
+    }
     const dayStart = moroccoDayStart(now);
     const spent = await this.segments.spentMicroUsd(
       channel,
@@ -831,11 +836,6 @@ function chargesFromBudget(
   channel: Channel,
 ): channel is Channel.LINKEDIN_POSTS | Channel.INDEED {
   return channel === Channel.LINKEDIN_POSTS || channel === Channel.INDEED;
-}
-
-/** The least left of the day's budget with which a budget-charged channel starts a run. */
-function minLeftUsd(channel: Channel): number {
-  return channel === Channel.INDEED ? INDEED_MIN_LEFT_USD : POSTS_MIN_LEFT_USD;
 }
 
 /** What a capped channel's run with no recorded cost counts as toward the day. */
