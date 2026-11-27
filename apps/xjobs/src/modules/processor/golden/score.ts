@@ -433,7 +433,7 @@ function requiredDiff(
 /**
  * Technology recall and precision on required (main + must) and on nice, by
  * code; kind on the technologies both list; domain and years only once a
- * human has labeled them (`drafted.requirements` reviewed).
+ * human has labeled them (`drafted.requirements` reviewed and the value set).
  */
 function scoreRequirements(
   doc: ExtractionDocument,
@@ -471,10 +471,16 @@ function scoreRequirements(
     counts.kindTotal++;
     if (match.some((r) => r.kind === want.kind)) counts.kindRight++;
     if (!labeled) continue;
-    counts.domainTotal++;
-    if (match.some((r) => r.domain === want.domain)) counts.domainRight++;
-    counts.yearsTotal++;
-    if (match.some((r) => sameRange(r.years, want.years))) counts.yearsRight++;
+    // A null domain or years in a reviewed label means "not labeled", not "none".
+    if (want.domain !== null) {
+      counts.domainTotal++;
+      if (match.some((r) => r.domain === want.domain)) counts.domainRight++;
+    }
+    if (want.years !== null) {
+      counts.yearsTotal++;
+      if (match.some((r) => sameRange(r.years, want.years)))
+        counts.yearsRight++;
+    }
   }
   return counts;
 }

@@ -340,6 +340,44 @@ describe('requirement scores', () => {
       yearsAccuracy: 0,
     });
   });
+
+  it('reads a null domain or years in a reviewed label as not labeled', () => {
+    const doc = fixtureDocument();
+    const [node, sql] = doc.techStack.value?.requirements ?? [];
+    Object.assign(node, { domain: 'backend', years: { min: 2, max: null } });
+    Object.assign(sql, { domain: 'data', years: { min: 5, max: null } });
+    const c = matchingCase();
+    c.drafted.requirements = { value: null, reviewed: true };
+    c.expected.requirements = [
+      req('Node', 'nodejs', 'main'),
+      req('SQL', 'sql', 'must'),
+    ];
+    expect(summarize([scoreCase(doc, c)]).requirements).toMatchObject({
+      domainAccuracy: null,
+      yearsAccuracy: null,
+    });
+  });
+
+  it('still scores a non-null domain or years in a reviewed label', () => {
+    const doc = fixtureDocument();
+    const [node, sql] = doc.techStack.value?.requirements ?? [];
+    Object.assign(node, { domain: 'backend', years: { min: 2, max: null } });
+    Object.assign(sql, { domain: 'data', years: { min: 5, max: null } });
+    const c = matchingCase();
+    c.drafted.requirements = { value: null, reviewed: true };
+    c.expected.requirements = [
+      req('Node', 'nodejs', 'main'),
+      { ...req('SQL', 'sql', 'must'), domain: 'backend' },
+      { ...req('Rust', 'rust', 'nice'), years: { min: 1, max: null } },
+    ];
+    const counts = scoreCase(doc, c).requirements;
+    expect(counts).toMatchObject({
+      domainRight: 0,
+      domainTotal: 1,
+      yearsRight: 0,
+      yearsTotal: 1,
+    });
+  });
 });
 
 describe('reportFileName', () => {
