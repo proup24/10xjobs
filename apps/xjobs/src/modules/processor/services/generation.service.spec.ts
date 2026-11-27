@@ -154,6 +154,36 @@ describe('GenerationService', () => {
     ]);
   });
 
+  it('a generation that runs out of turns on every try fails with the message', async () => {
+    const model = new FakeExtractionModel(
+      sequence<unknown>(
+        new ModelOutputError(
+          'max turns: no StructuredOutput call in 3 requests',
+          undefined,
+          [],
+        ),
+      ),
+      EXT,
+    );
+
+    const result = await service(model).generateWith(
+      echoSpec,
+      input,
+      vocabulary,
+      log,
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      errors: ['max turns: no StructuredOutput call in 3 requests'],
+    });
+    expect(model.calls.map((c) => c.req.retryErrors)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
   it("retries the spec's assembler error with its message, then fails", async () => {
     const model = new FakeExtractionModel(() => ({ word: 'bad' }), EXT);
 
