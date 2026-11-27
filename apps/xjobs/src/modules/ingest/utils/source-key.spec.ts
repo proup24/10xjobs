@@ -169,6 +169,25 @@ describe('sourceKey', () => {
     });
   });
 
+  describe('Indeed', () => {
+    it('uses the Indeed job key', () => {
+      expect(sourceKey(Channel.INDEED, { key: ' 5e5dafc2a80c214d ' })).toEqual({
+        key: 'jk:5e5dafc2a80c214d',
+      });
+    });
+
+    it('refuses an item without a job key', () => {
+      expect(
+        sourceKey(Channel.INDEED, {
+          url: 'https://www.indeed.com/viewjob?jk=1',
+        }),
+      ).toEqual({ invalid: 'no Indeed job key' });
+      expect(sourceKey(Channel.INDEED, { key: '' })).toEqual({
+        invalid: 'no Indeed job key',
+      });
+    });
+  });
+
   it('rejects a payload that is not a JSON object', () => {
     for (const payload of [null, 'x', 3, ['a']])
       expect(sourceKey(Channel.LINKEDIN_JOB_BOARD, payload)).toEqual({
