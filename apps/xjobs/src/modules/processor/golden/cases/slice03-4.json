@@ -12,12 +12,7 @@
         ],
         "places": [
           {
-            "kind": "country",
-            "code": "US"
-          },
-          {
-            "kind": "country",
-            "code": "CA"
+            "kind": "worldwide"
           }
         ],
         "placeStrictness": "mention"

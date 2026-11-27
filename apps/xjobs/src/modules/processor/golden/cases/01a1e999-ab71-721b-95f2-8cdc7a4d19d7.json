@@ -20,13 +20,30 @@
       }
     ],
     "roleKind": "other",
-    "seniority": "senior",
+    "seniority": "unstated",
     "yearsRequired": {
       "min": 8,
       "max": null
     },
     "contractMonths": null,
-    "requirements": [],
+    "requirements": [
+      {
+        "text": "AWS",
+        "code": "aws",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Azure",
+        "code": "azure",
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": null
+      }
+    ],
     "groups": [],
     "requiredLanguages": [],
     "sponsorship": "unstated",

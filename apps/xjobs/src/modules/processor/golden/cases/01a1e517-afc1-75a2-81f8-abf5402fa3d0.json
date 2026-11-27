@@ -120,6 +120,22 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "IBM i / AS400",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "REST APIs",
+        "code": "rest",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -153,7 +169,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

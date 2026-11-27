@@ -14,7 +14,7 @@
         "placeStrictness": "unstated"
       }
     ],
-    "roleKind": "data_engineer",
+    "roleKind": "backend_engineer",
     "seniority": "junior",
     "yearsRequired": null,
     "contractMonths": null,
@@ -30,6 +30,14 @@
       {
         "text": "microservices",
         "code": "microservices",
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "cloud platforms",
+        "code": null,
         "kind": "nice",
         "domain": null,
         "years": null,
@@ -57,7 +65,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

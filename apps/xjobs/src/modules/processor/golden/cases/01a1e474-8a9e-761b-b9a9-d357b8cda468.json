@@ -20,7 +20,7 @@
         "placeStrictness": "label"
       }
     ],
-    "roleKind": "security_engineer",
+    "roleKind": "cloud_engineer",
     "seniority": "senior",
     "yearsRequired": {
       "min": 7,
@@ -59,6 +59,14 @@
         "domain": null,
         "years": null,
         "group": null
+      },
+      {
+        "text": "OCI",
+        "code": null,
+        "kind": "nice",
+        "domain": null,
+        "years": null,
+        "group": null
       }
     ],
     "groups": [],
@@ -82,7 +90,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

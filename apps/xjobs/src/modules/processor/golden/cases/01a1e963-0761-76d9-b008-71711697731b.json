@@ -72,7 +72,7 @@
       {
         "text": "TypeScript",
         "code": "typescript",
-        "kind": "main",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": null
@@ -144,7 +144,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

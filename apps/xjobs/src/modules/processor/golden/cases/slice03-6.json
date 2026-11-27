@@ -51,7 +51,7 @@
       {
         "text": "TypeScript",
         "code": "typescript",
-        "kind": "nice",
+        "kind": "main",
         "domain": null,
         "years": null,
         "group": null
@@ -59,7 +59,7 @@
       {
         "text": "React",
         "code": "react",
-        "kind": "nice",
+        "kind": "main",
         "domain": null,
         "years": null,
         "group": null
@@ -67,7 +67,7 @@
       {
         "text": "Python",
         "code": "python",
-        "kind": "nice",
+        "kind": "main",
         "domain": null,
         "years": null,
         "group": null
@@ -75,7 +75,7 @@
       {
         "text": "Postgres",
         "code": "postgresql",
-        "kind": "nice",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": null
@@ -83,7 +83,7 @@
       {
         "text": "Kubernetes",
         "code": "kubernetes",
-        "kind": "nice",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": null
@@ -91,7 +91,7 @@
       {
         "text": "AWS",
         "code": "aws",
-        "kind": "nice",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": null
@@ -128,7 +128,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }

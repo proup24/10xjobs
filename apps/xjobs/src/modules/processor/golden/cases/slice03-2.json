@@ -28,14 +28,6 @@
         "group": null
       },
       {
-        "text": "CI/CD",
-        "code": "ci_cd",
-        "kind": "must",
-        "domain": null,
-        "years": null,
-        "group": null
-      },
-      {
         "text": "Python",
         "code": "python",
         "kind": "must",
@@ -70,7 +62,7 @@
       {
         "text": "GitHub Actions",
         "code": "github_actions",
-        "kind": "nice",
+        "kind": "must",
         "domain": null,
         "years": null,
         "group": null
@@ -107,7 +99,7 @@
     },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }
