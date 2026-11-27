@@ -515,7 +515,6 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       const j = await job();
       expect(await repo.loadCandidate(j.id)).toEqual({
         extractionId: j.extractionId,
-        needsReview: false,
         kind: 'job',
         post: null,
       });
@@ -1162,7 +1161,6 @@ describe.skipIf(!url)('matcher repository in PostgreSQL', () => {
       const role = await roleJob({ postedAt, verdictConfidence: 'unsure' });
       expect(await repo.loadCandidate(role.id)).toEqual({
         extractionId: role.extractionId,
-        needsReview: false,
         kind: 'post_role',
         post: {
           verdictConfidence: 'unsure',

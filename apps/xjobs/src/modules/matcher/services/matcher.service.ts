@@ -58,7 +58,6 @@ export class MatcherService {
       jobId,
       extractionId: built.extractionId,
       factsHash: built.factsHash,
-      needsReview: candidate.needsReview,
       facts: built.facts,
       post: candidate.post ? this.postContext(candidate.post) : null,
     };

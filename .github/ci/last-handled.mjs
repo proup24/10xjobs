@@ -1,4 +1,4 @@
-// Finds the commit a workflow last handled, from the run names of successful runs on main.
+// Finds the commit a workflow last handled, from the run names of its successful runs.
 // Usage: node .github/ci/last-handled.mjs --workflow <file.yml> --job <name>
 // Prints the SHA, or nothing. Always exits 0; on an API error it warns on stderr.
 import { execFileSync } from 'node:child_process';
@@ -11,6 +11,7 @@ export function extractSha(title) {
 
 export function pickLastHandled(runs, jobConclusion) {
   for (const run of runs) {
+    if (run.status !== 'completed' || run.conclusion !== 'success') continue;
     if (jobConclusion(run.id) === 'success')
       return extractSha(run.display_title);
   }
@@ -39,8 +40,10 @@ function main(argv) {
   const workflow = arg(argv, '--workflow');
   const job = arg(argv, '--job');
   // No branch filter: a rollback dispatched from another ref still counts as handled.
+  // No status filter either: GitHub's filtered list sometimes leaves out a
+  // successful run (seen 2026-11-27), so successful runs are picked here.
   const { workflow_runs: runs } = gh(
-    `repos/${repo}/actions/workflows/${workflow}/runs?status=success&per_page=30`,
+    `repos/${repo}/actions/workflows/${workflow}/runs?per_page=50`,
   );
   const conclusion = (id) =>
     gh(`repos/${repo}/actions/runs/${id}/jobs?per_page=100`).jobs.find(
