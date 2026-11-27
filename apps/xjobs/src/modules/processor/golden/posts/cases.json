@@ -2855,14 +2855,14 @@
         "applyKinds": ["external_link"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "fullstack_engineer",
+          "roleKind": "ai_training",
           "arrangement": "remote"
         },
         "reviewed": true,
         "reviewedBy": "owner"
       }
     ],
-    "note": "'Hiring: Remote Full Stack Engineers' at Turing (AI training), with apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Remote Full Stack Engineers: roleKind fullstack_engineer."
+    "note": "'Hiring: Remote Full Stack Engineers' at Turing (AI training), with apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Remote Full Stack Engineers: roleKind fullstack_engineer. Owner relabelled 2026-11-27: roleKind ai_training (slice 03 definition: the work trains or evaluates AI coding models)."
   },
   {
     "rawItemId": "01a1ffe8-daa5-75cc-9186-c0c9959a7114",
@@ -4135,14 +4135,14 @@
         "applyKinds": ["external_link"],
         "contactEmail": null,
         "facts": {
-          "roleKind": "backend_engineer",
+          "roleKind": "ai_training",
           "arrangement": "remote"
         },
         "reviewed": true,
         "reviewedBy": "owner"
       }
     ],
-    "note": "relays Forward Deployed Engineer contract (Joblet-AI/micro1), remote, apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Forward Deployed Engineer (FDE): roleKind backend_engineer."
+    "note": "relays Forward Deployed Engineer contract (Joblet-AI/micro1), remote, apply link. Owner ruled 2026-11-24 (role facts, Extract's reading): Forward Deployed Engineer (FDE): roleKind backend_engineer. Owner relabelled 2026-11-27: roleKind ai_training (slice 03 definition: the work trains or evaluates AI coding models)."
   },
   {
     "rawItemId": "01a1fd5a-67bf-733e-9475-b115a9ec9eb8",
