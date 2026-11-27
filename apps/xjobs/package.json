@@ -26,6 +26,7 @@
     "processor:post-golden-import": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-post-golden-import.ts",
     "processor:golden-draft": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-draft.ts",
     "processor:eval": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-eval.ts",
+    "processor:golden-review": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-golden-review.ts",
     "processor:smoke": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/processor-smoke.ts",
     "apify:probe-linkedin": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/probe-linkedin-search.ts",
     "apify:linkedin-plan-test": "tsx --conditions=@xjobs/source --tsconfig tsconfig.app.json src/scripts/linkedin-plan-test.ts",

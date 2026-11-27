@@ -1,10 +1,10 @@
 /**
  * Drafts the golden labels career-hub lacks (arrangement, contract type,
- * software-engineering role, engagement) with the extraction model:
+ * software-engineering role) with the extraction model:
  *
  *   pnpm --filter @xjobs/xjobs processor:golden-draft
  *
- * Calls `claude -p` (the Claude subscription). For each case missing a `drafted` key it writes all four
+ * Calls `claude -p` (the Claude subscription). For each case missing a `drafted` key it writes all three
  * values with `reviewed: false`. A human then reads every one and sets
  * `reviewed: true` (or corrects the value); the eval ignores the rest.
  */
@@ -34,7 +34,6 @@ const KEYS: LabelKey[] = [
   'arrangement',
   'contractType',
   'isSoftwareEngineeringRole',
-  'engagement',
 ];
 
 const codes = (list: keyof typeof SEED) => SEED[list].map((t) => t.code);
@@ -44,7 +43,6 @@ const SYSTEM_PROMPT = [
   '- arrangement: where the work is done (remote, hybrid or onsite), or unstated.',
   '- contractType: the contract type offered, or unstated.',
   '- isSoftwareEngineeringRole: true when the job is mainly building or running software.',
-  '- engagement: how the person is engaged (employee, contractor, eor, agency, per_task), or unstated.',
   'Use "unstated" whenever the posting does not say. Never guess.',
 ].join('\n');
 
@@ -55,7 +53,6 @@ const SCHEMA = z.strictObject({
   arrangement: codeEnum('arrangements'),
   contractType: codeEnum('contractTypes'),
   isSoftwareEngineeringRole: z.boolean(),
-  engagement: codeEnum('engagements'),
 });
 
 async function main(): Promise<void> {

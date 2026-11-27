@@ -1,0 +1,68 @@
+{
+  "id": "01a1ef64-6d77-7009-8709-76ee8c2c75b1",
+  "input": {
+    "title": "Senior Full Stack Engineer",
+    "description": "About the role\n\nI run a fast-growing DTC e-commerce brand with a 40+ person team, including an in-house editing team that produces video ads every day. Tech is the part of the company I'm investing in the most right now: today it's one senior engineer, and it's going to become a real department.\n\n\nI'm hiring a second senior developer to work side by side with him on custom AI tools for the editing team: automatic video generation, AI talking heads, and pipelines that turn one winning ad into many variations.\n\n\nWhat you'll build\n\n * AI video pipelines for ads with Higgsfield, Kie AI, Kling, Veo, Seedance, ElevenLabs and similar models and APIs\n * Automatic assembly of long multi-scene ads (ffmpeg, Remotion or similar): captions, audio, transitions\n * A browser-based editing tool where the editors fine-tune what the AI generates\n * AI talking heads and lip sync for video ads\n\n\nWhat I'm looking for\n\n * A senior developer with strong engineering fundamentals\n * Hands-on experience with AI video generation and video processing (FFmpeg, Remotion or similar)\n * Full-time and exclusive, available to start soon\n\n\nWhat you get\n\n * Real responsibility and a lot of freedom from day one\n * Growth tied to impact, up to leading a team as the department grows\n * Very well paid, full-time, remote, long term\n\n\nBig plus if you speak Serbian, Croatian or Bosnian, like my senior engineer."
+  },
+  "expected": {
+    "openings": [
+      {
+        "arrangements": [
+          "remote"
+        ],
+        "places": [],
+        "placeStrictness": "unstated"
+      }
+    ],
+    "roleKind": "fullstack_engineer",
+    "seniority": "senior",
+    "yearsRequired": null,
+    "contractMonths": null,
+    "requirements": [
+      {
+        "text": "FFmpeg",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "Remotion",
+        "code": null,
+        "kind": "must",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      }
+    ],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      }
+    ],
+    "requiredLanguages": [],
+    "sponsorship": "unstated",
+    "salary": null,
+    "junkFlags": []
+  },
+  "drafted": {
+    "arrangement": {
+      "value": "remote",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "full_time",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
+    "requirements": {
+      "value": null,
+      "reviewed": true
+    }
+  }
+}

@@ -7,7 +7,10 @@
   "expected": {
     "openings": [
       {
-        "arrangements": ["remote", "hybrid"],
+        "arrangements": [
+          "remote",
+          "hybrid"
+        ],
         "places": [
           {
             "kind": "city",
@@ -29,7 +32,7 @@
         "kind": "main",
         "domain": null,
         "years": null,
-        "group": null
+        "group": "g1"
       },
       {
         "text": "Vue",
@@ -37,10 +40,51 @@
         "kind": "main",
         "domain": null,
         "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "JavaScript",
+        "code": "javascript",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g1"
+      },
+      {
+        "text": "React",
+        "code": "react",
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": "g2"
+      },
+      {
+        "text": "Nuxt 3",
+        "code": null,
+        "kind": "main",
+        "domain": null,
+        "years": null,
+        "group": null
+      },
+      {
+        "text": "Kubernetes",
+        "code": "kubernetes",
+        "kind": "must",
+        "domain": null,
+        "years": null,
         "group": null
       }
     ],
-    "groups": [],
+    "groups": [
+      {
+        "id": "g1",
+        "min": 1
+      },
+      {
+        "id": "g2",
+        "min": 1
+      }
+    ],
     "requiredLanguages": [
       {
         "lang": "en",
@@ -52,9 +96,21 @@
     "junkFlags": []
   },
   "drafted": {
+    "arrangement": {
+      "value": "hybrid",
+      "reviewed": true
+    },
+    "contractType": {
+      "value": "unstated",
+      "reviewed": true
+    },
+    "isSoftwareEngineeringRole": {
+      "value": true,
+      "reviewed": true
+    },
     "requirements": {
       "value": null,
-      "reviewed": false
+      "reviewed": true
     }
   }
 }
