@@ -28,5 +28,5 @@ export function skipShareSql(raw: Raw, days: number) {
 export function skipShareLine(skipped: number, total: number): string {
   const share =
     total === 0 ? 'n/a' : ((skipped / total) * 100).toFixed(1) + '%';
-  return `Skipped before processing: ${skipped} of ${total} new LinkedIn listings (${share})`;
+  return `Skipped before processing: ${skipped} of ${total} new listings (${share})`;
 }

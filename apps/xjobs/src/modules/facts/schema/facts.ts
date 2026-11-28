@@ -42,7 +42,7 @@ const sourcedFactSchema = <T extends z.ZodType>(value: T) =>
 /**
  * The processor opening, with where each part came from in place of who decided it:
  * its arrangement and its places can come from different sources. `confidence` describes
- * the description-sourced parts; a part from LinkedIn is sure.
+ * the description-sourced parts; a part from the listing is sure.
  */
 const factOpeningSchema = openingSchema.omit({ decidedBy: true }).extend({
   arrangementSource: factSourceSchema,
@@ -123,7 +123,7 @@ export const jobFactsDocumentSchema = z
     });
   });
 
-/** The facts the matcher reads, combined from the description and the LinkedIn listing. */
+/** The facts the matcher reads, combined from the description and the listing. */
 export type JobFactsDocument = z.infer<typeof jobFactsDocumentSchema>;
 export type FactOpening = z.infer<typeof factOpeningSchema>;
 export type FactSalary = z.infer<typeof factSalarySchema>;

@@ -24,6 +24,13 @@ describe('channelBadges', () => {
       'LinkedIn · cheap_scraper',
     ]);
   });
+  it('labels Indeed with no actor', () => {
+    expect(channelBadges(['INDEED', 'LINKEDIN_JOB_BOARD'])).toEqual([
+      'LinkedIn · harvestapi',
+      'Indeed',
+    ]);
+    expect(sourceText(['INDEED'])).toBe('Indeed');
+  });
   it('dedupes', () => {
     expect(channelBadges(['ASHBY', 'ASHBY'])).toEqual(['Ashby']);
   });

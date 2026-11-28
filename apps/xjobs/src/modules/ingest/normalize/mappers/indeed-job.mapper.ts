@@ -1,0 +1,121 @@
+import type { NormalizeContext } from '../normalize';
+import { httpUrl } from '../linkedin';
+import { emptyRecord, type NormalizedRecord } from '../record';
+import {
+  cleanNumber,
+  cleanText,
+  datePart,
+  htmlToPlainText,
+  objectAt,
+} from '../text';
+
+/** Employer tag codes in `employerAttributes`. */
+const REMOTE_TAG = 'DSQF7';
+const HYBRID_TAG = 'PAXZC';
+
+const SALARY_PERIODS: Record<string, string> = {
+  YEAR: 'YEARLY',
+  MONTH: 'MONTHLY',
+  DAY: 'DAILY',
+  HOUR: 'HOURLY',
+};
+
+/** True for `indeed.com` and any `*.indeed.com` host. */
+export function isIndeedHost(url: URL): boolean {
+  const host = url.hostname.toLowerCase();
+  return host === 'indeed.com' || host.endsWith('.indeed.com');
+}
+
+/** An ISO datetime for a valid date string, else null. */
+function isoDate(value: unknown): string | null {
+  const raw = cleanText(value);
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/** What the employer set: remote beats hybrid; no tag is unknown, never on-site. */
+function workplaceType(
+  employerAttributes: unknown,
+): 'remote' | 'hybrid' | null {
+  const tags = objectAt(employerAttributes);
+  if (REMOTE_TAG in tags) return 'remote';
+  if (HYBRID_TAG in tags) return 'hybrid';
+  return null;
+}
+
+/** valig's `jobTypes` (an object of code to label): the value when there is one, else unknown. */
+function singleJobType(jobTypes: unknown): string | null {
+  const values = Array.isArray(jobTypes)
+    ? jobTypes
+    : Object.values(objectAt(jobTypes));
+  if (values.length !== 1) return null;
+  return cleanText(values[0]);
+}
+
+function salaryOf(baseSalary: unknown): NormalizedRecord['salary'] {
+  const pay = objectAt(baseSalary);
+  const min = cleanNumber(pay.min);
+  const max = cleanNumber(pay.max);
+  if (min === null && max === null) return null;
+  const unit = cleanText(pay.unitOfWork);
+  return {
+    text: null,
+    min,
+    max,
+    currency: cleanText(pay.currencyCode),
+    period: unit ? (SALARY_PERIODS[unit] ?? unit) : null,
+    providedByEmployer: true,
+  };
+}
+
+/** One `valig/indeed-jobs-scraper` dataset item to the unified record. */
+export function mapIndeedJob(
+  payload: Record<string, unknown>,
+  _ctx: NormalizeContext,
+): NormalizedRecord | { invalid: string } {
+  const place = objectAt(payload.location);
+  const employer = objectAt(payload.employer);
+  const description = objectAt(payload.description);
+  const rawCity = cleanText(place.city);
+  const admin1 = cleanText(place.admin1Code);
+  // A numeric admin1 code is not a place name.
+  const state = admin1 && !/^\d+$/.test(admin1) ? admin1 : null;
+  const parts = [rawCity, state, cleanText(place.countryName)].filter(
+    (part): part is string => part !== null,
+  );
+  const countryCode = cleanText(place.countryCode)?.toUpperCase() ?? null;
+  const descriptionHtml = cleanText(description.html);
+  const jobUrl = httpUrl(payload.jobUrl);
+  const key = cleanText(payload.key);
+  const posting = httpUrl(payload.url);
+  if (posting) posting.protocol = 'https:';
+  const postedAt =
+    isoDate(payload.datePublished) ?? isoDate(payload.dateOnIndeed);
+  const postingUrl =
+    posting?.href ?? (key ? `https://www.indeed.com/viewjob?jk=${key}` : null);
+  if (!postingUrl) return { invalid: 'no Indeed job key or URL' };
+  return emptyRecord({
+    kind: 'job',
+    title: cleanText(payload.title),
+    companyName: cleanText(employer.name),
+    companyUrl: httpUrl(employer.companyPageUrl)?.href ?? null,
+    location: parts.length ? parts.join(', ') : null,
+    countryCode:
+      countryCode && /^[A-Z]{2}$/.test(countryCode) ? countryCode : null,
+    city: rawCity && !/^remote$/i.test(rawCity) ? rawCity : null,
+    state,
+    workplaceType: workplaceType(payload.employerAttributes),
+    salary: salaryOf(payload.baseSalary),
+    publishedAt: datePart(postedAt),
+    postedAt,
+    expiresAt: isoDate(payload.expirationDate),
+    contractType: singleJobType(payload.jobTypes),
+    descriptionHtml,
+    descriptionText:
+      cleanText(description.text) ??
+      (descriptionHtml ? cleanText(htmlToPlainText(descriptionHtml)) : null),
+    applyUrl: jobUrl && !isIndeedHost(jobUrl) ? jobUrl.href : null,
+    postingUrl,
+  });
+}

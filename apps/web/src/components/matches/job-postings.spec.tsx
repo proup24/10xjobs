@@ -7,7 +7,7 @@ const now = new Date('2026-11-17T12:00:00Z');
 
 const posting = (over: Partial<JobPosting>): JobPosting => ({
   rawItemId: 'r',
-  channel: 'linkedin-job-board',
+  channel: 'LINKEDIN_JOB_BOARD',
   title: 'Engineer',
   location: 'Berlin',
   postedAt: '2026-11-17T09:00:00Z',
@@ -35,6 +35,33 @@ const two = [
 ];
 
 afterEach(cleanup);
+
+describe('posting link wording', () => {
+  it('names the posting source', () => {
+    render(
+      <JobPostings
+        postings={[
+          two[0],
+          posting({
+            rawItemId: 'i',
+            channel: 'INDEED',
+            postingUrl: 'https://www.indeed.com/viewjob?jk=1',
+          }),
+          posting({
+            rawItemId: 'x',
+            channel: 'SOMETHING_ELSE',
+            postingUrl: 'https://example.com/jobs/1',
+          }),
+        ]}
+        now={now}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('View on Indeed')).toBeTruthy();
+    expect(screen.getByText('View on LinkedIn')).toBeTruthy();
+    expect(screen.getByText('View posting')).toBeTruthy();
+  });
+});
 
 describe('actor badge', () => {
   it('names the actor on a cheap posting', () => {

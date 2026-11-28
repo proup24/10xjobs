@@ -240,7 +240,7 @@ export const SECTIONS: {
     // those whose current status is 'skipped' (the pre-LLM check). The sample
     // is random, so it differs on every run.
     title:
-      '14. Skipped before processing (last 7 days; new LinkedIn listings first seen in the window)',
+      '14. Skipped before processing (last 7 days; new listings first seen in the window)',
     sql: (
       raw,
     ) => raw.sql`SELECT coalesce(jsonb_agg(t), '[]'::jsonb) AS rows FROM (
@@ -274,9 +274,7 @@ export const SECTIONS: {
     // prefix dropped and array indices folded to N.
     title:
       '15. Claude call requests (last 7 days; calls with a turn record): requests per call, what repeats did, max turns, top rejections',
-    sql: (
-      raw,
-    ) => raw.sql`SELECT coalesce(jsonb_agg(to_jsonb(t) - 'p' - 'o'
+    sql: (raw) => raw.sql`SELECT coalesce(jsonb_agg(to_jsonb(t) - 'p' - 'o'
           ORDER BY t.p, t.kind, t.o, t.count DESC, t.key), '[]'::jsonb) AS rows FROM (
         WITH a AS (
           SELECT "docType" AS kind, turns,

@@ -27,7 +27,7 @@ export type UncheckedJob = PrefilterJob & { id: string };
 /**
  * Every read and write the prefilter makes. It only ever looks at `pending`
  * listing jobs (`kind = 'job'`) in the processor's scope (an active job with a
- * LinkedIn job board source, see `processorScopeSql`) that have no current
+ * LinkedIn job board or Indeed source, see `processorScopeSql`) that have no current
  * extraction and were not queued as `joined`: a job that was processed once,
  * a post, a post role or a joined job is never skipped.
  */

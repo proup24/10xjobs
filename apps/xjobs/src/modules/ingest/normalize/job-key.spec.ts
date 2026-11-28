@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { Channel } from 'src/common/enums';
 import { emptyRecord, type NormalizedRecord } from '.';
 import { canonicalApplyUrl, jobKey, linkKeysOf } from './job-key';
+import fixtures from '../utils/fixtures/indeed-valig.json';
+import { normalize } from './normalize';
 import { comparableText } from './posts/clean';
 import type { PostAuthor, PostDetail } from './record';
 
@@ -89,6 +91,22 @@ describe('jobKey', () => {
     expect(liJob('https://SII.pl/en/job-ads/id/38247?sii_source=10', '2')).toBe(
       tracked,
     );
+  });
+
+  it('unifies one posting seen through LinkedIn and Indeed board markers', () => {
+    const base = 'https://jobs.lever.co/acme/1234-5678';
+    expect(liJob(`${base}?lever-source=LinkedIn`)).toBe(
+      liJob(`${base}?lever-source=Indeed`),
+    );
+    expect(liJob(`${base}?iis=Indeed&iisn=Indeed&indeed-apply-token=abc`)).toBe(
+      liJob(base),
+    );
+    expect(liJob(`${base}?jobSite=Indeed`)).toBe(liJob(base));
+    expect(
+      liJob(
+        'https://acme.bamboohr.com/careers/25?source=indeed&postedDate=2026-11-23',
+      ),
+    ).toBe(liJob('https://acme.bamboohr.com/careers/25'));
   });
 
   it('falls back to the LinkedIn id for an apply URL with no identifier', () => {
@@ -428,5 +446,47 @@ describe('linkKeysOf', () => {
         'https://www.linkedin.com/jobs/view/2/?trk=y',
       ]),
     ).toEqual(['linkedin-job:1', 'linkedin-job:2']);
+  });
+});
+
+describe('jobKey for Indeed', () => {
+  const [remote, moroccan] = fixtures as Record<string, any>[];
+  const record = (item: unknown, applyUrl?: string | null) => {
+    const result = normalize(Channel.INDEED, item, {
+      scrapedAt: new Date('2026-11-27T00:00:00.000Z'),
+    });
+    if (!('record' in result)) throw new Error(result.invalid);
+    return applyUrl === undefined
+      ? result.record
+      : { ...result.record, applyUrl };
+  };
+  const indeed = (rec: NormalizedRecord, key = 'abc123') =>
+    jobKey(Channel.INDEED, `jk:${key}`, rec);
+
+  it("joins an Indeed job to harvestapi's job for the same Workday link", () => {
+    const rec = record(remote);
+    expect(rec.applyUrl).toContain('source=Indeed');
+    const key = indeed(rec);
+    expect(key.startsWith('url:')).toBe(true);
+    expect(key).toBe(liJob(rec.applyUrl));
+  });
+
+  it('keys an Indeed job with a Greenhouse link by its posting', () => {
+    const rec = record(
+      remote,
+      'https://job-boards.greenhouse.io/affirm/jobs/8016868003',
+    );
+    expect(indeed(rec).startsWith('ats:greenhouse/')).toBe(true);
+  });
+
+  it('falls back to indeed-job for an Indeed-hosted link', () => {
+    const rec = record(moroccan);
+    expect(rec.applyUrl).toBeNull();
+    expect(indeed(rec, 'k9')).toBe('indeed-job:k9');
+  });
+
+  it('falls back to indeed-job for a link with no identifier', () => {
+    const rec = record(remote, 'https://acme.com/careers');
+    expect(indeed(rec, 'k9')).toBe('indeed-job:k9');
   });
 });

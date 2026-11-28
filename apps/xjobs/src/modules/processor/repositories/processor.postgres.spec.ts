@@ -314,6 +314,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
       expect(await repo.listPendingInScope(10)).toContain(id);
     });
 
+    it('lists a job whose only source is Indeed', async () => {
+      const id = await job({ channels: [Channel.INDEED] });
+      expect(await repo.listPendingInScope(10)).toContain(id);
+    });
+
     it('orders by processingRequestedAt and respects the limit', async () => {
       const later = await job({
         requestedAt: new Date(t0.getTime() + minutes(5)),
@@ -380,6 +385,11 @@ describe.skipIf(!url)('processor repositories in PostgreSQL', () => {
 
     it('claims a job whose only source is on the trial channel', async () => {
       const id = await job({ channels: [Channel.LINKEDIN_JOB_BOARD_CHEAP] });
+      expect(await repo.claim(id)).not.toBeNull();
+    });
+
+    it('claims an Indeed-only job', async () => {
+      const id = await job({ channels: [Channel.INDEED] });
       expect(await repo.claim(id)).not.toBeNull();
     });
 

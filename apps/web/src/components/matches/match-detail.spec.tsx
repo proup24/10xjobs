@@ -314,7 +314,7 @@ describe('MatchDetail', () => {
     expect(contract?.textContent).toBe('Not stated');
   });
 
-  it('shows "From LinkedIn" next to a LinkedIn fact only', () => {
+  it('shows "From the listing" next to a listing fact only', () => {
     renderDetail([
       matchRow({
         facts: {
@@ -323,14 +323,14 @@ describe('MatchDetail', () => {
         },
       }),
     ]);
-    expect(screen.getAllByText('From LinkedIn')).toHaveLength(1);
+    expect(screen.getAllByText('From the listing')).toHaveLength(1);
     const arrangement = screen.getByText('Arrangement').parentElement;
-    expect(arrangement?.textContent).toContain('From LinkedIn');
+    expect(arrangement?.textContent).toContain('From the listing');
     const role = screen.getByText('Role').parentElement;
-    expect(role?.textContent).not.toContain('From LinkedIn');
+    expect(role?.textContent).not.toContain('From the listing');
   });
 
-  it('shows "From LinkedIn" on places only when only the places came from LinkedIn', () => {
+  it('shows "From the listing" on places only when only the places came from the listing', () => {
     renderDetail([
       matchRow({
         facts: {
@@ -342,11 +342,11 @@ describe('MatchDetail', () => {
         },
       }),
     ]);
-    expect(screen.getAllByText('From LinkedIn')).toHaveLength(1);
+    expect(screen.getAllByText('From the listing')).toHaveLength(1);
     const places = screen.getByText('Europe (CET)').parentElement;
-    expect(places?.textContent).toContain('From LinkedIn');
+    expect(places?.textContent).toContain('From the listing');
     const arrangement = screen.getByText('Arrangement').parentElement;
-    expect(arrangement?.textContent).not.toContain('From LinkedIn');
+    expect(arrangement?.textContent).not.toContain('From the listing');
   });
 
   it('lists a conflict under its fact', () => {
@@ -363,8 +363,8 @@ describe('MatchDetail', () => {
       }),
     ]);
     const arrangement = screen.getByText('Arrangement').parentElement;
-    expect(arrangement?.textContent).toContain('LinkedIn says onsite');
-    expect(screen.getAllByText('LinkedIn says onsite')).toHaveLength(1);
+    expect(arrangement?.textContent).toContain('The listing says onsite');
+    expect(screen.getAllByText('The listing says onsite')).toHaveLength(1);
   });
 
   it('renders a row without job facts', () => {
@@ -372,7 +372,7 @@ describe('MatchDetail', () => {
     expect(screen.getByText('Role').nextElementSibling?.textContent).toBe(
       'Not stated',
     );
-    expect(screen.queryByText('From LinkedIn')).toBeNull();
+    expect(screen.queryByText('From the listing')).toBeNull();
   });
 
   it('shows the stated salary', () => {
@@ -480,7 +480,7 @@ describe('MatchDetail', () => {
         .getAttribute('href'),
     ).toBe('/');
   });
-  it("MatchDetail on a review row shows the rule, the unsure fact's quote and the LinkedIn value", () => {
+  it("MatchDetail on a review row shows the rule, the unsure fact's quote and the listing value", () => {
     renderDetail([reviewRow()], vi.fn());
     const why = screen.getByText("Why it's in review").closest('section');
     if (!why) throw new Error('no section');
@@ -491,13 +491,13 @@ describe('MatchDetail', () => {
     expect(
       w.getByText('“You will lead as a staff-level engineer”'),
     ).toBeTruthy();
-    expect(w.getByText('LinkedIn says Mid-Senior level')).toBeTruthy();
+    expect(w.getByText('The listing says Mid-Senior level')).toBeTruthy();
     // A review row did not match: its checks are not "why it matched".
     expect(screen.queryByText(/Why it matched/)).toBeNull();
     expect(screen.getByText('Checks · Full-stack engineer')).toBeTruthy();
   });
 
-  it('names the location fact and its LinkedIn places on an openings review', () => {
+  it('names the location fact and its listing places on an openings review', () => {
     const row = reviewRow();
     renderDetail(
       [
@@ -524,7 +524,7 @@ describe('MatchDetail', () => {
     expect(within(why).getByText('Location')).toBeTruthy();
     expect(within(why).getByText('Where and how you work')).toBeTruthy();
     expect(within(why).getByText('“Remote in Europe”')).toBeTruthy();
-    expect(within(why).getByText('LinkedIn says France')).toBeTruthy();
+    expect(within(why).getByText('The listing says France')).toBeTruthy();
   });
 
   it('shows no decision buttons on a qualified row', () => {

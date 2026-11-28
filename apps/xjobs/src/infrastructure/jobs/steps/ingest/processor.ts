@@ -1,11 +1,12 @@
 import { UnrecoverableError } from 'bullmq';
 import { z } from 'zod';
-import { Channel, isLinkedinJobBoard } from 'src/common/enums';
+import { Channel } from 'src/common/enums';
 import {
   type BatchIngestService,
   type RawStorageRepository,
   ingestConfig,
 } from 'src/modules/ingest';
+import { PROCESSOR_CHANNELS } from 'src/modules/processor';
 import type { ProcessQueue } from '../process/queue.service';
 import { INGEST_BATCH_JOB, type IngestQueue, SWEEP_JOB } from './queue.service';
 
@@ -43,7 +44,10 @@ export async function processIngestJob(
       onPending: async ({ channel, jobIds }) => {
         // Other channels' jobs are out of the processor's scope: it would only
         // fail to claim them.
-        if (!isLinkedinJobBoard(channel) && channel !== Channel.LINKEDIN_POSTS)
+        if (
+          !PROCESSOR_CHANNELS.includes(channel) &&
+          channel !== Channel.LINKEDIN_POSTS
+        )
           return;
         // A posts batch holds only post jobs: at the posts' lower priority.
         for (const jobId of jobIds)

@@ -91,7 +91,7 @@ async function readRow(
 
 /**
  * Logs a mismatch the user found between a fact and the job post. The processor's value,
- * its quote, LinkedIn's value and the extraction id are copied from the job's `match_details` row here, never
+ * its quote, the listing's value and the extraction id are copied from the job's `match_details` row here, never
  * taken from the client. A job the user has no match on is `invalid`. Nothing reads these
  * reports yet. Log lines carry ids and error codes only.
  */

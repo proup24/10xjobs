@@ -5,7 +5,11 @@ import { useId, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { TextLink } from '@/components/ui/text';
-import { channelBadges } from '@/lib/matches/sources';
+import {
+  channelBadges,
+  channelLabel,
+  CHANNEL_LABELS,
+} from '@/lib/matches/sources';
 import { timeAgo } from '@/lib/matches/freshness';
 import { groupPostings } from '@/lib/matches/posting-groups';
 import type { JobPosting } from '@/lib/matches/postings';
@@ -18,6 +22,13 @@ export function MergedBadge({ postings }: { postings: JobPosting[] }) {
   const count = groupPostings(postings).length;
   if (count < 2) return null;
   return <Badge variant="secondary">{`Merged · ${count} postings`}</Badge>;
+}
+
+/** "View on Indeed", per source; "View posting" for a channel with no label. */
+function postingLinkText(channel: string): string {
+  return channel in CHANNEL_LABELS
+    ? `View on ${channelLabel(channel)}`
+    : 'View posting';
 }
 
 /** What differs from the posting shown above, as marks. */
@@ -75,7 +86,7 @@ export function JobPostings({
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      View on LinkedIn
+                      {postingLinkText(p.channel)}
                     </TextLink>
                   )}
                   {channelBadges(p.channels).map((b) => (

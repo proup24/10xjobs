@@ -87,7 +87,7 @@ export function linkKeysOf(links: string[]): string[] {
 }
 
 function sourceId(sourceKey: string): string {
-  return sourceKey.startsWith('id:') ? sourceKey.slice(3) : sourceKey;
+  return /^(?:id|jk):/.test(sourceKey) ? sourceKey.slice(3) : sourceKey;
 }
 
 /**
@@ -124,7 +124,9 @@ export function postJobKey(
 /**
  * The job's real id, from exact facts only. An Ashby or Greenhouse item is its
  * posting. A LinkedIn job is the posting its apply URL names, else that URL
- * when it carries an identifier, else its own LinkedIn id. A trial actor's
+ * when it carries an identifier, else its own LinkedIn id. An Indeed job is
+ * keyed the same way (so it joins harvestapi's job for the same link), else by
+ * its own `indeed-job:<key>`. A trial actor's
  * item is always its LinkedIn id. A post is keyed by its original's text (with
  * its attached links) when that text is long enough, whole and its author is
  * known (the same original shared or reposted is one job, exact matches only),
@@ -155,8 +157,13 @@ export function jobKey(
       if (key) return key;
       return `linkedin-job:${sourceId(sourceKey)}`;
     }
-    case Channel.INDEED:
-      throw new Error('Indeed ingest lands in Phase 5 slice 04');
+    case Channel.INDEED: {
+      const apply = record.applyUrl;
+      return (
+        (apply ? applyUrlKey(apply) : null) ??
+        `indeed-job:${sourceId(sourceKey)}`
+      );
+    }
   }
 }
 

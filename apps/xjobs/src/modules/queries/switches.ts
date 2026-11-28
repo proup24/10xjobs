@@ -17,7 +17,7 @@ export type SearchSwitch = {
   column: SwitchColumn;
   /** Builders' channel, for detach. */
   channel: Channel | null;
-  /** Shown and changeable, for every user. A later slice (Indeed rollout, Phase 4 slice 04b for posts) sets it. */
+  /** Shown and changeable, for every user. Posts stays off until Phase 4 slice 04b sets it. */
   available: boolean;
   /** The recipes the switch adds after the board recipes. */
   recipes(input: QuerySearchProfileInput): QuerySearchRecipe[];
@@ -44,7 +44,7 @@ export const SEARCH_SWITCHES: readonly SearchSwitch[] = [
     key: 'indeed',
     column: 'indeedSearch',
     channel: Channel.INDEED,
-    available: false,
+    available: true,
     recipes: indeedRecipes,
   },
 ];

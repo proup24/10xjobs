@@ -9,6 +9,13 @@ export const normalizeConfig = {
     'ref',
     'src',
     'source',
+    // Board markers: LinkedIn and Indeed add these to one posting's apply URL.
+    'lever-source',
+    'iis',
+    'iisn',
+    'indeed-apply-token',
+    'postedDate',
+    'jobSite',
   ],
   /** A non-ATS apply URL is a job id only if its path or query has one of these. */
   identifierPattern:

@@ -266,7 +266,7 @@ describe('CollectionService.collect', () => {
     expect(summary).not.toHaveProperty('inserted');
   });
 
-  it('stores an Indeed batch without enqueueing it', async () => {
+  it('stores an Indeed batch and enqueues it for ingest', async () => {
     const rows = builders(1, { channel: Channel.INDEED });
     const { collection, segments, ingestQueue } = setup(
       rows,
@@ -280,7 +280,7 @@ describe('CollectionService.collect', () => {
     expect(segments.collected[0]!.batch.storageKey.startsWith('INDEED/')).toBe(
       true,
     );
-    expect(ingestQueue.enqueue).not.toHaveBeenCalled();
+    expect(ingestQueue.enqueue).toHaveBeenCalledTimes(1);
   });
 
   it('records the search totals a run reports with its segment run', async () => {

@@ -103,10 +103,10 @@ function overlaps(a: Place, b: Place, vocab: PlaceVocabulary): boolean {
   return contains(a, b, vocab) || contains(b, a, vocab);
 }
 
-/** "LinkedIn: remote, Paris, France": the quote of a fact taken from the listing. */
+/** "Listing: remote, Paris, France": the quote of a fact taken from the listing. */
 function listingQuote(...parts: (string | null)[]): string {
   const said = parts.filter((p): p is string => !!p);
-  return said.length ? `LinkedIn: ${said.join(', ')}` : 'LinkedIn listing';
+  return said.length ? `Listing: ${said.join(', ')}` : 'Listing';
 }
 
 /** The description's top-level arrangement, when it states one. */

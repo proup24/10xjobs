@@ -5,7 +5,8 @@
  *   pnpm --filter @xjobs/xjobs db:spellings -- --days 7
  *   pnpm --filter @xjobs/xjobs db:spellings -- --days 7 --check-totals --dry-run
  *
- * Reads processed LinkedIn jobs last seen in the last N days (default 7) and
+ * Reads processed LinkedIn and Indeed listings (both share the search
+ * recipe's spellings) last seen in the last N days (default 7) and
  * prints a JSON report:
  * - technologies: per searched technology, over the jobs the processor tagged
  *   with it, each candidate form's share of job texts (title and description),

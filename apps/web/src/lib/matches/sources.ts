@@ -5,6 +5,7 @@ export const CHANNEL_LABELS: Record<string, string> = {
   LINKEDIN_POSTS: 'LinkedIn posts',
   GREEN_HOUSE: 'Greenhouse',
   ASHBY: 'Ashby',
+  INDEED: 'Indeed',
 };
 
 export const channelLabel = (channel: string): string =>

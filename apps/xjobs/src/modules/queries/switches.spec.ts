@@ -21,7 +21,7 @@ const input: QuerySearchProfileInput = {
 const byKey = (key: string) => SEARCH_SWITCHES.find((sw) => sw.key === key)!;
 
 describe('search switches', () => {
-  it('lists posts and indeed, both unavailable', () => {
+  it('lists posts (unavailable) and indeed (available)', () => {
     expect(
       SEARCH_SWITCHES.map(({ key, column, channel, available }) => ({
         key,
@@ -40,7 +40,7 @@ describe('search switches', () => {
         key: 'indeed',
         column: 'indeedSearch',
         channel: Channel.INDEED,
-        available: false,
+        available: true,
       },
     ]);
   });
@@ -68,10 +68,10 @@ describe('search switches', () => {
     ).toEqual([]);
   });
 
-  it("the indeed switch is INDEED's and stays unavailable", () => {
+  it("the indeed switch is INDEED's and available", () => {
     const sw = byKey('indeed');
     expect(sw.channel).toBe(Channel.INDEED);
-    expect(sw.available).toBe(false);
+    expect(sw.available).toBe(true);
     expect(sw.recipes).toBe(indeedRecipes);
     // No market rows or places on this input: nothing to search.
     expect(sw.recipes(input)).toEqual([]);

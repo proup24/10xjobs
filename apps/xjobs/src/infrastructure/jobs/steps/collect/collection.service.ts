@@ -322,8 +322,7 @@ export class CollectionService {
     if (
       budget &&
       (budget.reached ||
-        (chargesFromBudget(channel) &&
-          budget.leftUsd < minLeftUsd(channel)))
+        (chargesFromBudget(channel) && budget.leftUsd < minLeftUsd(channel)))
     ) {
       // Not a failure: no run started and no cursor moved, so the next tick re-covers the window.
       this.logBudgetReached(channel, budget);
@@ -724,7 +723,7 @@ export class CollectionService {
   }
 
   private async enqueueBatch(batchId: string, channel: Channel): Promise<void> {
-    // Stored and pending; ingest picks it up once its channel stops waiting.
+    // A channel waiting for its ingest stays stored and pending until it stops waiting.
     if (INGEST_WAITING_CHANNELS.includes(channel)) return;
     try {
       await this.ingestQueue.enqueue(batchId);
