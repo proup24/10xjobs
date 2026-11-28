@@ -36,7 +36,7 @@ export interface SavedFacts {
 
 /** Every read and write the facts build makes. */
 export abstract class FactsRepository {
-  /** The job's current extraction and its LinkedIn listing columns; null without a current extraction. */
+  /** The job's current extraction and its listing columns; null without a current extraction. */
   abstract loadInputs(jobId: string): Promise<FactsInputs | null>;
   /** The stored hash and version, never the build time. */
   abstract current(

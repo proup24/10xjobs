@@ -55,7 +55,7 @@ describe('mapIndeedJob', () => {
       contractType: 'Temps plein',
       countryCode: 'MA',
       city: 'Rabat',
-      state: '4',
+      state: null,
       regionCode: null,
       location: 'Rabat, Maroc',
       salary: null,
@@ -162,6 +162,18 @@ describe('mapIndeedJob', () => {
       url: 'http://ma.indeed.com/viewjob?jk=abc',
     });
     expect(record.postingUrl).toBe('https://ma.indeed.com/viewjob?jk=abc');
+  });
+});
+
+describe('contractType', () => {
+  it('takes the only job type', () => {
+    const one = { ...remote, jobTypes: { A: 'Contract' } };
+    expect(mapped(one).contractType).toBe('Contract');
+  });
+
+  it('is unknown when there are several job types', () => {
+    const many = { ...remote, jobTypes: { A: 'Full-time', B: 'Contract' } };
+    expect(mapped(many).contractType).toBeNull();
   });
 });
 

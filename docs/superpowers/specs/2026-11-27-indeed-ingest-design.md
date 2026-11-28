@@ -34,7 +34,7 @@ Indeed jobs collected by valig (slice 03) go through the same pipeline as Linked
 
 - One Indeed daily cap ($0.50 on the hosted engine today, on a $5 one-off Apify account), shared by every profile with Indeed on. With the switch open, several users' searches can use it up early in the day, and later ticks are refused (the owner's included). Accepted while only invited users exist; watched in the 2026-11-30 checks (slice 03a). A per-profile share of the cap is its own slice if it bites.
 - Claude quota: LinkedIn brings about 1,800–2,900 new listings per weekday on dev (2026-11-20 to 11-25). Indeed's 2026-11-27 evening ticks returned 128 rows in two ticks, so a weekday adds a few hundred rows at most, many of them repeats: about 10% more processing. The processor's daily budget and weekly stop, and the existing prefilter (skips hybrid/on-site jobs in countries no profile wants), already apply.
-- `NORMALIZER_VERSION` bumps to 11 (a mapper, the job key and the tracking parameters change). `db:renormalize` then `db:recheck-skips` run once on dev after deploy, because LinkedIn `url:` keys carrying the newly dropped parameters change (see Job key).
+- `NORMALIZER_VERSION` bumps to 11 (a mapper, the job key and the tracking parameters change). `db:renormalize`, then `db:role-links` (stored post-role `linkKeys` keep the old parameters), then `db:recheck-skips` run once on dev after deploy, because LinkedIn `url:` keys carrying the newly dropped parameters change (see Job key).
 
 ## Approaches
 
@@ -127,7 +127,7 @@ It credits jobs by batch actor, so it should work unchanged with `--actor valig/
 
 ## Rollout on dev (in the PR body)
 
-1. Merge and deploy. The waiting Indeed batches ingest through the sweep. Then run `db:renormalize` and `db:recheck-skips` once on dev (`XJOBS_ALLOW_REMOTE_DB=1`), and check that the count of LinkedIn jobs whose key changed is about the expected 256 plus the others' share, and that any merges it made are true twins.
+1. Merge and deploy. The waiting Indeed batches ingest through the sweep. Then run `db:renormalize`, `db:role-links` (`--dry-run` first, then for real) and `db:recheck-skips` once on dev (`XJOBS_ALLOW_REMOTE_DB=1`), and check that the count of LinkedIn jobs whose key changed is about the expected 256 plus the others' share, and that any merges it made are true twins.
 2. Check: every waiting batch `ingested`; Indeed raw items and normalized jobs exist; invalid items, if any, listed with reasons.
 3. Check: Indeed jobs reach the processor and get extractions; then match decisions with reasons for the owner's profile.
 4. Check: proven merges (an Indeed source on a job that also has a harvestapi or ATS source) counted; Indeed-only jobs counted.

@@ -44,16 +44,13 @@ function workplaceType(
   return null;
 }
 
-/** The first of valig's `jobTypes` (an object of code to label). */
-function firstJobType(jobTypes: unknown): string | null {
+/** valig's `jobTypes` (an object of code to label): the value when there is one, else unknown. */
+function singleJobType(jobTypes: unknown): string | null {
   const values = Array.isArray(jobTypes)
     ? jobTypes
     : Object.values(objectAt(jobTypes));
-  for (const value of values) {
-    const text = cleanText(value);
-    if (text) return text;
-  }
-  return null;
+  if (values.length !== 1) return null;
+  return cleanText(values[0]);
 }
 
 function salaryOf(baseSalary: unknown): NormalizedRecord['salary'] {
@@ -72,7 +69,7 @@ function salaryOf(baseSalary: unknown): NormalizedRecord['salary'] {
   };
 }
 
-/** One `valig/indeed-scraper` dataset item to the unified record. */
+/** One `valig/indeed-jobs-scraper` dataset item to the unified record. */
 export function mapIndeedJob(
   payload: Record<string, unknown>,
   _ctx: NormalizeContext,
@@ -81,12 +78,12 @@ export function mapIndeedJob(
   const employer = objectAt(payload.employer);
   const description = objectAt(payload.description);
   const rawCity = cleanText(place.city);
-  const state = cleanText(place.admin1Code);
-  const parts = [
-    rawCity,
-    state && !/^\d+$/.test(state) ? state : null,
-    cleanText(place.countryName),
-  ].filter((part): part is string => part !== null);
+  const admin1 = cleanText(place.admin1Code);
+  // A numeric admin1 code is not a place name.
+  const state = admin1 && !/^\d+$/.test(admin1) ? admin1 : null;
+  const parts = [rawCity, state, cleanText(place.countryName)].filter(
+    (part): part is string => part !== null,
+  );
   const countryCode = cleanText(place.countryCode)?.toUpperCase() ?? null;
   const descriptionHtml = cleanText(description.html);
   const jobUrl = httpUrl(payload.jobUrl);
@@ -113,7 +110,7 @@ export function mapIndeedJob(
     publishedAt: datePart(postedAt),
     postedAt,
     expiresAt: isoDate(payload.expirationDate),
-    contractType: firstJobType(payload.jobTypes),
+    contractType: singleJobType(payload.jobTypes),
     descriptionHtml,
     descriptionText:
       cleanText(description.text) ??

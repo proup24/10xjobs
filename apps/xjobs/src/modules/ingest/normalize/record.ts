@@ -17,7 +17,8 @@ import { z } from 'zod';
  * `bench-sales-hotlist`); run `db:renormalize`.
  * Version 11 maps Indeed (valig) items and drops the board markers
  * `lever-source`, `iis`, `iisn`, `indeed-apply-token`, `postedDate`, `jobSite` from
- * apply-URL keys; run `db:renormalize`, then `db:recheck-skips`.
+ * apply-URL keys; run `db:renormalize`, then `db:role-links` (dry run first;
+ * stored post-role link keys keep the old parameters), then `db:recheck-skips`.
  */
 export const NORMALIZER_VERSION = 11;
 
