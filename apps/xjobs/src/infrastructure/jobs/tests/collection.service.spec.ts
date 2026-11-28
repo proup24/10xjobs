@@ -1400,7 +1400,10 @@ describe('CollectionService posts budget and incomplete runs', () => {
       );
     };
 
-    expect(await ran(1, 5)).toEqual(await ran(5, 1));
+    // One run per group, in key order: the keys hold the geoIds, and europe's
+    // ("100506914") sorts before emea's ("91000007"), whichever waited longer.
+    expect(await ran(1, 5)).toEqual([['europe'], ['emea']]);
+    expect(await ran(5, 1)).toEqual([['europe'], ['emea']]);
   });
 
   it('skips posts segments once less than a cent is left', async () => {
