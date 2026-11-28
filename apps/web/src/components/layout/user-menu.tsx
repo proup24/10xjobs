@@ -22,6 +22,9 @@ function AdminItem({ admin }: { admin: Promise<boolean> }) {
       <DropdownMenuItem render={<Link href="/admin/rescues" />}>
         Admin: Rescues
       </DropdownMenuItem>
+      <DropdownMenuItem render={<Link href="/admin/posts-budget" />}>
+        Admin: Posts budget
+      </DropdownMenuItem>
     </>
   );
 }

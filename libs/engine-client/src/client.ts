@@ -63,6 +63,28 @@ export type VerdictView = {
   url: string;
   extractedAt: string;
 };
+/** One Morocco day of post search spend. */
+export type PostsBudgetDayView = {
+  dayStart: string;
+  spentUsd: number;
+  reachedAt: string | null;
+};
+/** The owner's post search budget report (`GET /api/admin/posts-budget`). */
+export type PostsBudgetView = {
+  limitUsd: number;
+  today: PostsBudgetDayView;
+  /** The 7 Morocco days before today, newest first. */
+  days: PostsBudgetDayView[];
+  /** Most behind first. */
+  searches: {
+    key: string;
+    profiles: number;
+    oldestCoveredUntil: string | null;
+    overDay: boolean;
+  }[];
+  pausedBuilders: number;
+  fullRuns: { key: string; runs: number; lastAt: string }[];
+};
 /** One post rescue, for the owner's report (`GET /api/admin/rescues`). */
 export type RescueView = {
   id: string;
@@ -169,6 +191,8 @@ export interface EngineClient {
   adminRescues(options?: {
     limit?: number;
   }): Promise<EngineResult<{ items: RescueView[] }>>;
+  /** Post search spend against the daily limit, and how far behind the searches are. */
+  adminPostsBudget(): Promise<EngineResult<PostsBudgetView>>;
   /** Who automatic silencing would silence now; already silenced authors are left out. */
   autoSilenceCandidates(): Promise<EngineResult<AutoSilenceCandidateView[]>>;
   silencedAuthors(): Promise<EngineResult<SilencedAuthorView[]>>;
@@ -270,6 +294,43 @@ function isRescueView(v: unknown): v is RescueView {
     typeof v.job.postingUrl === 'string' &&
     isRecord(v.user) &&
     typeof v.user.id === 'string'
+  );
+}
+
+function isPostsBudgetDayView(v: unknown): v is PostsBudgetDayView {
+  return (
+    isRecord(v) &&
+    typeof v.dayStart === 'string' &&
+    typeof v.spentUsd === 'number' &&
+    isNullableString(v.reachedAt)
+  );
+}
+
+function isPostsBudgetView(v: unknown): v is PostsBudgetView {
+  return (
+    isRecord(v) &&
+    typeof v.limitUsd === 'number' &&
+    isPostsBudgetDayView(v.today) &&
+    Array.isArray(v.days) &&
+    v.days.every(isPostsBudgetDayView) &&
+    Array.isArray(v.searches) &&
+    v.searches.every(
+      (x) =>
+        isRecord(x) &&
+        typeof x.key === 'string' &&
+        typeof x.profiles === 'number' &&
+        isNullableString(x.oldestCoveredUntil) &&
+        typeof x.overDay === 'boolean',
+    ) &&
+    typeof v.pausedBuilders === 'number' &&
+    Array.isArray(v.fullRuns) &&
+    v.fullRuns.every(
+      (x) =>
+        isRecord(x) &&
+        typeof x.key === 'string' &&
+        typeof x.runs === 'number' &&
+        typeof x.lastAt === 'string',
+    )
   );
 }
 
@@ -798,6 +859,12 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
           data.items.every(isRescueView)
             ? { items: data.items }
             : undefined,
+      ),
+    adminPostsBudget: () =>
+      admin(
+        'adminPostsBudget',
+        { method: 'GET', path: '/admin/posts-budget' },
+        (data) => (isPostsBudgetView(data) ? data : undefined),
       ),
     autoSilenceCandidates: () =>
       admin(

@@ -9,6 +9,8 @@ export type {
   EngineResult,
   HeldPostView,
   PostSearchView,
+  PostsBudgetDayView,
+  PostsBudgetView,
   PublishedProfile,
   RescueView,
   ReviewPage,

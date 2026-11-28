@@ -504,6 +504,37 @@ describe('engine client admin review', () => {
     expect(await bad.client.adminRescues()).toEqual({ kind: 'unavailable' });
   });
 
+  it('adminPostsBudget sends GET /admin/posts-budget and checks the shape', async () => {
+    const day = {
+      dayStart: '2026-11-26T23:00:00.000Z',
+      spentUsd: 2.4,
+      reachedAt: null,
+    };
+    const view = {
+      limitUsd: 3,
+      today: day,
+      days: [day],
+      searches: [
+        { key: 'k', profiles: 2, oldestCoveredUntil: null, overDay: false },
+      ],
+      pausedBuilders: 1,
+      fullRuns: [{ key: 'k', runs: 2, lastAt: '2026-11-27T10:00:00.000Z' }],
+    };
+    const { client, fetchMock } = setup(() => ok(view));
+    expect(await client.adminPostsBudget()).toEqual({
+      kind: 'ok',
+      data: view,
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/admin/posts-budget');
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+    const bad = setup(() => ok({ ...view, days: [{ dayStart: 1 }] }));
+    expect(await bad.client.adminPostsBudget()).toEqual({
+      kind: 'unavailable',
+    });
+  });
+
   it('prepareDrops sends the rule, cursor and limit as query params', async () => {
     const { client, fetchMock } = setup(() =>
       ok({ items: [drop], next: 'abc' }),
