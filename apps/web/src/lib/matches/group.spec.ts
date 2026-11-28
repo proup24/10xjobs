@@ -162,6 +162,36 @@ describe('sourceOptions', () => {
   });
 });
 
+describe('Indeed source', () => {
+  it('offers Indeed as a source and filters by it', () => {
+    const now = new Date('2026-11-10T21:00:00Z');
+    const mk = (jobId: string, channels: string[]) =>
+      ({
+        jobId,
+        rows: [row()],
+        postedAt: now,
+        postedExact: true,
+        channels,
+        viewed: false,
+        bestStackScore: null,
+        unverified: false,
+      }) as MatchedJob;
+    const jobs = [mk('i', ['INDEED']), mk('l', ['LINKEDIN_JOB_BOARD'])];
+    expect(sourceOptions(jobs)).toContainEqual({
+      value: 'INDEED',
+      label: 'Indeed',
+    });
+    expect(
+      selectJobs(jobs, {
+        profileId: 'all',
+        source: 'INDEED',
+        now,
+        tab: '7d',
+      }).map((j) => j.jobId),
+    ).toEqual(['i']);
+  });
+});
+
 describe('publishedRows', () => {
   it("drops rows of profiles that aren't published, so every view and count skips them", () => {
     const rows = [

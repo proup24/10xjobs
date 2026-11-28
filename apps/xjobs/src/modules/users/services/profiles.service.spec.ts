@@ -665,10 +665,12 @@ describe('ProfilesService', () => {
       expect(linkedPosts(id)).toHaveLength(4);
     });
 
-    describe('with the real registry (both unavailable)', () => {
-      it('lists no switch', async () => {
+    describe('with the real registry (posts unavailable, indeed available)', () => {
+      it('lists only the indeed switch', async () => {
         const { id } = await createOwner();
-        await expect(service.searchSwitches(userId, id)).resolves.toEqual([]);
+        await expect(
+          service.searchSwitches(userId, id),
+        ).resolves.toMatchObject([{ key: 'indeed', enabled: false }]);
       });
 
       it('refuses an unavailable switch without writing', async () => {
@@ -709,7 +711,7 @@ describe('ProfilesService', () => {
         expect(linkedPosts(id)).toHaveLength(4);
       });
 
-      it.each(['indeed', 'glassdoor', ''])(
+      it.each(['glassdoor', ''])(
         'refuses the key %j without writing',
         async (key) => {
           const { id } = await createOwner();
@@ -763,12 +765,13 @@ describe('ProfilesService', () => {
         const { id } = await createOwner();
         await expect(open.searchSwitches(userId, id)).resolves.toEqual([
           { key: 'posts', enabled: false, searches: 4 },
+          { key: 'indeed', enabled: false, searches: 0 },
         ]);
       });
 
-      it('refuses the unknown key glassdoor and unavailable indeed without writing', async () => {
+      it('refuses the unknown key glassdoor without writing', async () => {
         const { id } = await createOwner();
-        for (const key of ['glassdoor', 'indeed'])
+        for (const key of ['glassdoor'])
           await expect(
             open.setSearchSwitch(userId, id, key, true),
           ).rejects.toThrow(NotFoundException);
@@ -943,6 +946,7 @@ describe('ProfilesService', () => {
         );
         await expect(open.searchSwitches(userId, english.id)).resolves.toEqual([
           { key: 'posts', enabled: false, searches: 0 },
+          { key: 'indeed', enabled: false, searches: 0 },
         ]);
       });
     });
