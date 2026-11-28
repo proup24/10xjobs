@@ -130,7 +130,8 @@ describe('SearchSwitch', () => {
     render(<SearchSwitch profileId={ID} view={view()} />);
     expect(screen.queryByText(/paused until/)).toBeNull();
     fireEvent.click(screen.getByRole('switch'));
-    // The line shows at once with 'tomorrow', then with the formatted time.
+    // The line appears only once the save returns its pausedUntil, briefly with
+    // 'tomorrow' until the effect formats the time.
     await waitFor(() => {
       expect(screen.getByText(/Post searches are paused until/)).toBeTruthy();
       expect(screen.queryByText(/paused until tomorrow/)).toBeNull();

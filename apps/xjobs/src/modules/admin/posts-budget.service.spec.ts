@@ -308,7 +308,7 @@ describe('PostsBudgetReportService searches', () => {
     expect(view.searches[0]!.hash).not.toBe(view.searches[1]!.hash);
   });
 
-    it('orders the searches as longestWaitingFirst does', async () => {
+  it('orders the searches as longestWaitingFirst does', async () => {
     const builders = [
       builder('a', hoursAgo(1), { position: 'a' }),
       builder('b', hoursAgo(5), { position: 'b' }),
