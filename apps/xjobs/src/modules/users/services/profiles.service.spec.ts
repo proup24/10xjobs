@@ -668,9 +668,32 @@ describe('ProfilesService', () => {
     describe('with the real registry (posts unavailable, indeed available)', () => {
       it('lists only the indeed switch', async () => {
         const { id } = await createOwner();
-        await expect(
-          service.searchSwitches(userId, id),
-        ).resolves.toMatchObject([{ key: 'indeed', enabled: false }]);
+        await expect(service.searchSwitches(userId, id)).resolves.toEqual([
+          { key: 'indeed', enabled: false, searches: 0 },
+        ]);
+      });
+
+      it('accepts the indeed switch, attaching and detaching its channel', async () => {
+        const { id } = await createOwner();
+        await service.publish(userId, id);
+        const attach = vi.spyOn(QuerySearchService.prototype, 'attachSwitch');
+        const detach = vi.spyOn(QuerySearchService.prototype, 'detachChannel');
+        try {
+          await expect(
+            service.setSearchSwitch(userId, id, 'indeed', true),
+          ).resolves.toMatchObject({ key: 'indeed', enabled: true });
+          expect(attach).toHaveBeenCalledTimes(1);
+          expect(attach.mock.calls[0][1]).toMatchObject({
+            key: 'indeed',
+            channel: Channel.INDEED,
+          });
+          await service.setSearchSwitch(userId, id, 'indeed', false);
+          expect(detach).toHaveBeenCalledWith(id, Channel.INDEED);
+          expect((await flags(id)).indeedSearch).toBe(false);
+        } finally {
+          attach.mockRestore();
+          detach.mockRestore();
+        }
       });
 
       it('refuses an unavailable switch without writing', async () => {
@@ -771,10 +794,9 @@ describe('ProfilesService', () => {
 
       it('refuses the unknown key glassdoor without writing', async () => {
         const { id } = await createOwner();
-        for (const key of ['glassdoor'])
-          await expect(
-            open.setSearchSwitch(userId, id, key, true),
-          ).rejects.toThrow(NotFoundException);
+        await expect(
+          open.setSearchSwitch(userId, id, 'glassdoor', true),
+        ).rejects.toThrow(NotFoundException);
         expect(profiles.setSwitch).not.toHaveBeenCalled();
       });
 
