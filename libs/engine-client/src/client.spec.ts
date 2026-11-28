@@ -285,43 +285,6 @@ describe('engine client deleteProfile', () => {
   });
 });
 
-describe('engine client post search', () => {
-  const view = { enabled: false, allowed: true, searches: 2 };
-
-  it('sends GET …/api/profiles/{id}/post-search', async () => {
-    const { client, fetchMock } = setup(() =>
-      json(200, { status: 'success', data: view }),
-    );
-    expect(await client.postSearchStatus(PID)).toEqual({
-      kind: 'ok',
-      data: view,
-    });
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`http://engine.test/api/profiles/${PID}/post-search`);
-    expect(init?.method).toBe('GET');
-    const headers = new Headers(init?.headers);
-    expect(headers.get('x-engine-key')).toBe(KEY);
-    expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
-  });
-
-  it('sends PUT with {"enabled":true}', async () => {
-    const { client, fetchMock } = setup(() =>
-      json(200, { status: 'success', data: { ...view, enabled: true } }),
-    );
-    expect(await client.setPostSearch(PID, true)).toEqual({
-      kind: 'ok',
-      data: { ...view, enabled: true },
-    });
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`http://engine.test/api/profiles/${PID}/post-search`);
-    expect(init?.method).toBe('PUT');
-    expect(init?.body).toBe('{"enabled":true}');
-    expect(new Headers(init?.headers).get('content-type')).toBe(
-      'application/json',
-    );
-  });
-});
-
 describe('engine client search switches', () => {
   const views = [
     { key: 'posts', enabled: false, searches: 2, pausedUntil: null },

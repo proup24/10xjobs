@@ -3,11 +3,6 @@
 // is read only in the web app's `apps/web/src/lib/engine/server.ts`, which does
 // import `server-only`, and is handed in through `deps`.
 export type PublishedProfile = { id: string; state: string };
-export type PostSearchView = {
-  enabled: boolean;
-  allowed: boolean;
-  searches: number;
-};
 
 export type SearchSwitchKey = 'posts' | 'indeed';
 export type SearchSwitchView = {
@@ -156,11 +151,6 @@ export interface EngineClientDeps {
 export interface EngineClient {
   publishProfile(profileId: string): Promise<EngineResult<PublishedProfile>>;
   deleteProfile(profileId: string): Promise<EngineResult<{ id: string }>>;
-  postSearchStatus(profileId: string): Promise<EngineResult<PostSearchView>>;
-  setPostSearch(
-    profileId: string,
-    enabled: boolean,
-  ): Promise<EngineResult<PostSearchView>>;
   searchSwitches(profileId: string): Promise<EngineResult<SearchSwitchView[]>>;
   setSearchSwitch(
     profileId: string,
@@ -545,15 +535,6 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     }
   }
 
-  function isPostSearchView(data: unknown): data is PostSearchView {
-    return (
-      isRecord(data) &&
-      typeof data.enabled === 'boolean' &&
-      typeof data.allowed === 'boolean' &&
-      typeof data.searches === 'number'
-    );
-  }
-
   /**
    * The web deploys apart from the engine: an item with no `pausedUntil`
    * (an older engine) is accepted and set to null in place.
@@ -647,22 +628,6 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     } catch {
       return finish({ kind: 'unavailable' });
     }
-  }
-
-  function postSearch(
-    name: string,
-    profileId: string,
-    method: 'GET' | 'PUT',
-    enabled?: boolean,
-  ): Promise<EngineResult<PostSearchView>> {
-    return profileSearch(
-      name,
-      profileId,
-      'post-search',
-      isPostSearchView,
-      method,
-      enabled,
-    );
   }
 
   /**
@@ -912,10 +877,6 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
         },
         (_data, status) => (status === 204 ? null : undefined),
       ),
-    postSearchStatus: (profileId) =>
-      postSearch('postSearchStatus', profileId, 'GET'),
-    setPostSearch: (profileId, enabled) =>
-      postSearch('setPostSearch', profileId, 'PUT', enabled),
     searchSwitches: (profileId) =>
       profileSearch(
         'searchSwitches',

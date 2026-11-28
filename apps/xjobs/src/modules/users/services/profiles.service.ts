@@ -30,7 +30,6 @@ import type {
   Place,
   PlaceLabels,
   PlacesByArrangement,
-  PostSearchView,
   ProfileView,
   ProfileWithSkills,
   PublishedProfileView,
@@ -485,40 +484,6 @@ export class ProfilesService {
   }
 
   /**
-   * The post search switch for the old `/post-search` route: `allowed` is
-   * whether post search is available. Slice 04b deletes it.
-   */
-  async postSearchStatus(
-    userId: string,
-    profileId: string,
-  ): Promise<PostSearchView> {
-    const profile = await this.getOrThrow(userId, profileId);
-    const posts = this.postsSwitch();
-    const view = switchView(
-      posts,
-      profile,
-      await this.searchInput(profile),
-      null,
-    );
-    return toPostSearchView(posts, view);
-  }
-
-  /** The old `/post-search` PUT, over `setSearchSwitch`: a 404 while post search is unavailable. */
-  async setPostSearch(
-    userId: string,
-    profileId: string,
-    enabled: boolean,
-  ): Promise<PostSearchView> {
-    const view = await this.setSearchSwitch(
-      userId,
-      profileId,
-      'posts',
-      enabled,
-    );
-    return toPostSearchView(this.postsSwitch(), view);
-  }
-
-  /**
    * Today's posts budget, read once, only when an available posts switch is
    * on; a failed read answers null (not paused) rather than failing the view.
    */
@@ -536,12 +501,6 @@ export class ProfilesService {
       );
       return null;
     }
-  }
-
-  private postsSwitch(): SearchSwitch {
-    const posts = this.switches.find((sw) => sw.key === 'posts');
-    if (!posts) throw new Error('The search switch registry has no posts');
-    return posts;
   }
 
   private async searchInput(
@@ -567,11 +526,4 @@ function switchView(
         ? budget.nextDayStart.toISOString()
         : null,
   };
-}
-
-function toPostSearchView(
-  posts: SearchSwitch,
-  { enabled, searches }: SearchSwitchView,
-): PostSearchView {
-  return { enabled, allowed: posts.available, searches };
 }

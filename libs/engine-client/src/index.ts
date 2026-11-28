@@ -8,7 +8,6 @@ export type {
   EngineClientDeps,
   EngineResult,
   HeldPostView,
-  PostSearchView,
   PostsBudgetDayView,
   PostsBudgetView,
   PublishedProfile,

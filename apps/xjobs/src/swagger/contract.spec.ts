@@ -104,11 +104,9 @@ describe('API contract', () => {
     ).toEqual([
       'DELETE /api/profiles/{profileId}',
       'GET /api/health',
-      'GET /api/profiles/{profileId}/post-search',
       'GET /api/profiles/{profileId}/searches',
       'GET /api/users/{userId}/profiles/{profileId}/query-search',
       'POST /api/profiles/{profileId}/publish',
-      'PUT /api/profiles/{profileId}/post-search',
       'PUT /api/profiles/{profileId}/searches/{key}',
     ]);
   });

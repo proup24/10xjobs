@@ -739,30 +739,6 @@ describe('ProfilesService', () => {
           expect(profiles.setSwitch).not.toHaveBeenCalled();
         },
       );
-
-      it('postSearchStatus answers allowed false while posts is unavailable', async () => {
-        const { id } = await createOwner();
-        await expect(service.postSearchStatus(userId, id)).resolves.toEqual({
-          enabled: false,
-          allowed: false,
-          searches: 4,
-        });
-        await switchOnPosts(id);
-        await expect(service.postSearchStatus(userId, id)).resolves.toEqual({
-          enabled: true,
-          allowed: false,
-          searches: 4,
-        });
-      });
-
-      it('setPostSearch is not found while posts is unavailable', async () => {
-        const { id } = await createOwner();
-        await expect(service.setPostSearch(userId, id, true)).rejects.toThrow(
-          NotFoundException,
-        );
-        expect(profiles.setSwitch).not.toHaveBeenCalled();
-        expect((await flags(id)).postSearch).toBe(false);
-      });
     });
 
     describe('with posts available', () => {
@@ -932,12 +908,22 @@ describe('ProfilesService', () => {
         expect(linkedPosts(id)).toHaveLength(0);
         await expect(
           open.setSearchSwitch(userId, id, 'posts', true),
-        ).resolves.toEqual({ key: 'posts', enabled: true, searches: 4, pausedUntil: null });
+        ).resolves.toEqual({
+          key: 'posts',
+          enabled: true,
+          searches: 4,
+          pausedUntil: null,
+        });
         expect(linkedPosts(id)).toHaveLength(4);
         const before = querySearches.links.length;
         await expect(
           open.setSearchSwitch(userId, id, 'posts', false),
-        ).resolves.toEqual({ key: 'posts', enabled: false, searches: 4, pausedUntil: null });
+        ).resolves.toEqual({
+          key: 'posts',
+          enabled: false,
+          searches: 4,
+          pausedUntil: null,
+        });
         expect(linkedPosts(id)).toHaveLength(0);
         expect(querySearches.links.length).toBe(before - 4);
         expect(
@@ -1006,7 +992,12 @@ describe('ProfilesService', () => {
           await noChannel.setSearchSwitch(userId, id, 'indeed', true);
           await expect(
             noChannel.setSearchSwitch(userId, id, 'indeed', false),
-          ).resolves.toEqual({ key: 'indeed', enabled: false, searches: 0, pausedUntil: null });
+          ).resolves.toEqual({
+            key: 'indeed',
+            enabled: false,
+            searches: 0,
+            pausedUntil: null,
+          });
           expect(detach).not.toHaveBeenCalled();
         } finally {
           detach.mockRestore();
@@ -1028,22 +1019,6 @@ describe('ProfilesService', () => {
         } finally {
           detach.mockRestore();
         }
-      });
-
-      it('the wrappers go through the shared path', async () => {
-        const { id } = await createOwner();
-        await open.publish(userId, id);
-        await expect(open.setPostSearch(userId, id, true)).resolves.toEqual({
-          enabled: true,
-          allowed: true,
-          searches: 4,
-        });
-        expect(linkedPosts(id)).toHaveLength(4);
-        await expect(open.postSearchStatus(userId, id)).resolves.toEqual({
-          enabled: true,
-          allowed: true,
-          searches: 4,
-        });
       });
 
       it('reports how many searches the profile would get', async () => {

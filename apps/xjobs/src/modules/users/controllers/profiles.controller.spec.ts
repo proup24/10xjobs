@@ -25,32 +25,16 @@ describe('ProfilesController', () => {
     );
   });
 
-  it('reads and sets the post search switch for the token user', async () => {
-    const view = { enabled: true, allowed: true, searches: 4 };
-    const postSearchStatus = vi.fn().mockResolvedValue(view);
-    const setPostSearch = vi.fn().mockResolvedValue(view);
-    const controller = new ProfilesController({
-      postSearchStatus,
-      setPostSearch,
-    } as unknown as ProfilesService);
-    await expect(controller.postSearch('token-user', 'p1')).resolves.toBe(view);
-    expect(postSearchStatus).toHaveBeenCalledExactlyOnceWith(
-      'token-user',
-      'p1',
-    );
-    await expect(
-      controller.setPostSearch('token-user', 'p1', { enabled: true }),
-    ).resolves.toBe(view);
-    expect(setPostSearch).toHaveBeenCalledExactlyOnceWith(
-      'token-user',
-      'p1',
-      true,
-    );
-  });
-
   it('lists and sets search switches for the token user', async () => {
-    const list = [{ key: 'posts', enabled: false, searches: 4, pausedUntil: null }];
-    const view = { key: 'posts', enabled: true, searches: 4, pausedUntil: null };
+    const list = [
+      { key: 'posts', enabled: false, searches: 4, pausedUntil: null },
+    ];
+    const view = {
+      key: 'posts',
+      enabled: true,
+      searches: 4,
+      pausedUntil: null,
+    };
     const searchSwitches = vi.fn().mockResolvedValue(list);
     const setSearchSwitch = vi.fn().mockResolvedValue(view);
     const controller = new ProfilesController({

@@ -96,12 +96,3 @@ export type SearchSwitchView = {
   /** When paused for the day's posts budget, the instant post searches resume. */
   pausedUntil: string | null;
 };
-
-/** The post search switch as the old `/post-search` routes answer it; slice 04b deletes them. */
-export type PostSearchView = {
-  enabled: boolean;
-  /** Whether post search is available (shown and changeable) for every user. */
-  allowed: boolean;
-  /** How many LinkedIn post searches the profile would get. */
-  searches: number;
-};
