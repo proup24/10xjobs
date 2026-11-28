@@ -229,8 +229,9 @@ describe('PostsBudgetReportService searches', () => {
   });
 
   it('counts distinct profiles across the members of a segment', async () => {
+    const builders = [builder('a', hoursAgo(2)), builder('b', hoursAgo(3))];
     const { service, profilesFor } = setup({
-      builders: [builder('a', hoursAgo(2)), builder('b', hoursAgo(3))],
+      builders,
       profiles: new Map([
         ['a', ['p1', 'p2']],
         ['b', ['p2', 'p3']],
@@ -241,6 +242,7 @@ describe('PostsBudgetReportService searches', () => {
     expect(view.searches).toEqual([
       {
         key: 'linkedin_posts|en|backend|remote',
+        hash: planSegments(builders).segments[0]!.hash,
         profiles: 3,
         oldestCoveredUntil: hoursAgo(3).toISOString(),
         overDay: false,
@@ -282,7 +284,31 @@ describe('PostsBudgetReportService searches', () => {
     ]);
   });
 
-  it('orders the searches as longestWaitingFirst does', async () => {
+  it('tells apart the segments one group splits into by their hash', async () => {
+    // Spellings too long to merge into one search cut the group into parts.
+    const builders = Array.from({ length: 4 }, (_, i) =>
+      builder(`m${i}`, hoursAgo(i + 1), {
+        params: {
+          language: 'en',
+          position: 'backend',
+          remote: true,
+          spellings: [`${i}${'x'.repeat(150)}`],
+        },
+      }),
+    );
+    const { service } = setup({ builders });
+    const view = await service.view(NOW);
+    expect(view.searches).toHaveLength(2);
+    expect(new Set(view.searches.map((s) => s.key)).size).toBe(1);
+    expect(view.searches.map((s) => s.hash).sort()).toEqual(
+      planSegments(builders)
+        .segments.map((s) => s.hash)
+        .sort(),
+    );
+    expect(view.searches[0]!.hash).not.toBe(view.searches[1]!.hash);
+  });
+
+    it('orders the searches as longestWaitingFirst does', async () => {
     const builders = [
       builder('a', hoursAgo(1), { position: 'a' }),
       builder('b', hoursAgo(5), { position: 'b' }),

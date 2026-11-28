@@ -478,7 +478,13 @@ describe('engine client admin review', () => {
       today: day,
       days: [day],
       searches: [
-        { key: 'k', profiles: 2, oldestCoveredUntil: null, overDay: false },
+        {
+          key: 'k',
+          hash: 'h1',
+          profiles: 2,
+          oldestCoveredUntil: null,
+          overDay: false,
+        },
       ],
       pausedBuilders: 1,
       fullRuns: [{ key: 'k', runs: 2, lastAt: '2026-11-27T10:00:00.000Z' }],
@@ -493,6 +499,39 @@ describe('engine client admin review', () => {
     expect(init?.method).toBe('GET');
     expectAuth(init);
     const bad = setup(() => ok({ ...view, days: [{ dayStart: 1 }] }));
+    expect(await bad.client.adminPostsBudget()).toEqual({
+      kind: 'unavailable',
+    });
+  });
+
+  it('adminPostsBudget accepts a search with no hash from an older engine, and refuses a bad one', async () => {
+    const day = {
+      dayStart: '2026-11-26T23:00:00.000Z',
+      spentUsd: 0,
+      reachedAt: null,
+    };
+    const search = {
+      key: 'k',
+      profiles: 2,
+      oldestCoveredUntil: null,
+      overDay: false,
+    };
+    const view = {
+      limitUsd: 3,
+      today: day,
+      days: [],
+      searches: [search],
+      pausedBuilders: 0,
+      fullRuns: [],
+    };
+    const old = setup(() => ok(view));
+    expect(await old.client.adminPostsBudget()).toEqual({
+      kind: 'ok',
+      data: view,
+    });
+    const bad = setup(() =>
+      ok({ ...view, searches: [{ ...search, hash: 7 }] }),
+    );
     expect(await bad.client.adminPostsBudget()).toEqual({
       kind: 'unavailable',
     });

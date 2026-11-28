@@ -26,6 +26,11 @@ export class PostsBudgetDayViewDto {
 
 export class PostsBudgetSearchViewDto {
   @ApiProperty() key!: string;
+  @ApiProperty({
+    description:
+      "The segment's hash: the parts of a group split past the segment size share a key",
+  })
+  hash!: string;
   @ApiProperty({ description: 'Distinct profiles across the members' })
   profiles!: number;
   @ApiProperty({

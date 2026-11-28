@@ -63,6 +63,68 @@ describe('PostsBudgetReport', () => {
     expect(within(table).getAllByRole('row')).toHaveLength(8);
   });
 
+  it('heads the day table with the Morocco day, spend and when the limit was reached', () => {
+    render(<PostsBudgetReport view={view()} />);
+    const table = screen.getByRole('table', { name: 'Previous days' });
+    const heads = within(table)
+      .getAllByRole('columnheader')
+      .map((h) => h.textContent);
+    expect(heads).toEqual(['Morocco day', 'Spent', 'Reached']);
+    // 2026-11-26T23:00Z is 00:00 on 27 November in Morocco.
+    const [, first] = within(table).getAllByRole('row');
+    expect(within(first as HTMLElement).getByText('2026-11-27')).toBeTruthy();
+  });
+
+  it('tells apart the parts of one search and keys rows by hash', () => {
+    const error = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const part = (hash: string) => ({
+      key: 'search-split',
+      hash,
+      profiles: 1,
+      oldestCoveredUntil: null,
+      overDay: false,
+    });
+    render(
+      <PostsBudgetReport
+        view={view({
+          searches: [part('aaaaaaaa1111'), part('bbbbbbbb2222')],
+        })}
+      />,
+    );
+    expect(screen.getByText('part 1 (aaaaaaaa)')).toBeTruthy();
+    expect(screen.getByText('part 2 (bbbbbbbb)')).toBeTruthy();
+    expect(
+      error.mock.calls.some((c) => String(c[0]).includes('same key')),
+    ).toBe(false);
+    error.mockRestore();
+  });
+
+  it('keys rows by position when an older engine sends no hash', () => {
+    const error = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    const part = {
+      key: 'search-split',
+      profiles: 1,
+      oldestCoveredUntil: null,
+      overDay: false,
+    };
+    render(<PostsBudgetReport view={view({ searches: [part, part] })} />);
+    expect(screen.getByText('part 1')).toBeTruthy();
+    expect(screen.getByText('part 2')).toBeTruthy();
+    expect(
+      error.mock.calls.some((c) => String(c[0]).includes('same key')),
+    ).toBe(false);
+    error.mockRestore();
+  });
+
+  it('shows no part label for a search alone under its key', () => {
+    render(<PostsBudgetReport view={view()} />);
+    expect(screen.queryByText(/^part /)).toBeNull();
+  });
+
   it('flags searches over a day behind and never searched', () => {
     render(<PostsBudgetReport view={view()} />);
     expect(screen.getByText('over 24 hours behind')).toBeTruthy();

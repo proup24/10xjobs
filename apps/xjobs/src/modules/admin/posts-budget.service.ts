@@ -32,6 +32,8 @@ export interface PostsBudgetDayView {
 
 export interface PostsBudgetSearchView {
   key: string;
+  /** The segment's identity: one group past the segment size splits into parts sharing a key. */
+  hash: string;
   profiles: number;
   oldestCoveredUntil: string | null;
   overDay: boolean;
@@ -117,6 +119,10 @@ export class PostsBudgetReportService {
    * mark or wake): builders whose every owner is paused are left out, and when
    * the paused set can't be read it fails open the same way, leaving out only
    * builders already marked paused.
+   *
+   * A builder whose owner just came back is listed again at once but keeps the
+   * cursor it had while paused, so it can show as over 24 hours behind until
+   * the next tick wakes it and searches it.
    */
   private async searches(
     now: Date,
@@ -186,6 +192,7 @@ function searchView(
   );
   return {
     key: segment.key,
+    hash: segment.hash,
     profiles: ids.size,
     oldestCoveredUntil: oldest?.toISOString() ?? null,
     overDay: oldest !== null && now.getTime() - oldest.getTime() > DAY_MS,

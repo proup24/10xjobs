@@ -73,6 +73,11 @@ export type PostsBudgetView = {
   /** Most behind first. */
   searches: {
     key: string;
+    /**
+     * The segment's identity: one group can split into parts sharing a key. Missing from
+     * an engine older than the page; the page then keys rows by position.
+     */
+    hash?: string;
     profiles: number;
     oldestCoveredUntil: string | null;
     overDay: boolean;
@@ -308,6 +313,7 @@ function isPostsBudgetView(v: unknown): v is PostsBudgetView {
       (x) =>
         isRecord(x) &&
         typeof x.key === 'string' &&
+        (x.hash === undefined || typeof x.hash === 'string') &&
         typeof x.profiles === 'number' &&
         isNullableString(x.oldestCoveredUntil) &&
         typeof x.overDay === 'boolean',

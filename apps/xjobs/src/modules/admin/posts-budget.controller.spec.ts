@@ -49,6 +49,7 @@ describe('PostsBudgetController', () => {
       searches: [
         {
           key: 'linkedin_posts|en|backend|remote',
+          hash: 'abc123',
           profiles: 2,
           oldestCoveredUntil: null,
           overDay: false,
