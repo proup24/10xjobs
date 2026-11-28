@@ -135,13 +135,34 @@ describe('deleteProfileAction', () => {
 });
 
 describe('setSearchSwitchAction', () => {
+  const FAILED = { status: 'failed' };
+
   it('maps ok to saved and passes the id, key and flag', async () => {
     setSearchSwitch.mockResolvedValue({
       kind: 'ok',
       data: { key: 'indeed', enabled: true, searches: 1, pausedUntil: null },
     });
-    expect(await setSearchSwitchAction(ID, 'indeed', true)).toBe('saved');
+    expect(await setSearchSwitchAction(ID, 'indeed', true)).toEqual({
+      status: 'saved',
+      pausedUntil: null,
+    });
     expect(setSearchSwitch).toHaveBeenCalledWith(ID, 'indeed', true);
+  });
+
+  it("returns the engine's pausedUntil with saved", async () => {
+    setSearchSwitch.mockResolvedValue({
+      kind: 'ok',
+      data: {
+        key: 'posts',
+        enabled: true,
+        searches: 2,
+        pausedUntil: '2026-11-28T00:00:00.000Z',
+      },
+    });
+    expect(await setSearchSwitchAction(ID, 'posts', true)).toEqual({
+      status: 'saved',
+      pausedUntil: '2026-11-28T00:00:00.000Z',
+    });
   });
 
   it.each([
@@ -152,24 +173,24 @@ describe('setSearchSwitchAction', () => {
     { kind: 'invalid', message: 'x' },
   ])('maps $kind to failed', async (result) => {
     setSearchSwitch.mockResolvedValue(result);
-    expect(await setSearchSwitchAction(ID, 'posts', false)).toBe('failed');
+    expect(await setSearchSwitchAction(ID, 'posts', false)).toEqual(FAILED);
   });
 
   it('maps a thrown call to failed', async () => {
     setSearchSwitch.mockRejectedValue(new Error('boom'));
-    expect(await setSearchSwitchAction(ID, 'posts', true)).toBe('failed');
+    expect(await setSearchSwitchAction(ID, 'posts', true)).toEqual(FAILED);
   });
 
   it('fails bad input without calling the engine', async () => {
-    expect(await setSearchSwitchAction('not-a-uuid', 'posts', true)).toBe(
-      'failed',
+    expect(await setSearchSwitchAction('not-a-uuid', 'posts', true)).toEqual(
+      FAILED,
     );
     expect(
       await setSearchSwitchAction(ID, 'other' as unknown as 'posts', true),
-    ).toBe('failed');
+    ).toEqual(FAILED);
     expect(
       await setSearchSwitchAction(ID, 'posts', 'yes' as unknown as boolean),
-    ).toBe('failed');
+    ).toEqual(FAILED);
     expect(setSearchSwitch).not.toHaveBeenCalled();
   });
 });

@@ -102,8 +102,68 @@ describe('SearchSwitch', () => {
     expect(screen.queryByText(/paused until/)).toBeNull();
   });
 
+  it('hides the pause line once posts is turned off', async () => {
+    setSearchSwitchAction.mockResolvedValue({
+      status: 'saved',
+      pausedUntil: null,
+    });
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: '2026-11-28T00:00:00.000Z' })}
+      />,
+    );
+    expect(screen.getByText(/paused until/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('switch'));
+    expect(screen.queryByText(/paused until/)).toBeNull();
+    await waitFor(() =>
+      expect(setSearchSwitchAction).toHaveBeenCalledWith(ID, 'posts', false),
+    );
+    expect(screen.queryByText(/paused until/)).toBeNull();
+  });
+
+  it('shows the pause line when posts is turned on while paused', async () => {
+    setSearchSwitchAction.mockResolvedValue({
+      status: 'saved',
+      pausedUntil: '2026-11-28T00:00:00.000Z',
+    });
+    render(<SearchSwitch profileId={ID} view={view()} />);
+    expect(screen.queryByText(/paused until/)).toBeNull();
+    fireEvent.click(screen.getByRole('switch'));
+    // The line shows at once with 'tomorrow', then with the formatted time.
+    await waitFor(() => {
+      expect(screen.getByText(/Post searches are paused until/)).toBeTruthy();
+      expect(screen.queryByText(/paused until tomorrow/)).toBeNull();
+    });
+  });
+
+  it('shows no pause line when posts has no searches', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({
+          enabled: true,
+          searches: 0,
+          pausedUntil: '2026-11-28T00:00:00.000Z',
+        })}
+      />,
+    );
+    expect(screen.getByText(/No post searches for this profile/)).toBeTruthy();
+    expect(screen.queryByText(/paused until/)).toBeNull();
+  });
+
+  it('falls back to tomorrow when pausedUntil cannot be read', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: 'not a date' })}
+      />,
+    );
+    expect(screen.getByText(/paused until tomorrow because/)).toBeTruthy();
+  });
+
   it('reverts when the action fails', async () => {
-    setSearchSwitchAction.mockResolvedValue('failed');
+    setSearchSwitchAction.mockResolvedValue({ status: 'failed' });
     render(<SearchSwitch profileId={ID} view={view({ key: 'indeed' })} />);
     const sw = screen.getByRole('switch');
     expect(sw.getAttribute('aria-checked')).toBe('false');
