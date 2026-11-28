@@ -285,47 +285,10 @@ describe('engine client deleteProfile', () => {
   });
 });
 
-describe('engine client post search', () => {
-  const view = { enabled: false, allowed: true, searches: 2 };
-
-  it('sends GET …/api/profiles/{id}/post-search', async () => {
-    const { client, fetchMock } = setup(() =>
-      json(200, { status: 'success', data: view }),
-    );
-    expect(await client.postSearchStatus(PID)).toEqual({
-      kind: 'ok',
-      data: view,
-    });
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`http://engine.test/api/profiles/${PID}/post-search`);
-    expect(init?.method).toBe('GET');
-    const headers = new Headers(init?.headers);
-    expect(headers.get('x-engine-key')).toBe(KEY);
-    expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
-  });
-
-  it('sends PUT with {"enabled":true}', async () => {
-    const { client, fetchMock } = setup(() =>
-      json(200, { status: 'success', data: { ...view, enabled: true } }),
-    );
-    expect(await client.setPostSearch(PID, true)).toEqual({
-      kind: 'ok',
-      data: { ...view, enabled: true },
-    });
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe(`http://engine.test/api/profiles/${PID}/post-search`);
-    expect(init?.method).toBe('PUT');
-    expect(init?.body).toBe('{"enabled":true}');
-    expect(new Headers(init?.headers).get('content-type')).toBe(
-      'application/json',
-    );
-  });
-});
-
 describe('engine client search switches', () => {
   const views = [
-    { key: 'posts', enabled: false, searches: 2 },
-    { key: 'indeed', enabled: true, searches: 3 },
+    { key: 'posts', enabled: false, searches: 2, pausedUntil: null },
+    { key: 'indeed', enabled: true, searches: 3, pausedUntil: null },
   ];
 
   it('searchSwitches returns the list', async () => {
@@ -342,6 +305,40 @@ describe('engine client search switches', () => {
     const headers = new Headers(init?.headers);
     expect(headers.get('x-engine-key')).toBe(KEY);
     expect(headers.get('authorization')).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it('searchSwitches keeps a pausedUntil instant', async () => {
+    const paused = [{ ...views[0], pausedUntil: '2026-11-28T00:00:00.000Z' }];
+    const { client } = setup(() =>
+      json(200, { status: 'success', data: paused }),
+    );
+    expect(await client.searchSwitches(PID)).toEqual({
+      kind: 'ok',
+      data: paused,
+    });
+  });
+
+  it('searchSwitches reads an item without pausedUntil as null', async () => {
+    const { client } = setup(() =>
+      json(200, {
+        status: 'success',
+        data: [{ key: 'posts', enabled: true, searches: 2 }],
+      }),
+    );
+    expect(await client.searchSwitches(PID)).toEqual({
+      kind: 'ok',
+      data: [{ key: 'posts', enabled: true, searches: 2, pausedUntil: null }],
+    });
+  });
+
+  it('searchSwitches rejects a non-string pausedUntil', async () => {
+    const { client } = setup(() =>
+      json(200, {
+        status: 'success',
+        data: [{ key: 'posts', enabled: true, searches: 2, pausedUntil: 5 }],
+      }),
+    );
+    expect(await client.searchSwitches(PID)).toEqual({ kind: 'unavailable' });
   });
 
   it('searchSwitches maps a malformed list to unavailable', async () => {
@@ -468,6 +465,76 @@ describe('engine client admin review', () => {
     expectAuth(init);
     const bad = setup(() => ok({ items: [{ id: 1 }] }));
     expect(await bad.client.adminRescues()).toEqual({ kind: 'unavailable' });
+  });
+
+  it('adminPostsBudget sends GET /admin/posts-budget and checks the shape', async () => {
+    const day = {
+      dayStart: '2026-11-26T23:00:00.000Z',
+      spentUsd: 2.4,
+      reachedAt: null,
+    };
+    const view = {
+      limitUsd: 3,
+      today: day,
+      days: [day],
+      searches: [
+        {
+          key: 'k',
+          hash: 'h1',
+          profiles: 2,
+          oldestCoveredUntil: null,
+          overDay: false,
+        },
+      ],
+      pausedBuilders: 1,
+      fullRuns: [{ key: 'k', runs: 2, lastAt: '2026-11-27T10:00:00.000Z' }],
+    };
+    const { client, fetchMock } = setup(() => ok(view));
+    expect(await client.adminPostsBudget()).toEqual({
+      kind: 'ok',
+      data: view,
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://engine.test/api/admin/posts-budget');
+    expect(init?.method).toBe('GET');
+    expectAuth(init);
+    const bad = setup(() => ok({ ...view, days: [{ dayStart: 1 }] }));
+    expect(await bad.client.adminPostsBudget()).toEqual({
+      kind: 'unavailable',
+    });
+  });
+
+  it('adminPostsBudget accepts a search with no hash from an older engine, and refuses a bad one', async () => {
+    const day = {
+      dayStart: '2026-11-26T23:00:00.000Z',
+      spentUsd: 0,
+      reachedAt: null,
+    };
+    const search = {
+      key: 'k',
+      profiles: 2,
+      oldestCoveredUntil: null,
+      overDay: false,
+    };
+    const view = {
+      limitUsd: 3,
+      today: day,
+      days: [],
+      searches: [search],
+      pausedBuilders: 0,
+      fullRuns: [],
+    };
+    const old = setup(() => ok(view));
+    expect(await old.client.adminPostsBudget()).toEqual({
+      kind: 'ok',
+      data: view,
+    });
+    const bad = setup(() =>
+      ok({ ...view, searches: [{ ...search, hash: 7 }] }),
+    );
+    expect(await bad.client.adminPostsBudget()).toEqual({
+      kind: 'unavailable',
+    });
   });
 
   it('prepareDrops sends the rule, cursor and limit as query params', async () => {

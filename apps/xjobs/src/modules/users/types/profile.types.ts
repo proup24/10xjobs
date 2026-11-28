@@ -93,13 +93,6 @@ export type SearchSwitchView = {
   enabled: boolean;
   /** How many searches the switch would add for this profile. */
   searches: number;
-};
-
-/** The post search switch as the old `/post-search` routes answer it; slice 04b deletes them. */
-export type PostSearchView = {
-  enabled: boolean;
-  /** Whether post search is available (shown and changeable) for every user. */
-  allowed: boolean;
-  /** How many LinkedIn post searches the profile would get. */
-  searches: number;
+  /** When paused for the day's posts budget, the instant post searches resume. */
+  pausedUntil: string | null;
 };

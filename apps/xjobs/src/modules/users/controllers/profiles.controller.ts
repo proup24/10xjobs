@@ -19,7 +19,6 @@ import {
 } from 'src/common/decorators';
 import { UserGuard } from 'src/common/guards';
 import { ENGINE_KEY_AND_BEARER } from 'src/swagger/security';
-import { PostSearchResponseDto } from '../dto/post-search.dto';
 import {
   SearchSwitchResponseDto,
   SetSearchSwitchDto,
@@ -27,11 +26,7 @@ import {
 import { DeleteProfileResponseDto } from '../dto/delete-profile.response.dto';
 import { PublishProfileResponseDto } from '../dto/publish-profile.response.dto';
 import { ProfilesService } from '../services/profiles.service';
-import type {
-  PostSearchView,
-  PublishedProfileView,
-  SearchSwitchView,
-} from '../types';
+import type { PublishedProfileView, SearchSwitchView } from '../types';
 
 @ApiTags('profiles')
 // Both headers on every route: one requirement object, so they are ANDed and
@@ -107,32 +102,5 @@ export class ProfilesController {
     @Body() body: SetSearchSwitchDto,
   ): Promise<SearchSwitchView> {
     return this.profiles.setSearchSwitch(userId, profileId, key, body.enabled);
-  }
-
-  @ApiSuccessResponse(PostSearchResponseDto, {
-    description:
-      'The post search switch, and whether post search is available; slice 04b removes this route',
-  })
-  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
-  @Get(':profileId/post-search')
-  postSearch(
-    @CurrentUser() userId: string,
-    @Param('profileId', ParseUUIDPipe) profileId: string,
-  ): Promise<PostSearchView> {
-    return this.profiles.postSearchStatus(userId, profileId);
-  }
-
-  @ApiSuccessResponse(PostSearchResponseDto, {
-    description:
-      'Turns post search on or off, over the search switch path; a 404 while post search is unavailable. Slice 04b removes this route.',
-  })
-  @ApiErrorResponses(HttpStatus.BAD_REQUEST, HttpStatus.NOT_FOUND)
-  @Put(':profileId/post-search')
-  setPostSearch(
-    @CurrentUser() userId: string,
-    @Param('profileId', ParseUUIDPipe) profileId: string,
-    @Body() body: SetSearchSwitchDto,
-  ): Promise<PostSearchView> {
-    return this.profiles.setPostSearch(userId, profileId, body.enabled);
   }
 }

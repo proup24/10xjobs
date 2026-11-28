@@ -26,6 +26,10 @@ describe('UserMenu', () => {
       name: 'Admin: Rescues',
     });
     expect(rescues.getAttribute('href')).toBe('/admin/rescues');
+    const budget = await screen.findByRole('menuitem', {
+      name: 'Admin: Posts budget',
+    });
+    expect(budget.getAttribute('href')).toBe('/admin/posts-budget');
   });
 
   it('hides the admin item from anyone else', async () => {

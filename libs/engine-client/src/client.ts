@@ -3,17 +3,14 @@
 // is read only in the web app's `apps/web/src/lib/engine/server.ts`, which does
 // import `server-only`, and is handed in through `deps`.
 export type PublishedProfile = { id: string; state: string };
-export type PostSearchView = {
-  enabled: boolean;
-  allowed: boolean;
-  searches: number;
-};
 
 export type SearchSwitchKey = 'posts' | 'indeed';
 export type SearchSwitchView = {
   key: SearchSwitchKey;
   enabled: boolean;
   searches: number;
+  /** When paused for the day's posts budget, the instant post searches resume. */
+  pausedUntil: string | null;
 };
 
 /** The signed-in user's searches: paused, and when they were last active. */
@@ -60,6 +57,33 @@ export type VerdictView = {
   postedAt: string | null;
   url: string;
   extractedAt: string;
+};
+/** One Morocco day of post search spend. */
+export type PostsBudgetDayView = {
+  dayStart: string;
+  spentUsd: number;
+  reachedAt: string | null;
+};
+/** The owner's post search budget report (`GET /api/admin/posts-budget`). */
+export type PostsBudgetView = {
+  limitUsd: number;
+  today: PostsBudgetDayView;
+  /** The 7 Morocco days before today, newest first. */
+  days: PostsBudgetDayView[];
+  /** Most behind first. */
+  searches: {
+    key: string;
+    /**
+     * The segment's identity: one group can split into parts sharing a key. Missing from
+     * an engine older than the page; the page then keys rows by position.
+     */
+    hash?: string;
+    profiles: number;
+    oldestCoveredUntil: string | null;
+    overDay: boolean;
+  }[];
+  pausedBuilders: number;
+  fullRuns: { key: string; runs: number; lastAt: string }[];
 };
 /** One post rescue, for the owner's report (`GET /api/admin/rescues`). */
 export type RescueView = {
@@ -132,11 +156,6 @@ export interface EngineClientDeps {
 export interface EngineClient {
   publishProfile(profileId: string): Promise<EngineResult<PublishedProfile>>;
   deleteProfile(profileId: string): Promise<EngineResult<{ id: string }>>;
-  postSearchStatus(profileId: string): Promise<EngineResult<PostSearchView>>;
-  setPostSearch(
-    profileId: string,
-    enabled: boolean,
-  ): Promise<EngineResult<PostSearchView>>;
   searchSwitches(profileId: string): Promise<EngineResult<SearchSwitchView[]>>;
   setSearchSwitch(
     profileId: string,
@@ -167,6 +186,8 @@ export interface EngineClient {
   adminRescues(options?: {
     limit?: number;
   }): Promise<EngineResult<{ items: RescueView[] }>>;
+  /** Post search spend against the daily limit, and how far behind the searches are. */
+  adminPostsBudget(): Promise<EngineResult<PostsBudgetView>>;
   /** Who automatic silencing would silence now; already silenced authors are left out. */
   autoSilenceCandidates(): Promise<EngineResult<AutoSilenceCandidateView[]>>;
   silencedAuthors(): Promise<EngineResult<SilencedAuthorView[]>>;
@@ -268,6 +289,44 @@ function isRescueView(v: unknown): v is RescueView {
     typeof v.job.postingUrl === 'string' &&
     isRecord(v.user) &&
     typeof v.user.id === 'string'
+  );
+}
+
+function isPostsBudgetDayView(v: unknown): v is PostsBudgetDayView {
+  return (
+    isRecord(v) &&
+    typeof v.dayStart === 'string' &&
+    typeof v.spentUsd === 'number' &&
+    isNullableString(v.reachedAt)
+  );
+}
+
+function isPostsBudgetView(v: unknown): v is PostsBudgetView {
+  return (
+    isRecord(v) &&
+    typeof v.limitUsd === 'number' &&
+    isPostsBudgetDayView(v.today) &&
+    Array.isArray(v.days) &&
+    v.days.every(isPostsBudgetDayView) &&
+    Array.isArray(v.searches) &&
+    v.searches.every(
+      (x) =>
+        isRecord(x) &&
+        typeof x.key === 'string' &&
+        (x.hash === undefined || typeof x.hash === 'string') &&
+        typeof x.profiles === 'number' &&
+        isNullableString(x.oldestCoveredUntil) &&
+        typeof x.overDay === 'boolean',
+    ) &&
+    typeof v.pausedBuilders === 'number' &&
+    Array.isArray(v.fullRuns) &&
+    v.fullRuns.every(
+      (x) =>
+        isRecord(x) &&
+        typeof x.key === 'string' &&
+        typeof x.runs === 'number' &&
+        typeof x.lastAt === 'string',
+    )
   );
 }
 
@@ -482,22 +541,20 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     }
   }
 
-  function isPostSearchView(data: unknown): data is PostSearchView {
-    return (
-      isRecord(data) &&
-      typeof data.enabled === 'boolean' &&
-      typeof data.allowed === 'boolean' &&
-      typeof data.searches === 'number'
-    );
-  }
-
+  /**
+   * The web deploys apart from the engine: an item with no `pausedUntil`
+   * (an older engine) is accepted and set to null in place.
+   */
   function isSearchSwitchView(data: unknown): data is SearchSwitchView {
-    return (
-      isRecord(data) &&
-      (data.key === 'posts' || data.key === 'indeed') &&
-      typeof data.enabled === 'boolean' &&
-      typeof data.searches === 'number'
-    );
+    if (
+      !isRecord(data) ||
+      !(data.key === 'posts' || data.key === 'indeed') ||
+      typeof data.enabled !== 'boolean' ||
+      typeof data.searches !== 'number'
+    )
+      return false;
+    if (data.pausedUntil === undefined) data.pausedUntil = null;
+    return data.pausedUntil === null || typeof data.pausedUntil === 'string';
   }
 
   function isSearchSwitchList(data: unknown): data is SearchSwitchView[] {
@@ -577,22 +634,6 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
     } catch {
       return finish({ kind: 'unavailable' });
     }
-  }
-
-  function postSearch(
-    name: string,
-    profileId: string,
-    method: 'GET' | 'PUT',
-    enabled?: boolean,
-  ): Promise<EngineResult<PostSearchView>> {
-    return profileSearch(
-      name,
-      profileId,
-      'post-search',
-      isPostSearchView,
-      method,
-      enabled,
-    );
   }
 
   /**
@@ -790,6 +831,12 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
             ? { items: data.items }
             : undefined,
       ),
+    adminPostsBudget: () =>
+      admin(
+        'adminPostsBudget',
+        { method: 'GET', path: '/admin/posts-budget' },
+        (data) => (isPostsBudgetView(data) ? data : undefined),
+      ),
     autoSilenceCandidates: () =>
       admin(
         'autoSilenceCandidates',
@@ -836,10 +883,6 @@ export function createEngineClient(deps: EngineClientDeps): EngineClient {
         },
         (_data, status) => (status === 204 ? null : undefined),
       ),
-    postSearchStatus: (profileId) =>
-      postSearch('postSearchStatus', profileId, 'GET'),
-    setPostSearch: (profileId, enabled) =>
-      postSearch('setPostSearch', profileId, 'PUT', enabled),
     searchSwitches: (profileId) =>
       profileSearch(
         'searchSwitches',

@@ -36,15 +36,20 @@ import {
   type SegmentWindow,
   SearchSegmentsRepository,
   type SegmentQueryOutcome,
+  DailyBudget,
   LinkedinSearchSplitsRepository,
+  PostsBudgetService,
+  POSTS_NULL_COST_MICRO_USD,
+  moroccoDayStart,
+  longestWaitingFirst,
   planSegments,
+  postsBudgetReached,
   segmentHash,
   segmentWindow,
 } from 'src/modules/segments';
 import { StorageService } from 'src/modules/storage';
 import { channelJobsConfig } from './config';
 import { IngestQueue } from '../ingest';
-import { DailyBudget, moroccoDayStart } from './spend';
 import { canHalve, halve, nextParts } from './splits';
 import { CollectionSummary, SegmentOutcome } from './types';
 const HOUR_MS = 3_600_000;
@@ -58,10 +63,6 @@ export const COLLECT_JOB = 'collect';
  */
 const LINKEDIN_JOB_BOARD_TICK_LIMIT_MS = 60 * 60_000;
 
-/** What a posts run with no recorded cost counts as, until its cost is re-read. */
-const POSTS_NULL_COST_MICRO_USD = 250_000;
-/** A posts run is not started with less than this left of the day's budget. */
-const POSTS_MIN_LEFT_USD = 0.01;
 /** An Indeed run is not started with less than this left of the day's budget. */
 const INDEED_MIN_LEFT_USD = 0.001;
 
@@ -117,6 +118,7 @@ export class CollectionService {
     private readonly queries: QuerySearchService,
     private readonly segments: SearchSegmentsRepository,
     private readonly splits: LinkedinSearchSplitsRepository,
+    private readonly postsBudget: PostsBudgetService,
     private readonly activity: ActivityRepository,
     private readonly storage: StorageService,
     private readonly ingestQueue: IngestQueue,
@@ -150,7 +152,12 @@ export class CollectionService {
       config.segmentSize,
       new Map([...remembered].map(([key, { parts }]) => [key, parts])),
     );
-    const { segments } = plan;
+    // Posts have a daily budget that can run out mid-tick: the search that has
+    // waited longest goes first, so the skipped ones lead next time.
+    const segments =
+      channel === Channel.LINKEDIN_POSTS
+        ? longestWaitingFirst(plan.segments)
+        : plan.segments;
     // Keyword length, not a full search, cut these groups: one line per group.
     for (const cut of plan.cuts) {
       const parts = remembered.get(cut.key)?.parts ?? 1;
@@ -321,9 +328,10 @@ export class CollectionService {
     }
     if (
       budget &&
-      (budget.reached ||
-        (chargesFromBudget(channel) &&
-          budget.leftUsd < minLeftUsd(channel)))
+      (channel === Channel.LINKEDIN_POSTS
+        ? postsBudgetReached(budget)
+        : budget.reached ||
+          (channel === Channel.INDEED && budget.leftUsd < INDEED_MIN_LEFT_USD))
     ) {
       // Not a failure: no run started and no cursor moved, so the next tick re-covers the window.
       this.logBudgetReached(channel, budget);
@@ -414,6 +422,10 @@ export class CollectionService {
     now: Date,
   ): Promise<DailyBudget | undefined> {
     if (!hasDailyBudget(channel)) return undefined;
+    if (channel === Channel.LINKEDIN_POSTS) {
+      const day = await this.postsBudget.today(now);
+      return new DailyBudget(day.limitUsd, day.spentMicroUsd, day.dayStart);
+    }
     const dayStart = moroccoDayStart(now);
     const spent = await this.segments.spentMicroUsd(
       channel,
@@ -830,11 +842,6 @@ function chargesFromBudget(
   channel: Channel,
 ): channel is Channel.LINKEDIN_POSTS | Channel.INDEED {
   return channel === Channel.LINKEDIN_POSTS || channel === Channel.INDEED;
-}
-
-/** The least left of the day's budget with which a budget-charged channel starts a run. */
-function minLeftUsd(channel: Channel): number {
-  return channel === Channel.INDEED ? INDEED_MIN_LEFT_USD : POSTS_MIN_LEFT_USD;
 }
 
 /** What a capped channel's run with no recorded cost counts as toward the day. */

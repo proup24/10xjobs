@@ -19,7 +19,11 @@ import {
 import { FakeActivityRepository } from 'src/modules/activity/testing/fakes';
 import { ingestConfig, parseBatchFile } from 'src/modules/ingest';
 import type { QuerySearchService } from 'src/modules/queries';
-import { segmentHash, segmentKey } from 'src/modules/segments';
+import {
+  PostsBudgetService,
+  segmentHash,
+  segmentKey,
+} from 'src/modules/segments';
 import {
   FakeLinkedinSearchSplitsRepository,
   FakeSearchSegmentsRepository,
@@ -127,6 +131,7 @@ function setup(
     queries as unknown as QuerySearchService,
     segments,
     splits,
+    new PostsBudgetService(segments, { get: configGet } as never),
     activity,
     storage,
     ingestQueue as unknown as IngestQueue,
@@ -1337,6 +1342,68 @@ describe('CollectionService posts budget and incomplete runs', () => {
     const limits = collector.collect.mock.calls.map(([s]) => s.maxChargeUsd!);
     expect(limits[0]).toBeCloseTo(1.5, 9);
     expect(limits[1]).toBeCloseTo(0.5, 9);
+  });
+
+  it('runs the longest-waiting post search first when the budget allows one', async () => {
+    const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+    const ranFirst = async (fullstackHours: number, backendHours: number) => {
+      const { collection, collector } = setup(
+        [
+          ...posts(1).map((b) => ({
+            ...b,
+            coveredUntil: hoursAgo(fullstackHours),
+          })),
+          ...posts(1, 'backend').map((b) => ({
+            ...b,
+            coveredUntil: hoursAgo(backendHours),
+          })),
+        ],
+        async (s) => resultFor(s, undefined, { costUsd: 1.5 }),
+        POSTS,
+        1.5,
+      );
+      await collection.collect(POSTS);
+      expect(collector.collect).toHaveBeenCalledTimes(1);
+      const [search] = collector.collect.mock.calls[0];
+      return search.queries[0].params?.position;
+    };
+
+    expect(await ranFirst(1, 5)).toBe('backend');
+    expect(await ranFirst(5, 1)).toBe('fullstack');
+  });
+
+  it('keeps job board groups in key order whatever their cursors', async () => {
+    const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+    const ran = async (emeaHours: number, europeHours: number) => {
+      const rows = [
+        builder({
+          channel: Channel.LINKEDIN_JOB_BOARD,
+          type: Arrangement.remote,
+          params: { location: 'emea' },
+          coveredUntil: hoursAgo(emeaHours),
+        }),
+        builder({
+          channel: Channel.LINKEDIN_JOB_BOARD,
+          type: Arrangement.remote,
+          params: { location: 'europe' },
+          coveredUntil: hoursAgo(europeHours),
+        }),
+      ];
+      const { collection, collector } = setup(
+        rows,
+        undefined,
+        Channel.LINKEDIN_JOB_BOARD,
+      );
+      await collection.collect(Channel.LINKEDIN_JOB_BOARD);
+      return collector.collect.mock.calls.map(([s]) =>
+        s.queries.map((q) => q.params?.location),
+      );
+    };
+
+    // One run per group, in key order: the keys hold the geoIds, and europe's
+    // ("100506914") sorts before emea's ("91000007"), whichever waited longer.
+    expect(await ran(1, 5)).toEqual([['europe'], ['emea']]);
+    expect(await ran(5, 1)).toEqual([['europe'], ['emea']]);
   });
 
   it('skips posts segments once less than a cent is left', async () => {

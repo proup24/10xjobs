@@ -17,4 +17,12 @@ export class SearchSwitchResponseDto {
 
   @ApiProperty({ description: 'Searches the switch would add for the profile' })
   searches!: number;
+
+  @ApiProperty({
+    nullable: true,
+    type: String,
+    description:
+      'When paused for the day’s posts budget, the instant post searches resume',
+  })
+  pausedUntil!: string | null;
 }

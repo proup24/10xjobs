@@ -99,28 +99,35 @@ export async function deleteProfileAction(
   redirect(hrefAfterDelete(list, profileId));
 }
 
+export type SearchSwitchResult =
+  | { status: 'saved'; pausedUntil: string | null }
+  | { status: 'failed' };
+
 /**
  * Turns one search switch on or off for one of the user's profiles. Only the engine
- * writes the switch columns; the web app has no grant on them.
+ * writes the switch columns; the web app has no grant on them. A save returns the
+ * engine's `pausedUntil` for the new state, so the switch can show or hide its pause line.
  */
 export async function setSearchSwitchAction(
   profileId: string,
   key: SearchSwitchKey,
   enabled: boolean,
-): Promise<'saved' | 'failed'> {
+): Promise<SearchSwitchResult> {
   if (
     !isProfileId(profileId) ||
     (key !== 'posts' && key !== 'indeed') ||
     typeof enabled !== 'boolean'
   )
-    return 'failed';
+    return { status: 'failed' };
   try {
     const result = await (
       await engineClient()
     ).setSearchSwitch(profileId, key, enabled);
-    return result.kind === 'ok' ? 'saved' : 'failed';
+    return result.kind === 'ok'
+      ? { status: 'saved', pausedUntil: result.data.pausedUntil }
+      : { status: 'failed' };
   } catch {
-    return 'failed';
+    return { status: 'failed' };
   }
 }
 

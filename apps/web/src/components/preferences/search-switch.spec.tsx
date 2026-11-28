@@ -23,6 +23,7 @@ const view = (over = {}) => ({
   key: 'posts' as const,
   enabled: false,
   searches: 2,
+  pausedUntil: null as string | null,
   ...over,
 });
 
@@ -49,7 +50,10 @@ describe('SearchSwitch', () => {
 
   it('shows the Indeed label and description', () => {
     render(
-      <SearchSwitch profileId={ID} view={view({ key: 'indeed', searches: 0 })} />,
+      <SearchSwitch
+        profileId={ID}
+        view={view({ key: 'indeed', searches: 0 })}
+      />,
     );
     expect(screen.getByText('Search Indeed')).toBeTruthy();
     expect(
@@ -60,8 +64,107 @@ describe('SearchSwitch', () => {
     expect(screen.queryByText(/No post searches for this profile/)).toBeNull();
   });
 
+  it('says when post searches are paused for the day', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: '2026-11-28T00:00:00.000Z' })}
+      />,
+    );
+    expect(
+      screen.getByText(
+        /Post searches are paused until .+ because today's search budget is used up\. They catch up on what they missed when they restart\./,
+      ),
+    ).toBeTruthy();
+  });
+
+  it('shows no pause line when posts is not paused', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: null })}
+      />,
+    );
+    expect(screen.queryByText(/paused until/)).toBeNull();
+  });
+
+  it('shows no pause line for Indeed even with a pausedUntil', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({
+          key: 'indeed',
+          enabled: true,
+          pausedUntil: '2026-11-28T00:00:00.000Z',
+        })}
+      />,
+    );
+    expect(screen.queryByText(/paused until/)).toBeNull();
+  });
+
+  it('hides the pause line once posts is turned off', async () => {
+    setSearchSwitchAction.mockResolvedValue({
+      status: 'saved',
+      pausedUntil: null,
+    });
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: '2026-11-28T00:00:00.000Z' })}
+      />,
+    );
+    expect(screen.getByText(/paused until/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('switch'));
+    expect(screen.queryByText(/paused until/)).toBeNull();
+    await waitFor(() =>
+      expect(setSearchSwitchAction).toHaveBeenCalledWith(ID, 'posts', false),
+    );
+    expect(screen.queryByText(/paused until/)).toBeNull();
+  });
+
+  it('shows the pause line when posts is turned on while paused', async () => {
+    setSearchSwitchAction.mockResolvedValue({
+      status: 'saved',
+      pausedUntil: '2026-11-28T00:00:00.000Z',
+    });
+    render(<SearchSwitch profileId={ID} view={view()} />);
+    expect(screen.queryByText(/paused until/)).toBeNull();
+    fireEvent.click(screen.getByRole('switch'));
+    // The line appears only once the save returns its pausedUntil, briefly with
+    // 'tomorrow' until the effect formats the time.
+    await waitFor(() => {
+      expect(screen.getByText(/Post searches are paused until/)).toBeTruthy();
+      expect(screen.queryByText(/paused until tomorrow/)).toBeNull();
+    });
+  });
+
+  it('shows no pause line when posts has no searches', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({
+          enabled: true,
+          searches: 0,
+          pausedUntil: '2026-11-28T00:00:00.000Z',
+        })}
+      />,
+    );
+    expect(screen.getByText(/No post searches for this profile/)).toBeTruthy();
+    expect(screen.queryByText(/paused until/)).toBeNull();
+  });
+
+  it('falls back to tomorrow when pausedUntil cannot be read', () => {
+    render(
+      <SearchSwitch
+        profileId={ID}
+        view={view({ enabled: true, pausedUntil: 'not a date' })}
+      />,
+    );
+    expect(screen.getByText(/paused until tomorrow because/)).toBeTruthy();
+  });
+
   it('reverts when the action fails', async () => {
-    setSearchSwitchAction.mockResolvedValue('failed');
+    setSearchSwitchAction.mockResolvedValue({ status: 'failed' });
     render(<SearchSwitch profileId={ID} view={view({ key: 'indeed' })} />);
     const sw = screen.getByRole('switch');
     expect(sw.getAttribute('aria-checked')).toBe('false');
