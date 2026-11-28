@@ -1,5 +1,7 @@
 # 04: Ingest, process and match
 
+Status: Built. Spec: [Indeed ingest design](../../superpowers/specs/2026-11-27-indeed-ingest-design.md). Plan: [Indeed ingest plan](../../superpowers/plans/2026-11-27-indeed-ingest.md).
+
 ## Goal
 
 Every collected Indeed job is normalized, has its facts extracted by the existing processor, and is decided against each profile by the existing matcher, with the same rules and reasons as LinkedIn jobs. Qualified ones appear in the matches view with an Indeed label; rejected ones can be checked with their reasons.
@@ -30,6 +32,6 @@ This is the "prepare" and "extract" of the request: for listings, preparing is i
 
 ## Open questions
 
-- Claude quota: Indeed may add many jobs to process on the owner's subscription. Does it need a pre-filter before Claude (for example clearly non-engineering titles), and if so, which drops are safe given "missing the right jobs" is an anti-goal?
+- ~~Claude quota: Indeed may add many jobs to process on the owner's subscription. Does it need a pre-filter before Claude (for example clearly non-engineering titles), and if so, which drops are safe given "missing the right jobs" is an anti-goal?~~ No pre-filter. Indeed adds about 10% to LinkedIn's 1,800 to 2,900 new listings a weekday. The prefilter's on-site skip and the processor's daily and weekly stops apply.
 - ~~Indeed's descriptions are often HTML fragments; is the existing text cleaner enough?~~ Yes: `htmlToPlainText` gave a full description on 100% of rows on every actor (slice 01).
-- Does `db:archive-actor` work for Indeed actors unchanged?
+- ~~Does `db:archive-actor` work for Indeed actors unchanged?~~ Expected to, with `--actor valig/indeed-jobs-scraper`, because it credits jobs by batch actor. Not verified locally, since the local DB has no Indeed batches. Checked on dev with `--dry-run` after deploy.

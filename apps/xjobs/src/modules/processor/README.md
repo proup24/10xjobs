@@ -95,7 +95,7 @@ A call already running when a pause starts finishes normally. Pauses are logged 
 
 Two kinds of job are in scope, always `status='active'`:
 
-- **Listings** (`kind='job'`): at least one source (`normalized_job_sources` → `raw_items`) has a channel in `PROCESSOR_CHANNELS` (`processor.config.ts`): harvestapi's `LINKEDIN_JOB_BOARD` the trial channels (`TRIAL_CHANNELS`, today `LINKEDIN_JOB_BOARD_CHEAP`) and `INDEED`. A LinkedIn or Indeed job merged with its Ashby or Greenhouse posting is in scope.
+- **Listings** (`kind='job'`): at least one source (`normalized_job_sources` → `raw_items`) has a channel in `PROCESSOR_CHANNELS` (`processor.config.ts`): harvestapi's `LINKEDIN_JOB_BOARD`, the trial channels (`TRIAL_CHANNELS`, today `LINKEDIN_JOB_BOARD_CHEAP` and `LINKEDIN_JOB_BOARD_BEBITY`) and `INDEED`. A LinkedIn or Indeed job merged with its Ashby or Greenhouse posting is in scope.
 - **Posts** (`kind='post'`): first seen within the last 7 days, and not every author silenced. A post older than the window (`outOfWindow`) or whose authors are all silenced (`silenced`) is out of scope and stays as it is.
 
 Only in-scope jobs are listed, claimed or reprocessed; every other job, `post_role` jobs included, is invisible to the processor. An `archived` job is never claimed. A closed in-scope job is claimed and marked `processed` with no model call and no extraction.
